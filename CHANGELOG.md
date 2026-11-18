@@ -2,6 +2,10 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-17: board looks readable on phones
+
+- Home: in High contrast, CVI and Dim, the chosen look's button lost its white card and its dark text disappeared on black. It now keeps a white card (yellow in CVI). Hover effects only apply on devices with a mouse, so they can't stick after a tap on phones.
+
 ## 2026-11-17: Figures 15 and 16 centered
 
 - Features: the learners figure and the backup figure now sit centered in their cards (they were pushed to the left).
