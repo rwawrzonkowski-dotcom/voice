@@ -329,3 +329,11 @@ footer strong{color:var(--ink)}
 
 /* Dark looks: hovering an option must stay readable (light tint, light text) */
 @media (hover:hover){.th-dark .under .seg .pill:not([aria-pressed=true]):hover,.th-cvi .under .seg .pill:not([aria-pressed=true]):hover,.th-dim .under .seg .pill:not([aria-pressed=true]):hover{background:rgba(255,255,255,.2);color:var(--hink)}}
+
+/* Home hero: the full name under the eyebrow */
+.fullname{margin:-4px 0 10px;font-family:Lexend,system-ui,sans-serif;font-size:17px;color:#6b5f3a}
+/* Dark board looks (High contrast, CVI, Dim): nothing may stay dark purple or brown on the dark hero/bar */
+.th-dark .fullname,.th-cvi .fullname,.th-dim .fullname{color:var(--hsoft)}
+.th-dark :is(.hero,#site-bar,.under) .egg:not(.found),.th-cvi :is(.hero,#site-bar,.under) .egg:not(.found),.th-dim :is(.hero,#site-bar,.under) .egg:not(.found){color:var(--hsoft);border-color:rgba(255,255,255,.45);background:rgba(255,255,255,.08)}
+.th-dark :is(.hero,#site-bar,.under) .egg:not(.found) img,.th-cvi :is(.hero,#site-bar,.under) .egg:not(.found) img,.th-dim :is(.hero,#site-bar,.under) .egg:not(.found) img{filter:grayscale(1) invert(1)}
+.th-dark .egg.found,.th-cvi .egg.found,.th-dim .egg.found{color:#1e1b4b}

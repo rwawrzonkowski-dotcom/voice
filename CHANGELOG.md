@@ -4,6 +4,7 @@ Newest first. Add a line here every time the site changes.
 
 ## 2026-11-17: board looks readable on phones
 
+- Home in High contrast, CVI and Dim: the full-name line and the hidden-word tiles in the top area ("I" in the bar, "play" under the buttons) were dark purple or brown on black. They now use the look's light text color; hidden-word tiles get a light outline and a light picture. Every text on Home now passes 4.5:1 contrast in all five looks.
 - Home: in High contrast, CVI and Dim, the chosen look's button lost its white card and its dark text disappeared on black. It now keeps a white card (yellow in CVI). Hover effects only apply on devices with a mouse, so they can't stick after a tap on phones.
 
 ## 2026-11-17: Figures 15 and 16 centered
