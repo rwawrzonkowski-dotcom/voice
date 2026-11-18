@@ -2,6 +2,13 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-18: Common questions page
+
+- New page, `faq.html` ("Questions" in the menu): 14 questions in four groups (Getting it, Using it with my child, Privacy and safety, Help). Tap a question to open its answer; it works without JavaScript, and a link like `faq.html#backup` opens that answer.
+- For clinicians: new section "What the research says" (Millar, Light & Schlosser 2006; Schlosser & Wendt 2008; Romski & Sevcik 2005), which the family answers on AAC and speech and on readiness link to.
+- Home (iPad panel) and Get started (last step) link to the new page. New hidden sentence on the page: "what do you want".
+- All CSS and JS links now use `?v=20261118a`.
+
 ## 2026-11-17: license and notice
 
 - Added `LICENSE` (© 2026 Richard Wawrzonkowski, all rights reserved) and `NOTICE.md` (third-party parts and their licenses). README has a License section.

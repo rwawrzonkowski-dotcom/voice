@@ -11,7 +11,7 @@
   var APP = C.appUrl || 'https://rwawrzonkowski-dotcom.github.io/AAC-App/';
   var here = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
   if (here.indexOf('.html') < 0) here = 'index.html';
-  var NAV = [['get-started.html', 'Get started'], ['features.html', 'Features'], ['videos.html', 'Videos and guides'], ['clinicians.html', 'For clinicians'], ['privacy.html', 'Privacy'], ['about.html', 'About']];
+  var NAV = [['get-started.html', 'Get started'], ['features.html', 'Features'], ['videos.html', 'Videos and guides'], ['faq.html', 'Questions'], ['clinicians.html', 'For clinicians'], ['privacy.html', 'Privacy'], ['about.html', 'About']];
   // One hidden sentence per page.
   var SENTENCES = {
     'index.html': 'I want to go play',
@@ -19,7 +19,8 @@
     'features.html': 'I can do that',
     'clinicians.html': 'what do you like',
     'privacy.html': 'no not that',
-    'about.html': 'who can help'
+    'about.html': 'who can help',
+    'faq.html': 'what do you want'
   };
 
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -101,6 +102,14 @@
     $all('[data-need="' + key + '"]').forEach(function (n) { n.hidden = true; });
   });
   $all('[data-text]').forEach(function (el) { var v = C[el.getAttribute('data-text')]; if (v) el.textContent = v; });
+
+  // ----- Questions page: a link to #a-question opens that answer -----
+  function openFromHash() {
+    var id = decodeURIComponent((location.hash || '').slice(1));
+    var d = id && document.getElementById(id);
+    if (d && d.tagName === 'DETAILS') { d.open = true; d.scrollIntoView(); }
+  }
+  openFromHash(); window.addEventListener('hashchange', openFromHash);
 
   // ----- Copy the app link -----
   $all('button[data-copy]').forEach(function (b) {
