@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>V.O.I.C.E. for clinicians</title>
+<meta name="description" content="How V.O.I.C.E. teaches: fixed motor plans, reveal stages, prompt ladders with automatic fading, and session and everyday data.">
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<link rel="icon" href="img/icons/icon-192.png">
+<link rel="apple-touch-icon" href="img/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="css/site.css">
+<link rel="stylesheet" href="css/pages.css">
+</head>
+<body class="th-standard">
+<a class="skip" href="#main">Skip to the main content</a>
+<header id="site-bar"><noscript><nav class="wrap"><a href="index.html">V.O.I.C.E.</a> · <a href="get-started.html">Get started</a> · <a href="features.html">Features</a> · <a href="videos.html">Videos and guides</a> · <a href="clinicians.html">For clinicians</a> · <a href="privacy.html">Privacy</a> · <a href="about.html">About</a> · <a href="https://rwawrzonkowski-dotcom.github.io/AAC-App/">Open V.O.I.C.E.</a></nav></noscript></header>
+
+<main id="main">
+<div class="pagehead"><div class="wrap narrow">
+  <h1>For clinicians</h1>
+  <p>For BCBAs, SLPs, RBTs and teachers. This page covers the reasoning behind the design of V.O.I.C.E. (Variable Output for Individualized Communication and Expression) and what the teaching tools do.</p>
+</div></div>
+
+<div class="wrap narrow sec prose p-stack">
+
+  <div class="sticky yellow p-top"><span class="tape"></span><p>V.O.I.C.E. supports an individualized AAC assessment by an SLP or team. It does not replace one, and it is not speech-language therapy. It is in pilot use now, with a public release planned.</p></div>
+
+  <section class="paper p-sec"><span class="tape"></span>
+  <h2>Design principles</h2>
+  <ul class="facts p-cards">
+    <li><strong>Fixed motor plans</strong>Words keep their places as the board grows. New vocabulary is revealed in permanent, saved locations, never by rearranging the words a learner already knows.</li>
+    <li><strong>Core vocabulary first</strong>The board includes all 36 Universal Core words (Project Core). The full vocabulary is about 1,700 words.</li>
+    <li><strong>Reveal stages</strong>Stage 1 shows six words: help, stop, eat, drink, bathroom, more. Later stages reveal more of the same layout. <a href="index.html#grow-section">See the stages</a>.</li>
+    <li><strong>Color by word type</strong>Buttons follow the Modified Fitzgerald Key convention.</li>
+  </ul>
+  </section>
+  <section class="paper p-sec"><span class="tape l"></span>
+  <h2>Boards</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Board</th><th>Layout</th><th>Intended for</th></tr></thead>
+    <tbody>
+      <tr><td>24</td><td>6 × 4, large buttons</td><td>Early learners: requests, breaks, finished, yes and no, and reporting that something hurts. Three stages, after which V.O.I.C.E. suggests the 45.</td></tr>
+      <tr><td>45</td><td>9 × 5</td><td>The standard board.</td></tr>
+      <tr><td>84</td><td>12 × 7</td><td>The larger board. Its first four rows match the 45 board, so a learner who moves up keeps the same motor plans.</td></tr>
+    </tbody>
+  </table></div>
+  <p>A word can also appear in more than one place where a learner would look for it, without moving anything already placed. Every Dolch sight word (318 words in the list V.O.I.C.E. uses) can be reached within three taps on the 45 and 84 boards, a few of them through a word form or a close synonym. <button type="button" class="egg" data-egg="what" hidden></button></p>
+  </section>
+  <section class="paper p-sec"><span class="tape r"></span>
+  <h2>Teaching sessions</h2>
+  <p>Sessions are opt-in and appear in the Clinician view. Each session records who ran it (parent, RBT, teacher, BCBA or other) and where (home, clinic, school or community).</p>
+  <ul>
+    <li><strong>Targets</strong> can be single words or sentences.</li>
+    <li><strong>Prompt ladders</strong> run from most help to least, then independent. The default ladder fades only the Model prompt.</li>
+    <li><strong>Automatic fading</strong> applies to most-to-least targets.</li>
+    <li><strong>Chaining:</strong> backward and forward chaining are built in.</li>
+    <li><strong>Errorless sentence trials</strong> block incorrect buttons while the current word’s prompt is at 50% or higher. Blocked errors are logged.</li>
+    <li><strong>Natural environment opportunities</strong> can be recorded alongside trials.</li>
+    <li><strong>Mastery and next-stage suggestions</strong> appear at the end of a session. An adult confirms every change.</li>
+  </ul>
+
+  <h3>The Model prompt</h3>
+  <p>The Model prompt is a ring around the target, a small model “critter,” or both (a ring only by default). The critter is Dibs the pigeon unless an adult picks one of his Chicago friends. Both fade in steps. The adult delivers the reinforcement, not the app.</p>
+  <div class="fade p-fade" id="fade" hidden>
+    <div class="stage" aria-hidden="true">
+      <div class="ring"></div>
+      <div class="tile"><img src="img/symbols/more.svg" alt=""><span>more</span></div>
+      <img class="critter" src="img/dibs/dibs.svg" alt="">
+    </div>
+    <div style="flex:1 1 260px;min-width:0">
+      <p class="stagehead" id="fade-label" role="status" aria-live="polite" style="margin-top:0">Model prompt at 100%</p>
+      <div class="meter" id="fade-meter" aria-hidden="true"></div>
+      <div class="seg p-segfade" role="group" aria-label="Model prompt level">
+        <button type="button" class="btn" id="fade-less">Fade one step</button>
+        <button type="button" class="btn" id="fade-more">Give more help</button>
+      </div>
+      <p class="small" style="margin:14px 0 0">A simplified picture. In V.O.I.C.E. the ladder’s steps, and the rules for moving between them, are set per target.</p>
+    </div>
+  </div>
+  <noscript><p class="small">The default steps are 100%, 75%, 50% and 25%, then independent.</p></noscript>
+  <p style="margin-top:16px">In Model mode, an adult can also type a sentence and V.O.I.C.E. models it on the board word by word, along each word’s real path. <button type="button" class="egg" data-egg="do" hidden></button></p>
+  </section>
+  <section class="paper p-sec"><span class="tape"></span>
+  <h2>Moving to the next stage</h2>
+  <p>V.O.I.C.E. suggests the next stage when the learner is proficient with enough of the current one. You set the rule.</p>
+  <ul>
+    <li><strong>Proficient</strong> means a mastered target, or independent everyday use on three or more days in the last four weeks.</li>
+    <li><strong>How much is enough:</strong> a percent of the stage’s main-board words (50% by default), or a list of words you choose for each stage.</li>
+    <li>Progress shows under Vocabulary stage in the adult menu.</li>
+  </ul>
+  </section>
+  <section class="paper p-sec"><span class="tape l"></span>
+  <h2>Data and reports</h2>
+  <p>Everyday recording runs outside sessions, so reports cover real use and not only trials.</p>
+  <ul>
+    <li>A heat map of where on the board the learner taps, with adult modeling shown separately.</li>
+    <li>New words and multi-word messages over time.</li>
+    <li>A one-page parent summary, written in plain language, that prints cleanly.</li>
+    <li>Export for your own analysis.</li>
+  </ul>
+  <p>All of it stays on the iPad unless an adult exports it. See <a href="privacy.html">Privacy</a>. <button type="button" class="egg" data-egg="you" hidden></button></p>
+  </section>
+  <section class="paper p-sec"><span class="tape r"></span>
+  <h2>Language growth</h2>
+  <ul>
+    <li><strong>Grammar:</strong> a Forms button changes the last word (go to went). Pressing and holding a word opens a dial of its forms in fixed directions.</li>
+    <li><strong>Little words:</strong> a strip of eight little words in permanent slots. Each one opens four related words.</li>
+    <li><strong>Keyboard and number pad:</strong> the keyboard can say letter names or letter sounds. The number pad says numbers aloud.</li>
+    <li><strong>Reading stage:</strong> words only, with the pictures hidden.</li>
+    <li><strong>Camera scenes:</strong> an adult photographs a setting, V.O.I.C.E. suggests words, and the adult approves them. They appear in a separate strip, so core words never move.</li>
+  </ul>
+  </section>
+  <section class="paper p-sec"><span class="tape"></span>
+  <h2>Access</h2>
+  <ul>
+    <li><strong>Display:</strong> High contrast, CVI, Color-blind safe and Dim themes. Atkinson Hyperlegible, Lexend and OpenDyslexic fonts. Larger labels and wider gaps.</li>
+    <li><strong>Touch:</strong> select on lift-off, larger touch zones, keyguard mode, dwell and hold-to-select.</li>
+    <li><strong>Switch scanning.</strong></li>
+    <li><strong>For the listener:</strong> a Show screen that flips the message to face them.</li>
+    <li>Several learners can share one iPad, each with their own board and settings.</li>
+  </ul>
+  <p>Ready to try it? <a href="get-started.html">Get started</a>, and choose “Clinician or teacher” on the first screen. <button type="button" class="egg" data-egg="like" hidden></button></p>
+  </section>
+</div>
+</main>
+
+<footer id="site-foot"><div class="wrap"><noscript>V.O.I.C.E. (Variable Output for Individualized Communication and Expression) · Free AAC by Richard Wawrzonkowski, M.S., LBA, BCBA · Universal Core, Mulberry Symbols and OpenMoji (CC BY-SA 4.0) · © 2026 Richard Wawrzonkowski</noscript></div></footer>
+
+<script src="js/config.js"></script>
+<script src="js/board-data.js"></script>
+<script src="js/site.js"></script>
+<script src="js/fade.js"></script>
+</body>
+</html>

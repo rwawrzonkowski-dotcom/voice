@@ -1,0 +1,47 @@
+/* Page styles for Get started, For clinicians, Privacy and About. Classes are prefixed p-. Loaded after site.css. */
+.p-stack>.paper,.p-stack>.sticky{margin-top:34px}
+.p-stack>.sticky.p-top{margin:6px 0 0;transform:rotate(-.6deg)}
+.p-sec{padding:34px 30px 24px}
+.p-sec>h2:first-child{margin-top:0}
+.p-sec>*:last-child{margin-bottom:0}
+.p-sec:nth-of-type(odd){transform:rotate(-.25deg)}.p-sec:nth-of-type(even){transform:rotate(.25deg)}
+.p-sec .scroll{margin-bottom:16px}
+.p-sec table th{background:var(--tint)}
+.p-cards li{background:var(--page);box-shadow:none;border:1px solid var(--edge)}
+.p-sticks li{border-radius:4px;box-shadow:0 14px 20px -14px rgba(70,50,20,.5);background:var(--people)}
+.p-sticks li:nth-child(1){background:var(--people);transform:rotate(-1deg)}
+.p-sticks li:nth-child(2){background:var(--action);transform:rotate(.8deg)}
+.p-sticks li:nth-child(3){background:var(--describing);transform:rotate(-.6deg)}
+.p-sticks li:nth-child(4){background:var(--social);transform:rotate(.7deg)}
+.p-fade{border:1px dashed var(--edge);box-shadow:none;background:var(--page);margin:16px 0}
+.p-segfade .btn{flex:1 1 auto}
+.p-segfade #fade-less{background:#fff;color:#1e1b4b;box-shadow:0 1px 2px rgba(30,27,75,.14),0 0 0 1.5px rgba(59,47,158,.35)}
+.p-segfade .btn[disabled]{opacity:.45}
+.p-fade .critter{width:84px;height:84px}
+.p-fade .tile img{width:70%;height:auto}
+.p-all{display:inline-flex;margin:0 0 22px}
+.p-all .tog{min-width:44px;padding-right:12px}
+.p-steps .step{margin-bottom:22px;overflow:visible}
+.p-steps .step::after{content:"";position:absolute;top:-12px;left:50%;width:100px;height:28px;margin-left:-50px;background:var(--tape);border:1px solid rgba(180,160,120,.35);transform:rotate(-3deg);pointer-events:none}
+.p-steps .step:nth-child(even)::after{transform:rotate(3deg);left:30%}
+.p-steps .step h2{margin-top:2px}
+.p-steps .step p>.btn,.p-steps .step .row .btn{min-width:44px}
+.p-steps .size{background:#fff;border:0;border-radius:6px;box-shadow:var(--lift)}
+.p-steps .p-s24{background:var(--people)}.p-steps .p-s45{background:var(--action)}.p-steps .p-s84{background:var(--describing)}
+.p-steps .six{max-width:560px}
+.p-steps .six .t img{width:100%;height:auto;max-height:44px;object-fit:contain}
+.p-steps .p-sticky{margin:22px 0;box-shadow:0 14px 22px -14px rgba(70,50,20,.5)}
+.p-steps .p-sticky p{margin-bottom:8px}
+.p-steps .p-sticky p:last-child{margin-bottom:0}
+.p-steps .qr img{width:116px;height:116px}
+.p-nav{margin-top:22px}
+.p-nav .btn{min-width:96px}
+@media(max-width:560px){
+  .p-sec{padding:30px 18px 20px}
+  .p-steps .step::after{display:none}
+  .p-nav{justify-content:center}
+  .p-nav .dots{order:-1;width:100%;justify-content:center}
+  .p-nav .btn{flex:1 1 40%}
+}
+@media(prefers-reduced-motion:reduce){.p-sec,.p-sticks li,.p-steps .step{transform:none!important}}
+.p-sec>.tape+h2{margin-top:0}
