@@ -11,7 +11,7 @@
   var APP = C.appUrl || 'https://rwawrzonkowski-dotcom.github.io/AAC-App/';
   var here = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
   if (here.indexOf('.html') < 0) here = 'index.html';
-  var NAV = [['get-started.html', 'Get started'], ['features.html', 'Features'], ['videos.html', 'Videos and guides'], ['faq.html', 'Questions'], ['clinicians.html', 'For clinicians'], ['privacy.html', 'Privacy'], ['about.html', 'About']];
+  var NAV = [['get-started.html', 'Get started'], ['features.html', 'Features'], ['videos.html', 'Videos and guides'], ['faq.html', 'Questions'], ['games.html', 'Practice games'], ['clinicians.html', 'For clinicians'], ['privacy.html', 'Privacy'], ['about.html', 'About']];
   // One hidden sentence per page.
   var SENTENCES = {
     'index.html': 'I want to go play',
@@ -20,7 +20,8 @@
     'clinicians.html': 'what do you like',
     'privacy.html': 'no not that',
     'about.html': 'who can help',
-    'faq.html': 'what do you want'
+    'faq.html': 'what do you want',
+    'games.html': 'I like that'
   };
 
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }

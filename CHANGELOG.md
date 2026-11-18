@@ -2,6 +2,17 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-18: Practice games (draft)
+
+- New page, `games.html` ("Practice games" in the menu): three short games with Dibs. "Find the favorite" (pick the pretend child's favorite item by offering two at a time and recording each pick), "Why did that happen?" (match 8 short stories to a reason: attention, escape, an item, or feels good) and "Build a goal" (turn a vague goal into one with five parts: specific, measurable, achievable, relevant, time-bound).
+- A switch at the top ("I'm a parent" / "I work in a school") changes the stories, items and goals. Clinical terms appear only in the school view, in parentheses after the plain words.
+- Nothing is saved or sent. Everything resets when you leave the page. Privacy page has a new line saying so.
+- All stories and names are invented. No photos of children.
+- New files: `games.html`, `css/games.css`, `js/games.js`. New hidden sentence on the page: "I like that".
+- Menu: "Practice games" added after "Questions" (also in the no-JavaScript menu on every page).
+- Symbols copied unmodified from the V.O.I.C.E. app's Mulberry folder into `img/symbols/`: `computer.svg`, `stickers.svg`, `teacher.svg`.
+- All CSS and JS links now use `?v=20261118b`.
+
 ## 2026-11-18: Common questions page
 
 - New page, `faq.html` ("Questions" in the menu): 14 questions in four groups (Getting it, Using it with my child, Privacy and safety, Help). Tap a question to open its answer; it works without JavaScript, and a link like `faq.html#backup` opens that answer.
