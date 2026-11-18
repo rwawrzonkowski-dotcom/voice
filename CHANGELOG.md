@@ -2,6 +2,11 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-17: passcode surprises are saved
+
+- Features, Figure 15: the surprises you find with the 1-2-3 passcode are now remembered in this browser (like the hidden words), and a collection panel under the figure shows all 81: V.O.I.C.E. words, Dibs's friends and celebrations, 27 each, with a progress bar and a Start over button. Privacy page updated to say so.
+- Every page links its CSS and JS with a version number (?v=...) so phones load new files right away.
+
 ## 2026-11-17: board looks readable on phones
 
 - Home in High contrast, CVI and Dim: the full-name line and the hidden-word tiles in the top area ("I" in the bar, "play" under the buttons) were dark purple or brown on black. They now use the look's light text color; hidden-word tiles get a light outline and a light picture. Every text on Home now passes 4.5:1 contrast in all five looks.

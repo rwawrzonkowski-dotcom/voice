@@ -270,3 +270,21 @@ button.f-c{cursor:pointer}
 
 .f-ride{margin-top:70px}
 .f-ipad{min-width:min(220px,100%)}
+
+/* Figure 15: the passcode-surprise collection (saved in this browser only) */
+.f-found{margin-top:22px;padding:16px 18px;border-radius:14px;background:#f6f1e4;box-shadow:inset 0 0 0 1px #e8dfc9}
+.f-foundhead{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-bottom:12px}
+.f-foundhead strong{font-family:Lexend,system-ui,sans-serif;font-size:17px}
+.f-foundbar{flex:1 1 140px;height:10px;border-radius:99px;background:#e6dcc6;overflow:hidden;min-width:120px}
+.f-foundbar b{display:block;height:100%;background:#3b2f9e;border-radius:99px;transition:width .4s}
+.f-foundclear{min-height:36px;padding:0 12px;font-size:14px}
+.f-foundgroups{display:flex;flex-wrap:wrap;gap:18px;justify-content:center}
+.f-foundgroup{flex:1 1 220px;max-width:300px}
+.f-foundgroup p{margin:0 0 6px;font-size:14px;line-height:1.3}
+.f-foundgroup p span{color:#6b5f3a;font-size:13px}
+.f-foundgrid{display:grid;grid-template-columns:repeat(9,1fr);gap:3px}
+.f-foundgrid i{aspect-ratio:1;border-radius:5px;background:#fff;box-shadow:inset 0 0 0 1px #e2d8c2;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.f-foundgrid i.on{background:#eef0ff;box-shadow:inset 0 0 0 1.5px #3b2f9e}
+.f-foundgrid i img{width:80%;height:80%;object-fit:contain}
+.f-foundgrid i span{font-size:clamp(10px,2.2vw,17px);line-height:1}
+@media (prefers-reduced-motion: reduce){.f-foundbar b{transition:none}}

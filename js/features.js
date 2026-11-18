@@ -668,6 +668,24 @@ var SCENE = "<rect x=\"0\" y=\"0\" width=\"900\" height=\"370\" fill=\"#f6efe0\"
     ['🎤', 'Your voice!'], ['💬', 'Let’s talk!'], ['🙌', 'High five!'], ['🍕', 'Deep dish!'], ['❄️', 'Snow day!'], ['🏆', 'You did it!'], ['🌟', 'Shine bright!'], ['🎶', 'Sing it!'], ['😄', 'Hello!'],
     ['👋', 'Hi there!'], ['🤗', 'Big hug!'], ['🍪', 'Cookie!'], ['🧩', 'Puzzle time!'], ['🛝', 'Down the slide!'], ['🎨', 'Let’s paint!'], ['📚', 'Story time!'], ['🥁', 'Boom boom!'], ['🤩', 'Amazing!']];
   var holdT = 0, popT = 0;
+  function foundPanel() {
+    var n = Object.keys(S.combos).length;
+    var groups = [[1, 'V.O.I.C.E. words', 'Codes starting with 1'], [2, 'Dibs’s friends', 'Codes starting with 2'], [3, 'Celebrations', 'Codes starting with 3']];
+    return '<div class="f-found"><div class="f-foundhead"><strong>Your collection: ' + n + ' of 81 found</strong>' +
+      '<span class="f-foundbar" aria-hidden="true"><b style="width:' + (n / 81 * 100).toFixed(1) + '%"></b></span>' +
+      (n ? '<button type="button" class="btn f-foundclear" data-a="clearcombos">Start over</button>' : '') + '</div>' +
+      '<div class="f-foundgroups">' + groups.map(function (g) {
+        var got = 0, cells = '';
+        for (var i = 0; i < 27; i++) {
+          var c = codeOf(g[0], i), on = !!S.combos[c];
+          if (on) got++;
+          var inner = !on ? '' : g[0] === 1 ? '<img src="' + rows[(i * 7) % 45].src + '" alt="">' : '<span>' + (g[0] === 2 ? ANIMALS[i][0] : PARTY[i][0]) + '</span>';
+          var name = !on ? 'not found yet' : g[0] === 1 ? rows[(i * 7) % 45].label : g[0] === 2 ? ANIMALS[i][1] : PARTY[i][1];
+          cells += '<i class="' + (on ? 'on' : '') + '" title="' + c + ': ' + esc(name) + '">' + inner + '</i>';
+        }
+        return '<div class="f-foundgroup"><p><b>' + g[1] + '</b> ' + got + ' of 27<br><span>' + g[2] + '</span></p><div class="f-foundgrid" role="img" aria-label="' + g[1] + ': ' + got + ' of 27 found">' + cells + '</div></div>';
+      }).join('') + '</div><p class="cap" style="margin:8px 0 0">Your collection is saved only in this browser.</p></div>';
+  }
   R[15] = function () {
     var L = LRN[S.learner], deg = Math.round(S.hold / 30 * 360);
     var cells = rows.map(function (r) {
@@ -687,19 +705,24 @@ var SCENE = "<rect x=\"0\" y=\"0\" width=\"900\" height=\"370\" fill=\"#f6efe0\"
       (S.unlocked ? '<div class="row f-mid" style="margin-top:10px" role="img" aria-label="' + S.pin.length + ' of 4 digits entered">' + dots + '</div>' +
         '<div class="row f-mid" role="group" aria-label="Passcode keys" style="margin-top:12px">' + ['1', '2', '3'].map(function (k) { return '<button type="button" class="f-key big" data-a="pin" data-v="' + k + '">' + k + '</button>'; }).join('') + '</div>' +
         '<p style="font-size:14px;color:#6b5f3a;margin:10px 0 0">Found ' + Object.keys(S.combos).length + ' of 81 surprises</p><button type="button" class="btn" style="margin-top:8px" data-a="relock">Lock again</button>' : '') +
-      '</div></div>');
+      '</div></div>' + foundPanel());
     var p = S.pop;
     paint($('f15pop'), p ? '<div class="f-pop-wrap" role="status" aria-live="polite" data-k="pop' + p.n + '"><div class="f-pop">' + (p.img ? '<img src="' + p.src + '" alt="">' : '<span class="emo" aria-hidden="true">' + p.e + '</span>') +
       '<strong>' + esc(p.title) + '</strong><span>' + esc(p.sub) + '</span>' + (p.isNew ? '<em>New find!</em>' : '') + '</div></div>' : '');
   };
   var popN = 0;
+  // Found surprises are remembered in this browser only (like the hidden words), never sent anywhere.
+  var CKEY = 'voice-site-passcode-surprises';
+  try { (JSON.parse(localStorage.getItem(CKEY) || '[]') || []).forEach(function (c) { if (/^[1-3]{4}$/.test(c)) S.combos[c] = true; }); } catch (e) {}
+  function saveCombos() { try { localStorage.setItem(CKEY, JSON.stringify(Object.keys(S.combos))); } catch (e) {} }
+  function codeOf(first, idx) { return '' + first + (Math.floor(idx / 9) + 1) + (Math.floor(idx / 3) % 3 + 1) + (idx % 3 + 1); }
   function showPop(code) {
     var d = code.split('').map(Number), idx = (d[1] - 1) * 9 + (d[2] - 1) * 3 + (d[3] - 1), isNew = !S.combos[code], pop;
     if (d[0] === 1) { var w = rows[(idx * 7) % 45]; pop = { img: true, src: w.src, e: '', title: w.label, sub: 'A word from the V.O.I.C.E. board', speak: w.label }; }
     else if (d[0] === 2) { var a = ANIMALS[idx]; pop = { img: false, src: '', e: a[0], title: a[2], sub: a[1] + ', one of Dibs’s friends', speak: a[2] }; }
     else { var c = PARTY[idx]; pop = { img: false, src: '', e: c[0], title: c[1], sub: 'Code ' + code, speak: c[1] }; }
     pop.isNew = isNew; pop.n = ++popN;
-    S.combos[code] = true; S.pop = pop; S.pin = ''; draw(15);
+    S.combos[code] = true; saveCombos(); S.pop = pop; S.pin = ''; draw(15);
     say(pop.speak);
     if (isNew) fanfare();
     clearTimeout(popT); popT = setTimeout(function () { S.pop = null; draw(15); }, 2400);
@@ -787,6 +810,7 @@ var SCENE = "<rect x=\"0\" y=\"0\" width=\"900\" height=\"370\" fill=\"#f6efe0\"
     pmword: function (v) { S.pmWords[v] = !S.pmWords[v]; draw(14); },
     learner: function (v) { S.learner = +v; draw(15); },
     pin: function (k) { var v = S.pin + k; if (v.length < 4) { S.pin = v; draw(15); } else showPop(v); },
+    clearcombos: function () { S.combos = {}; saveCombos(); draw(15); },
     relock: function () { S.unlocked = false; S.hold = 0; S.pin = ''; draw(15); },
     bksave: function () { S.bk = 1; draw(16); },
     bkrestore: function () { S.bk = 2; draw(16); },
