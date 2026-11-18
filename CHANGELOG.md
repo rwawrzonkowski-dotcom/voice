@@ -2,6 +2,12 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-18: Facebook link (hidden until set)
+
+- New setting `facebookUrl` in `js/config.js`. When filled with a `https://www.facebook.com/...` address, the footer shows a plain "V.O.I.C.E. on Facebook" link after "What's new". Blank (now) = no link.
+- Plain link only: no Facebook scripts, widgets, pixels or embeds; opens with `noopener noreferrer`. Addresses not on facebook.com are ignored.
+- All CSS and JS links now use `?v=20261118c`.
+
 ## 2026-11-18: Practice games
 
 - New page, `games.html` ("Practice games" in the menu): three short games with Dibs. "Find the favorite" (pick the pretend child's favorite item by offering two at a time and recording each pick), "Why did that happen?" (match 8 short stories to a reason: attention, escape, an item, or feels good) and "Build a goal" (turn a vague goal into one with five parts: specific, measurable, achievable, relevant, time-bound).

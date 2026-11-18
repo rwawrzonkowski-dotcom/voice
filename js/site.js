@@ -7,7 +7,9 @@
   function safeUrl(u) { return /^https:\/\/[^\s"'<>]+$/i.test(u || '') ? u : ''; }
   function safeEmail(e) { return /^[^\s@"'<>]+@[^\s@"'<>]+\.[a-z]{2,}$/i.test(e || '') ? e : ''; }
   var C = { appUrl: safeUrl(RAW.appUrl), donateUrl: safeUrl(RAW.donateUrl), contactEmail: safeEmail(RAW.contactEmail),
-    lbaState: String(RAW.lbaState || ''), lbaLicense: String(RAW.lbaLicense || '') };
+    lbaState: String(RAW.lbaState || ''), lbaLicense: String(RAW.lbaLicense || ''),
+    // Facebook page: a plain link only (no Facebook scripts or widgets), and only to facebook.com.
+    facebookUrl: /^https:\/\/(www\.)?facebook\.com\/[^\s"'<>]+$/i.test(RAW.facebookUrl || '') ? RAW.facebookUrl : '' };
   var APP = C.appUrl || 'https://rwawrzonkowski-dotcom.github.io/AAC-App/';
   var here = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
   if (here.indexOf('.html') < 0) here = 'index.html';
@@ -79,6 +81,7 @@
       '<div><strong>V.O.I.C.E.</strong> · Variable Output for Individualized Communication and Expression · Free AAC by Richard Wawrzonkowski, M.S., LBA, BCBA' +
       (C.lbaState ? '<br>Licensed Behavior Analyst in ' + esc(C.lbaState) + (C.lbaLicense ? ', license no. ' + esc(C.lbaLicense) : '') + '.' : '') +
       '<br>No ads, no tracking, no cookies. <a href="privacy.html">Privacy</a> · <a href="about.html#whats-new">What’s new</a>' +
+      (C.facebookUrl ? ' · <a href="' + esc(C.facebookUrl) + '"' + X + '>V.O.I.C.E. on Facebook</a>' : '') +
       '<br>© 2026 Richard Wawrzonkowski. V.O.I.C.E. and this site are provided as is, without warranty. <span id="foot-egg"></span></div>' +
       '<div><strong>Credits</strong><br>Core vocabulary: Universal Core, Center for Literacy and Disability Studies, UNC-Chapel Hill (<a href="https://project-core.com"' + X + '>Project Core</a>), <a href="https://creativecommons.org/licenses/by-sa/4.0/"' + X + '>CC BY-SA 4.0</a>.' +
       '<br>Symbols: <a href="https://mulberrysymbols.org"' + X + '>Mulberry Symbols</a> by Steve Lee, <a href="https://creativecommons.org/licenses/by-sa/4.0/"' + X + '>CC BY-SA 4.0</a>.' +

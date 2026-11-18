@@ -14,5 +14,9 @@ window.VOICE_SITE = {
   lbaState: 'Illinois',
 
   // Illinois LBA license number, shown in the footer if filled in. '' = left out.
-  lbaLicense: ''
+  lbaLicense: '',
+
+  // The V.O.I.C.E. AAC Facebook page, shown as a plain link in the footer. '' = hidden.
+  // Must start with https://www.facebook.com/ (no Facebook scripts are ever loaded).
+  facebookUrl: ''
 };
