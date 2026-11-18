@@ -5,6 +5,7 @@ Newest first. Add a line here every time the site changes.
 ## 2026-11-17: license and notice
 
 - Added `LICENSE` (© 2026 Richard Wawrzonkowski, all rights reserved) and `NOTICE.md` (third-party parts and their licenses). README has a License section.
+- Correction: the Dibs drawings are shared under CC BY-SA 4.0, as the V.O.I.C.E. app's CREDITS.md already does for its critters, so LICENSE and NOTICE now say so.
 
 ## 2026-11-17: passcode surprises are saved
 

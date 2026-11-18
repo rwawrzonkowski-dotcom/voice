@@ -9,8 +9,9 @@ These parts of the site are not owned by Richard Wawrzonkowski. They are used un
 | OpenMoji emoji | many files in `img/symbols/` | [OpenMoji](https://openmoji.org/), the open-source emoji and icon project | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
 | Lexend font | `fonts/lexend-*` | The Lexend Project Authors | SIL Open Font License 1.1 (`fonts/OFL-lexend.txt`) |
 | Atkinson Hyperlegible font | `fonts/atkinson-*` | Braille Institute of America | SIL Open Font License 1.1 (`fonts/OFL-atkinson-hyperlegible.txt`) |
+| Dibs the pigeon drawings (Dibs, and Dibs riding the L) | `img/dibs/` | Richard Wawrzonkowski | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), the same license the V.O.I.C.E. app uses for its critter drawings |
 | OpenDyslexic font (used unmodified; Reserved Font Name kept) | `fonts/opendyslexic-*` | Abbie Gonzalez | SIL Open Font License 1.1 (`fonts/OFL-opendyslexic.txt`) |
 
 Symbol files are stored unmodified; the website sometimes shows them dimmed or recolored with CSS. The site is not affiliated with or endorsed by Project Core, the University of North Carolina, Mulberry Symbols or OpenMoji.
 
-Everything else in this repository (code, page text, the drawings including Dibs the pigeon, the guide videos, captions and scripts) is © 2026 Richard Wawrzonkowski, all rights reserved. See `LICENSE`.
+Everything else in this repository (code, page text, the other drawings, the guide videos, captions and scripts) is © 2026 Richard Wawrzonkowski, all rights reserved. See `LICENSE`.
