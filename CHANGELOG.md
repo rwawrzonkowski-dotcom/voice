@@ -2,6 +2,10 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-17: license and notice
+
+- Added `LICENSE` (© 2026 Richard Wawrzonkowski, all rights reserved) and `NOTICE.md` (third-party parts and their licenses). README has a License section.
+
 ## 2026-11-17: passcode surprises are saved
 
 - Features, Figure 15: the surprises you find with the 1-2-3 passcode are now remembered in this browser (like the hidden words), and a collection panel under the figure shows all 81: V.O.I.C.E. words, Dibs's friends and celebrations, 27 each, with a progress bar and a Start over button. Privacy page updated to say so.

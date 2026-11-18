@@ -34,4 +34,8 @@ Plain HTML, CSS and JavaScript. There is no build step and nothing is loaded fro
 
 ## Credits
 
-Symbols in `img/symbols/` are unmodified Mulberry Symbols (CC BY-SA 4.0) and OpenMoji (CC BY-SA 4.0) files. Core vocabulary: Universal Core, Project Core (CC BY 4.0). Fonts: Atkinson Hyperlegible and Lexend (SIL Open Font License, texts in `fonts/`).
+## License
+
+© 2026 Richard Wawrzonkowski. All rights reserved. See `LICENSE`.
+
+Third-party parts keep their own licenses, listed in `NOTICE.md`: Universal Core vocabulary (Project Core, CC BY-SA 4.0; UNC also lists CC BY 4.0), Mulberry Symbols and OpenMoji (CC BY-SA 4.0, files stored unmodified), and the Lexend, Atkinson Hyperlegible and OpenDyslexic fonts (SIL Open Font License, texts in `fonts/`).
