@@ -2,7 +2,7 @@
 
 Newest first. Add a line here every time the site changes.
 
-## 2026-11-18: Practice games (draft)
+## 2026-11-18: Practice games
 
 - New page, `games.html` ("Practice games" in the menu): three short games with Dibs. "Find the favorite" (pick the pretend child's favorite item by offering two at a time and recording each pick), "Why did that happen?" (match 8 short stories to a reason: attention, escape, an item, or feels good) and "Build a goal" (turn a vague goal into one with five parts: specific, measurable, achievable, relevant, time-bound).
 - A switch at the top ("I'm a parent" / "I work in a school") changes the stories, items and goals. Clinical terms appear only in the school view, in parentheses after the plain words.
