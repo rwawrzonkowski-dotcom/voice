@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<!-- Wacker: peregrine falcon, Dibs's smug rival. Original drawing, perched, facing left. -->
+<g stroke="#2a2350" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+<path d="M64 76L70 98H90L84 72Z" fill="#5b6b84"></path>
+<path d="M68 86H87M70 92H88" fill="none" stroke="#3f4a5e" stroke-width="2"></path>
+<path d="M40 88v6M60 88v6" stroke="#f2c230" stroke-width="3.4" fill="none"></path>
+<path d="M40 94l-6 3M40 94l-1 4M40 94l5 3M60 94l-6 3M60 94l-1 4M60 94l5 3" fill="none" stroke="#f2c230" stroke-width="3.2"></path>
+<ellipse cx="52" cy="64" rx="27" ry="27" fill="#5b6b84"></ellipse>
+<path d="M62 46Q82 62 76 94Q64 90 58 84Q54 66 56 48Z" fill="#3f4a5e"></path>
+<path d="M61 52Q74 66 70 84" fill="none" stroke="#2a2350" stroke-width="2"></path>
+<path d="M28 46Q22 68 36 88Q50 92 56 84Q60 66 54 48Z" fill="#f7f1e3"></path>
+<path d="M33 68h11M32 75h13M35 82h11" fill="none" stroke="#3f4a5e" stroke-width="2.4"></path>
+<circle cx="42" cy="30" r="22" fill="#2f3850"></circle>
+</g>
+<path d="M21 33Q30 30 36 36Q42 42 42 52Q36 56 28 50Q22 44 21 33Z" fill="#f7f1e3" stroke="#2a2350" stroke-width="2" stroke-linejoin="round"></path>
+<path d="M37 37Q46 40 46 55Q40 56 36 50Q34 44 37 37Z" fill="#2f3850" stroke="#2a2350" stroke-width="2" stroke-linejoin="round"></path>
+<path d="M25 22Q10 22 10 34Q11 42 18 44Q18 38 23 36Q28 33 28 27Z" fill="#6f7a92" stroke="#2a2350" stroke-width="2.4" stroke-linejoin="round"></path>
+<path d="M24 24Q30 22 32 27Q29 31 24 31Q22 28 24 24Z" fill="#f2c230" stroke="#2a2350" stroke-width="2" stroke-linejoin="round"></path>
+<circle cx="39" cy="26" r="9" fill="#f2c230" stroke="#2a2350" stroke-width="2"></circle>
+<circle cx="37.5" cy="27.5" r="4.8" fill="#211d2b"></circle>
+<circle cx="36" cy="26" r="1.6" fill="#fff"></circle>
+<path d="M30 25A9 9 0 0 1 48 23Z" fill="#2f3850" stroke="#2a2350" stroke-width="2" stroke-linejoin="round"></path>
+</svg>

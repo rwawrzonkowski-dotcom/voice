@@ -2,6 +2,18 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-20: Wacker the falcon (hot dog easter egg)
+
+- Figure 4, "Lunch break" sticky note: tap ketchup five times (since the last "New hot dog") and Wacker, a peregrine falcon and Dibs's smug rival, swoops in and takes the hot dog. He sits on it for about 3.5 seconds with a speech bubble, then flies off with it. A tap anywhere in the figure sends him off at once. Dibs ruffles his feathers; Wacker never touches him.
+- While the hot dog is gone, the note shows an empty plate with crumbs. Mustard and ketchup say "No hot dog to dress. Tap New hot dog." "New hot dog" brings back a fresh one and resets the count.
+- Four taunts rotate across steals (starting at a random one). The caption (live region) says what happened and what Wacker said.
+- Sound (only when the Figure 3 Sound switch is on): a soft whoosh on the swoop and the taunt in a lower voice, on-device voices only.
+- Reduced motion: no swoop or flight. Wacker fades in (0.12 s), then fades out with the hot dog after the same delay. No shake on Dibs.
+- The count is kept in the page only. Nothing is saved or sent.
+- New art: `img/wacker/wacker.svg` (perched) and `img/wacker/wacker-fly.svg` (flying), original drawings in Dibs's style.
+- Credits line in the footer now reads "Dibs the pigeon, V.O.I.C.E.'s mascot, and Wacker the falcon are original drawings." (LICENSE and NOTICE.md are not changed yet.)
+- Changed: `js/features.js`, `css/features.css`, `js/site.js`. All CSS and JS links now use `?v=20261120a`.
+
 ## 2026-11-18: Facebook link (hidden until set)
 
 - New setting `facebookUrl` in `js/config.js`. When filled with a `https://www.facebook.com/...` address, the footer shows a plain "V.O.I.C.E. on Facebook" link after "What's new". Blank (now) = no link.

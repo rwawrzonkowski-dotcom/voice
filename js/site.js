@@ -87,7 +87,7 @@
       '<br>Symbols: <a href="https://mulberrysymbols.org"' + X + '>Mulberry Symbols</a> by Steve Lee, <a href="https://creativecommons.org/licenses/by-sa/4.0/"' + X + '>CC BY-SA 4.0</a>.' +
       '<br>All emojis designed by <a href="https://openmoji.org/"' + X + '>OpenMoji</a> – the open-source emoji and icon project. License: <a href="https://creativecommons.org/licenses/by-sa/4.0/"' + X + '>CC BY-SA 4.0</a>.' +
       '<br>Fonts: Lexend, Atkinson Hyperlegible and OpenDyslexic, all under the SIL Open Font License (OpenDyslexic is used unmodified; its Reserved Font Name is kept).' +
-      '<br>Dibs the pigeon, V.O.I.C.E.’s mascot, is an original drawing.' +
+      '<br>Dibs the pigeon, V.O.I.C.E.’s mascot, and Wacker the falcon are original drawings.' +
       '<br>This site shows some symbols dimmed or recolored. <a href="about.html#credits">All credits and licenses</a></div>' +
       '<div><strong>Please note</strong><br>V.O.I.C.E. supports, but doesn’t replace, an AAC assessment by a speech-language pathologist or team. It is not speech-language therapy. Using this site doesn’t make you a client.' +
       '<br>Not affiliated with or endorsed by Apple, Project Core, Mulberry Symbols or OpenMoji. iPad and Safari are trademarks of Apple Inc.</div></div>';

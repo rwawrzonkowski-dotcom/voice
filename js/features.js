@@ -54,8 +54,9 @@
   }
   // Same rule as V.O.I.C.E.: the word I is spoken from a lowercase i, so voices say "eye", not "capital I".
   function fixI(t) { t = String(t); if (t.trim() === 'I') return 'i'; return t.replace(/^I(?=\s)/, 'i'); }
-  function say(t) {
+  function say(t, pitch) {
     if (!t) return;
+    if (pitch) { sayTone(t, pitch, 0.95); return; }   // Wacker: same on-device voices, lower pitch
     t = fixI(t);
     if (window.VOICE_SAY) window.VOICE_SAY(t);
   }
@@ -86,6 +87,23 @@
     } catch (e) {}
   }
   function dingDong() { tones([[659.25, 0, 0.35], [523.25, 0.18, 0.35]], 'sine', 0.16); }
+  // Soft whoosh: filtered noise sweeping up and back down, about 0.4 s. Only when the Sound switch is on.
+  function whoosh() {
+    if (!S.gSound) return;
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+      ac = ac || new AC(); if (ac.resume) ac.resume();
+      var t0 = ac.currentTime + 0.02, len = Math.floor(ac.sampleRate * 0.42);
+      var buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
+      for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      var src = ac.createBufferSource(); src.buffer = buf;
+      var f = ac.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 1.2;
+      f.frequency.setValueAtTime(450, t0); f.frequency.exponentialRampToValueAtTime(2400, t0 + 0.22); f.frequency.exponentialRampToValueAtTime(700, t0 + 0.4);
+      var g = ac.createGain();
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.09, t0 + 0.18); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.4);
+      src.connect(f); f.connect(g); g.connect(ac.destination); src.start(t0); src.stop(t0 + 0.43);
+    } catch (e) {}
+  }
   function fanfare() { tones([[523.25, 0, 0.2], [659.25, 0.12, 0.2], [783.99, 0.24, 0.2], [1046.5, 0.36, 0.6]], 'triangle', 0.18); }
   function numWords(n) {
     var ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
@@ -95,7 +113,7 @@
   // ---------- State ----------
   var S = {
     stage: 1, walk: 0, gR: 0, gW: null, gOpen: false, gScore: 0, gSolved: false, gMsg: '', gSound: true, party: 0, gDone: {},
-    dial: false, dialSaid: 'Tap eat to open its dial.', dogM: false, dogK: false, dogMood: '', dogSaid: '', lw: -1,
+    dial: false, dialSaid: 'Tap eat to open its dial.', dogM: false, dogK: false, dogMood: '', dogSaid: '', dogKN: 0, dogGone: false, wk: '', wkT: '', wkI: -1, lw: -1,
     twMsg: ['I', 'want', 'more'], twOpen: false, twSlide: false, twPress: false, twHover: '', twLock: 0, twMood: '', twLast: '', twSaid: '', twLocked: false,
     fx: 450, fy: 300, shot: null, keep: {}, rel: {}, plc: {}, sname: 0, used: false, usedItems: [], said: [], glow: '', flash: false,
     bb: {}, bbPreset: '', bbNote: '', bbMsg: [], bbTalking: false, bbLit: -1, bbShow: false, bbFlip: false,
@@ -209,14 +227,52 @@ var SCENE = "<rect x=\"0\" y=\"0\" width=\"900\" height=\"370\" fill=\"#f6efe0\"
       '<button type="button" class="hub" data-a="dial" aria-expanded="' + S.dial + '"><img src="' + src['eat'] + '" alt="">eat</button></div>' +
       '<p class="cap f-center" aria-live="polite">' + esc(S.dialSaid) + '</p>' +
       '<div class="f-dog"><span class="f-dogtag">Lunch break</span><div class="f-dogrow">' +
-      '<svg class="f-dogsvg" viewBox="0 0 220 96" role="img" aria-label="A hot dog' + (S.dogM ? ' with mustard' : '') + (S.dogK ? ' with ketchup, for a moment' : '') + '" stroke="#2a2350" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">' +
+      '<svg class="f-dogsvg" viewBox="0 0 220 96" role="img" aria-label="' + (S.dogGone ? 'An empty plate with a few crumbs' : 'A hot dog' + (S.dogM ? ' with mustard' : '') + (S.dogK ? ' with ketchup, for a moment' : '')) + '" stroke="#2a2350" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">' +
+      (S.dogGone ? PLATE :
       '<path d="M14 52Q14 84 44 84H176Q206 84 206 52Z" fill="#e9b26b"></path><path d="M8 50Q8 34 30 34H190Q212 34 212 50Q212 62 190 62H30Q8 62 8 50Z" fill="#c8553d"></path>' +
       '<path d="M14 52Q14 40 40 40" fill="none" stroke="#f3c98b" stroke-width="3"></path>' +
-      '<path d="' + (S.dogM ? MUSP : '') + '" fill="none" stroke="#f2c230" stroke-width="5"></path><path d="' + (S.dogK ? KETP : '') + '" fill="none" stroke="#d62828" stroke-width="5"></path></svg>' +
+      '<path d="' + (S.dogM ? MUSP : '') + '" fill="none" stroke="#f2c230" stroke-width="5"></path><path d="' + (S.dogK ? KETP : '') + '" fill="none" stroke="#d62828" stroke-width="5"></path>') + '</svg>' +
       '<img class="f-dogdibs' + (S.dogMood ? ' ' + S.dogMood : '') + '" src="img/dibs/dibs.svg" alt=""></div>' +
       '<div class="row f-mid"><button type="button" class="pchip" data-a="mustard"><img src="img/symbols/mustard.svg" alt="">mustard</button><button type="button" class="pchip" data-a="ketchup"><img src="img/symbols/ketchup.svg" alt="">ketchup</button><button type="button" class="btn" data-a="dogreset">New hot dog</button></div>' +
-      '<p class="cap f-center" aria-live="polite">' + esc(S.dogSaid || 'Dress the hot dog.') + '</p></div>');
+      '<p class="cap f-center" aria-live="polite">' + esc(S.dogSaid || 'Dress the hot dog.') + '</p>' +
+      // Easter egg layer. Always in the page (so re-renders never rebuild it); only its state class changes.
+      '<div class="f-wkclip" aria-hidden="true"><div class="f-wkbub' + (S.wk === 'perch' ? ' on' : '') + '">' + esc(S.wkT) + '</div>' +
+      '<div class="f-wk' + (S.wk ? ' ' + S.wk : '') + '"><img class="wk-p" src="img/wacker/wacker.svg" alt=""><img class="wk-f" src="img/wacker/wacker-fly.svg" alt="">' +
+      '<svg class="wk-dog" viewBox="0 0 220 96" stroke="#2a2350" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"><path d="M14 52Q14 84 44 84H176Q206 84 206 52Z" fill="#e9b26b"></path><path d="M8 50Q8 34 30 34H190Q212 34 212 50Q212 62 190 62H30Q8 62 8 50Z" fill="#c8553d"></path></svg></div></div></div>');
   };
+  var PLATE = '<ellipse cx="110" cy="62" rx="98" ry="24" fill="#fffdf8"></ellipse><ellipse cx="110" cy="62" rx="74" ry="16" fill="none" stroke="#e2d8c2" stroke-width="3"></ellipse>' +
+    '<circle cx="86" cy="60" r="3.4" fill="#e9b26b" stroke="none"></circle><circle cx="132" cy="66" r="2.6" fill="#e9b26b" stroke="none"></circle><circle cx="108" cy="68" r="2.2" fill="#c8553d" stroke="none"></circle><circle cx="146" cy="58" r="2.2" fill="#e9b26b" stroke="none"></circle>';
+  // Wacker the falcon (easter egg): the 5th ketchup tap since the last New hot dog.
+  var TAUNTS = ['Ketchup? On a Chicago dog? I’ll take that.', 'Fastest bird in Chicago. Slowest lunch. Thanks, Dibs!', 'This hot dog has been confiscated by the ketchup police.', '242 miles an hour, and I still had time to judge your toppings.'];
+  var GONE = 'Wacker took the hot dog. Tap New hot dog for another one.';
+  var NOHD = 'No hot dog to dress. Tap New hot dog.';
+  var wkTimers = [];
+  function wkLater(fn, ms) { var t = setTimeout(fn, ms); wkTimers.push(t); return t; }
+  function wkClear() { wkTimers.forEach(clearTimeout); wkTimers = []; }
+  function wkRM() { try { return reduce || window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return reduce; } }
+  function wkStart() {
+    if (S.dogGone || S.wk) return;
+    if (wkRM()) { wkPerch(); return; }
+    S.wk = 'swoop'; draw(4); whoosh();
+    wkLater(wkPerch, 600);
+  }
+  function wkPerch() {
+    S.wk = 'perch'; S.dogGone = true; S.dogK = false;
+    if (S.wkI < 0) S.wkI = Math.floor(Math.random() * TAUNTS.length);
+    S.wkT = TAUNTS[S.wkI]; S.wkI = (S.wkI + 1) % TAUNTS.length;
+    S.dogMood = wkRM() ? '' : 'ruffle';
+    S.dogSaid = 'Wacker the peregrine falcon swooped in and took the hot dog! He says: “' + S.wkT + '”';
+    draw(4); say(S.wkT, 0.6);
+    wkLater(function () { S.dogMood = ''; draw(4); }, 700);
+    wkLater(wkLeave, 3500);
+  }
+  function wkLeave() {
+    if (S.wk !== 'perch') return;
+    wkClear(); S.dogMood = ''; S.dogSaid = GONE;
+    if (wkRM()) { S.wk = ''; draw(4); return; }
+    S.wk = 'leave'; draw(4);
+    wkLater(function () { S.wk = ''; draw(4); }, 850);
+  }
 
   // ---------- Figure 5: little words ----------
   var LWG = [['a', 'an', 'the', 'any', 'every'], ['is', 'was', 'are', 'am', 'were'], ['and', 'but', 'or', 'so', 'because'], ['to', 'of', 'for', 'with', 'from'],
@@ -751,9 +807,9 @@ var SCENE = "<rect x=\"0\" y=\"0\" width=\"900\" height=\"370\" fill=\"#f6efe0\"
     gsound: function () { S.gSound = !S.gSound; draw(3); },
     dial: function () { S.dial = !S.dial; S.dialSaid = S.dial ? 'Up: past. Right: -ing. Down: -s. Left: the last form.' : 'Tap eat to open its dial.'; draw(4); if (S.dial) say('eat'); },
     dpick: function (v) { S.dial = false; S.dialSaid = 'Chose “' + DIAL[+v] + '”.'; draw(4); say(DIAL[+v]); },
-    mustard: function () { clearTimeout(dogT); S.dogM = true; S.dogMood = 'yum'; S.dogSaid = 'Mustard? Yes. Dibs approves.'; draw(4); say('mustard, yes!'); dogT = setTimeout(function () { S.dogMood = ''; draw(4); }, 600); },
-    ketchup: function () { clearTimeout(dogT); S.dogK = true; S.dogMood = 'nope'; S.dogSaid = 'Dibs shakes his head: no ketchup on a hot dog. It’s a Chicago thing.'; draw(4); say('no ketchup!'); dogT = setTimeout(function () { S.dogK = false; S.dogMood = ''; draw(4); }, 900); },
-    dogreset: function () { clearTimeout(dogT); S.dogM = S.dogK = false; S.dogMood = ''; S.dogSaid = ''; draw(4); },
+    mustard: function () { clearTimeout(dogT); if (S.dogGone) { S.dogSaid = NOHD; draw(4); return; } S.dogM = true; S.dogMood = 'yum'; S.dogSaid = 'Mustard? Yes. Dibs approves.'; draw(4); say('mustard, yes!'); dogT = setTimeout(function () { S.dogMood = ''; draw(4); }, 600); },
+    ketchup: function () { clearTimeout(dogT); if (S.dogGone) { S.dogSaid = NOHD; draw(4); return; } S.dogKN++; if (S.dogKN === 5) wkLater(wkStart, 500); S.dogK = true; S.dogMood = 'nope'; S.dogSaid = 'Dibs shakes his head: no ketchup on a hot dog. It’s a Chicago thing.'; draw(4); say('no ketchup!'); dogT = setTimeout(function () { S.dogK = false; S.dogMood = ''; draw(4); }, 900); },
+    dogreset: function () { clearTimeout(dogT); wkClear(); S.wk = ''; S.wkT = ''; S.dogGone = false; S.dogKN = 0; S.dogM = S.dogK = false; S.dogMood = ''; S.dogSaid = ''; draw(4); },
     lw: function (v) { v = +v; S.lw = S.lw === v ? -1 : v; draw(5); say(LWG[v][0]); },
     lwsay: function (v) { say(v); },
     twadd: function (v) { say(v); S.twMsg = S.twMsg.concat([v]).slice(-6); draw(6); },
@@ -817,6 +873,7 @@ var SCENE = "<rect x=\"0\" y=\"0\" width=\"900\" height=\"370\" fill=\"#f6efe0\"
     bkreset: function () { S.bk = 0; draw(16); }
   };
   document.addEventListener('click', function (e) {
+    if (S.wk === 'perch' && e.target.closest && e.target.closest('#f4')) wkLeave();
     var egg = e.target.closest && e.target.closest('button.egg');
     if (egg) { var w = egg.getAttribute('data-egg'); if (w && rowOf[w]) bump(w, 'eggs'); return; }
     var el = e.target.closest && e.target.closest('[data-a]');
