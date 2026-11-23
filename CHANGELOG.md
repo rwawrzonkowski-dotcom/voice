@@ -2,9 +2,11 @@
 
 Newest first. Add a line here every time the site changes.
 
-## 2026-11-23: Facebook link on
+## 2026-11-23: Launch polish
 
-- `facebookUrl` set to the V.O.I.C.E. AAC page (https://www.facebook.com/61596526118540). Every page's footer now shows a plain "V.O.I.C.E. on Facebook" link. No Facebook scripts.
+- Link preview cards: new `img/og-card.png` (1200x630, cut-paper look with the name, the Stage 1 tiles and Dibs). Every page now has Open Graph and Twitter card tags with its own title, description and absolute address (`https://rwawrzonkowski-dotcom.github.io/voice/...`). Still noindex.
+- New `404.html` ("This page flew the coop."): Dibs looks around, Wacker sits smugly with a speech bubble. All its links are absolute from `/voice/` because GitHub serves it at any depth. New `css/notfound.css`. `js/site.js` reads `data-root` on the body (set only on 404.html) and starts the menu and footer links from that root; other pages behave as before.
+- About: app version now 3.5; What's new has entries for November 18, 20 and 23.
 - All CSS and JS links now use `?v=20261123a`.
 
 ## 2026-11-20: Wacker the falcon (hot dog easter egg)

@@ -13,6 +13,9 @@
   var APP = C.appUrl || 'https://rwawrzonkowski-dotcom.github.io/AAC-App/';
   var here = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
   if (here.indexOf('.html') < 0) here = 'index.html';
+  // Only the page-not-found page sets data-root ("/voice/"): it can be served at any depth, so its links start from the site root.
+  var ROOT = (document.body && document.body.getAttribute('data-root')) || '';
+  if (ROOT) here = '404.html';
   var NAV = [['get-started.html', 'Get started'], ['features.html', 'Features'], ['videos.html', 'Videos and guides'], ['faq.html', 'Questions'], ['games.html', 'Practice games'], ['clinicians.html', 'For clinicians'], ['privacy.html', 'Privacy'], ['about.html', 'About']];
   // One hidden sentence per page.
   var SENTENCES = {
@@ -62,11 +65,11 @@
   var bar = document.getElementById('site-bar');
   if (bar) {
     var links = NAV.map(function (n) {
-      return '<a class="nav" href="' + n[0] + '"' + (n[0] === here ? ' aria-current="page"' : '') + '>' + n[1] + '</a>';
+      return '<a class="nav" href="' + ROOT + n[0] + '"' + (n[0] === here ? ' aria-current="page"' : '') + '>' + n[1] + '</a>';
     }).join('');
     bar.className = 'bar';
     bar.innerHTML = '<nav class="wrap" aria-label="Main">' +
-      '<a class="logo" href="index.html"' + (here === 'index.html' ? ' aria-label="V.O.I.C.E. (say hello)"' : ' aria-label="V.O.I.C.E. home"') + '>' + LOGO + 'V.O.I.C.E.</a>' +
+      '<a class="logo" href="' + (ROOT || 'index.html') + '"' + (here === 'index.html' ? ' aria-label="V.O.I.C.E. (say hello)"' : ' aria-label="V.O.I.C.E. home"') + '>' + LOGO + 'V.O.I.C.E.</a>' +
       '<div class="links">' + links + '<span id="bar-egg"></span><a class="go" href="' + esc(APP) + '">Open V.O.I.C.E.</a></div></nav>';
     var logo = bar.querySelector('.logo');
     if (here === 'index.html') logo.addEventListener('click', function (e) {
@@ -80,7 +83,7 @@
     foot.innerHTML = '<div class="wrap cols">' +
       '<div><strong>V.O.I.C.E.</strong> · Variable Output for Individualized Communication and Expression · Free AAC by Richard Wawrzonkowski, M.S., LBA, BCBA' +
       (C.lbaState ? '<br>Licensed Behavior Analyst in ' + esc(C.lbaState) + (C.lbaLicense ? ', license no. ' + esc(C.lbaLicense) : '') + '.' : '') +
-      '<br>No ads, no tracking, no cookies. <a href="privacy.html">Privacy</a> · <a href="about.html#whats-new">What’s new</a>' +
+      '<br>No ads, no tracking, no cookies. <a href="' + ROOT + 'privacy.html">Privacy</a> · <a href="' + ROOT + 'about.html#whats-new">What’s new</a>' +
       (C.facebookUrl ? ' · <a href="' + esc(C.facebookUrl) + '"' + X + '>V.O.I.C.E. on Facebook</a>' : '') +
       '<br>© 2026 Richard Wawrzonkowski. V.O.I.C.E. and this site are provided as is, without warranty. <span id="foot-egg"></span></div>' +
       '<div><strong>Credits</strong><br>Core vocabulary: Universal Core, Center for Literacy and Disability Studies, UNC-Chapel Hill (<a href="https://project-core.com"' + X + '>Project Core</a>), <a href="https://creativecommons.org/licenses/by-sa/4.0/"' + X + '>CC BY-SA 4.0</a>.' +
@@ -88,7 +91,7 @@
       '<br>All emojis designed by <a href="https://openmoji.org/"' + X + '>OpenMoji</a> – the open-source emoji and icon project. License: <a href="https://creativecommons.org/licenses/by-sa/4.0/"' + X + '>CC BY-SA 4.0</a>.' +
       '<br>Fonts: Lexend, Atkinson Hyperlegible and OpenDyslexic, all under the SIL Open Font License (OpenDyslexic is used unmodified; its Reserved Font Name is kept).' +
       '<br>Dibs the pigeon, V.O.I.C.E.’s mascot, and Wacker the falcon are original drawings.' +
-      '<br>This site shows some symbols dimmed or recolored. <a href="about.html#credits">All credits and licenses</a></div>' +
+      '<br>This site shows some symbols dimmed or recolored. <a href="' + ROOT + 'about.html#credits">All credits and licenses</a></div>' +
       '<div><strong>Please note</strong><br>V.O.I.C.E. supports, but doesn’t replace, an AAC assessment by a speech-language pathologist or team. It is not speech-language therapy. Using this site doesn’t make you a client.' +
       '<br>Not affiliated with or endorsed by Apple, Project Core, Mulberry Symbols or OpenMoji. iPad and Safari are trademarks of Apple Inc.</div></div>';
   }

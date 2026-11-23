@@ -1,0 +1,16 @@
+/* Page-not-found (404.html). Dibs looks around; Wacker sits smugly. */
+.nf{padding:44px 0 56px}
+.nf h1{font-size:clamp(30px,6vw,52px)}
+.nf-stage{position:relative;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:center;gap:20px 36px;margin:30px 0 8px}
+.nf-dibs{position:relative;width:150px;flex:none}
+.nf-dibs img{display:block;width:150px;height:150px;transform:rotate(-8deg);animation:nf-look 3.2s ease-in-out infinite}
+.nf-q{position:absolute;font-family:Lexend,sans-serif;font-weight:700;color:var(--accent);font-size:30px;line-height:1}
+.nf-q.a{left:-6px;top:-4px;transform:rotate(-12deg)}.nf-q.b{right:-8px;top:6px;font-size:38px;transform:rotate(14deg)}
+.nf-wacker{display:flex;align-items:flex-end;gap:12px;flex:1 1 280px;max-width:420px;min-width:0}
+.nf-wacker img{display:block;width:120px;height:120px;flex:none}
+.nf-bubble{position:relative;flex:1 1 0;min-width:0;margin:0 0 54px;padding:10px 14px;background:#fff;border:2px solid var(--ink);border-radius:14px;font-size:17px;line-height:1.4;color:var(--ink)}
+.nf-bubble::before{content:"";position:absolute;left:-9px;bottom:16px;width:14px;height:14px;background:#fff;border-left:2px solid var(--ink);border-bottom:2px solid var(--ink);transform:rotate(45deg)}
+.nf .row{justify-content:center;margin-top:22px}
+@keyframes nf-look{0%,100%{transform:rotate(-8deg) translateX(0)}30%{transform:rotate(8deg) translateX(8px)}65%{transform:rotate(-12deg) translateX(-6px)}}
+@media (prefers-reduced-motion:reduce){.nf-dibs img{animation:none}}
+@media (max-width:420px){.nf-wacker img{width:96px;height:96px}.nf-bubble{margin-bottom:40px}}
