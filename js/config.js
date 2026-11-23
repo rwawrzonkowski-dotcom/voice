@@ -18,5 +18,5 @@ window.VOICE_SITE = {
 
   // The V.O.I.C.E. AAC Facebook page, shown as a plain link in the footer. '' = hidden.
   // Must start with https://www.facebook.com/ (no Facebook scripts are ever loaded).
-  facebookUrl: ''
+  facebookUrl: 'https://www.facebook.com/61596526118540'
 };
