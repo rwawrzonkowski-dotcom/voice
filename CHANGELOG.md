@@ -2,6 +2,15 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-23: Dibs's First Day story
+
+- Get started now opens with "Dibs's First Day", a tap-through story in six short scenes. Sam gets a talker; the visitor chooses what the grown-up does (start with six words, show don't test, treat every tap as talking, make "stop" work, show "help" before helping). Wrong choices get a gentle "Not quite" and stay visible but marked; the right one makes Dibs hop and shows a reason.
+- Wacker watches from the rooftop outside the window with his own bubble, spoken lower; in the last scene he flies off top-left (reduced motion: he just fades). Dibs and Wacker art are reused unchanged.
+- The drawn iPad shows the six Stage 1 tiles (help, stop, more pink; eat, drink green; bathroom blue). A tapped tile glows. A small hand taps it, never a face. Sound switch (off by default) speaks the tile words with the site's on-device voice. Nothing is saved or sent.
+- Last scene: a printable "Your first day" card (six reminders). "Print this card" prints only the card, black on white. Link on to step 1.
+- Without JavaScript the section shows the six reminders as a plain list.
+- New files: `js/story.js`, `css/story.css` (loaded on Get started only). All CSS and JS links now use `?v=20261123b`.
+
 ## 2026-11-23: Launch polish
 
 - Link preview cards: new `img/og-card.png` (1200x630, cut-paper look with the name, the Stage 1 tiles and Dibs). Every page now has Open Graph and Twitter card tags with its own title, description and absolute address (`https://rwawrzonkowski-dotcom.github.io/voice/...`). Still noindex.

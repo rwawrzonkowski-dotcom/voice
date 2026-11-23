@@ -1,0 +1,168 @@
+/* "Dibs's First Day": the tap-through story at the top of Get started. Classes are prefixed s-. Loaded after site.css and pages.css.
+   Reuses .paper .tape .sticky .btn .pchip .tog/.togs from site.css. */
+.s-story{max-width:940px;width:calc(100% - 32px);margin:32px auto 8px;padding:34px 22px 18px}
+.s-story>h2{margin-top:0}
+.s-lead{font-size:19px;color:var(--soft);margin:0 0 20px;max-width:62ch}
+.s-static{margin:0 0 12px}
+.s-static ol{padding-left:24px;margin:0 0 14px}
+.s-static li{margin-bottom:8px}
+.s-mount:empty{display:none}
+.s-skip{margin:16px 0 0;font-size:16px}
+.s-skip a{display:inline-flex;align-items:center;min-height:44px}
+
+/* The stage: one comic panel */
+.s-stage{position:relative;display:grid;grid-template-columns:minmax(0,1fr);border:3px solid var(--ink);border-radius:10px;background:var(--page);box-shadow:5px 6px 0 rgba(42,35,80,.9)}
+.s-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 14px;padding:10px 14px;border-bottom:3px solid var(--ink);background:var(--tint);border-radius:7px 7px 0 0}
+.s-ttl{flex:1 1 220px;min-width:0}
+.s-kick{display:block;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--soft)}
+.s-title{font-size:21px;margin:0}
+.s-title:focus{outline:none}
+.s-title:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:4px}
+.s-prog{display:flex;gap:7px;list-style:none;margin:0;padding:0}
+.s-prog li{width:14px;height:14px;border-radius:50%;border:2px solid var(--ink);background:#fff}
+.s-prog li.past{background:var(--accent);border-color:var(--accent)}
+.s-prog li.now{width:30px;border-radius:999px;background:#ffd84d}
+.s-snd.togs{flex-direction:row;padding:3px}
+.s-snd .tog{min-height:44px}
+
+.s-left{min-width:0;padding:12px 12px 4px}
+.s-right{min-width:0;padding:8px 14px 16px}
+
+/* The scene picture */
+.s-scene{position:relative;aspect-ratio:3/2;overflow:hidden;border:3px solid var(--ink);border-radius:8px;background:#f6ead2;container-type:inline-size}
+.s-bg{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+.s-bg *{stroke-linejoin:round;stroke-linecap:round}
+.s-wall{fill:#f6ead2}.s-floor{fill:#e0cfa9}.s-sky{fill:#cfe6f5}
+.s-night{display:none}
+.s-prop{display:none}
+.s-stage[data-scene="2"] .s-p2,.s-stage[data-scene="4"] .s-p4,.s-stage[data-scene="5"] .s-p5{display:inline}
+.s-stage[data-scene="6"] .s-sky{fill:#2f2a66}
+.s-stage[data-scene="6"] .s-wall{fill:#e9d8b4}
+.s-stage[data-scene="6"] .s-night{display:inline}
+.s-stage[data-scene="6"] .s-bld{fill:#4b4687}
+.s-bld{fill:#b9bfe6}
+
+.s-dibs{position:absolute;left:4%;bottom:25%;width:27%;height:auto;aspect-ratio:1;display:block;transform-origin:50% 100%}
+.s-dibs.s-hop{animation:s-hop .55s}
+@keyframes s-hop{0%,100%{transform:translateY(0)}35%{transform:translateY(-12%)}65%{transform:translateY(0)}80%{transform:translateY(-4%)}}
+
+.s-wk{position:absolute;left:69%;bottom:47%;width:24%;aspect-ratio:1;pointer-events:none}
+.s-wk img{position:absolute;left:0;top:0;width:100%;height:auto;aspect-ratio:1;display:none}
+.s-wk .wk-p{display:block}
+.s-wk.fly .wk-p{display:none}
+.s-wk.fly .wk-f{display:block;animation:s-wkout .95s cubic-bezier(.5,0,.9,.6) forwards}
+.s-wk.gone{opacity:0}
+@keyframes s-wkout{0%{transform:translate(0,0) rotate(-6deg)}100%{transform:translate(-430%,-300%) rotate(-14deg)}}
+
+/* The drawn iPad with the six Stage 1 tiles */
+.s-ipad{position:absolute;left:31.5%;bottom:32%;width:34%;aspect-ratio:4/3;padding:7px;padding:1.87cqw;border-radius:7%/9%;background:var(--ink);box-shadow:0 3px 0 rgba(0,0,0,.25)}
+.s-screen{height:100%;padding:4%;border-radius:3%;background:#fffdf8}
+.s-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:5%;height:100%}
+.s-tile{display:flex;flex-direction:column;align-items:center;justify-content:space-between;min-width:0;padding:6% 2% 4%;border-radius:12%;color:#111;box-shadow:0 1px 0 rgba(0,0,0,.15);transition:transform .18s,box-shadow .18s}
+.s-tile img{width:70%;height:auto;flex:1 1 auto;min-height:0;object-fit:contain}
+.s-tile span{font-weight:700;font-size:7px;font-size:max(6.5px,1.75cqw);line-height:1.05;white-space:nowrap;letter-spacing:-.02em}
+.s-tile:last-child span{font-size:6px;font-size:max(6px,1.5cqw)}
+.k-social{background:var(--social)}.k-action{background:var(--action)}.k-place{background:var(--describing)}
+.s-tile.off{background:#e6e2d8;color:#4a4466}
+.s-tile.off img{filter:grayscale(1);opacity:.5}
+.s-tile.glow{transform:scale(1.14);box-shadow:0 0 0 3px #3b2f9e,0 0 12px 5px rgba(59,47,158,.5);animation:s-glow .5s ease-in-out 2;z-index:2}
+@keyframes s-glow{50%{box-shadow:0 0 0 4px #3b2f9e,0 0 20px 10px rgba(59,47,158,.6)}}
+.s-stand{position:absolute}
+
+/* The hand that taps (a grown-up's or a child's), shown only while a tile is tapped */
+.s-hand{position:absolute;width:27%;aspect-ratio:48/64;left:50%;top:70%;opacity:0;pointer-events:none;transform:translate(-50%,40%);transition:transform .25s ease-out,opacity .15s;z-index:3;--skin:#e8b88f;--sleeve:#3b2f9e}
+.s-hand svg{display:block;width:100%;height:100%}
+.s-hand.on{opacity:1;transform:translate(-50%,-4%)}
+.s-hand.kid{--skin:#f3cfae;--sleeve:#ffd84d;width:23%}
+.s-hand.at0{left:21.4%;top:30%}.s-hand.at1{left:50%;top:30%}.s-hand.at2{left:78.7%;top:30%}
+.s-hand.at3{left:21.4%;top:70%}.s-hand.at4{left:50%;top:70%}.s-hand.at5{left:78.7%;top:70%}
+
+.s-conf{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.s-conf i{position:absolute;top:-14px;width:9px;height:13px;border-radius:2px;animation:s-fall 1.7s ease-in forwards}
+@keyframes s-fall{to{transform:translateY(330px) rotate(360deg);opacity:.9}}
+
+/* Speech bubbles and the caption strip sit under the picture, so they stay readable at any width */
+.s-says{display:flex;flex-wrap:wrap;gap:14px 12px;margin:14px 0 0}
+.s-bub{position:relative;flex:1 1 230px;min-width:0;padding:10px 12px;border:2px solid var(--ink);border-radius:14px;background:#fff;color:var(--ink);font-size:16px;line-height:1.4}
+.s-bub::before{content:"";position:absolute;top:-12px;left:30px;width:16px;height:16px;background:inherit;border-left:2px solid var(--ink);border-top:2px solid var(--ink);transform:rotate(45deg);border-radius:3px 0 0 0}
+.s-bub.wk{background:#e6eaf4}
+.s-bub.wk::before{left:auto;right:30px}
+.s-who{display:block;font-family:Lexend,sans-serif;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:#4a4466;margin-bottom:2px}
+.s-bub .s-chk{display:inline-block;vertical-align:-5px;margin-right:6px}
+.s-chk{width:24px;height:24px}
+.s-cap{margin:14px 0 8px;padding:10px 14px;border:2px solid var(--ink);border-radius:4px;background:var(--people);color:var(--ink);font-size:17px;line-height:1.45;font-weight:700}
+
+/* Question and choices */
+.s-qtext{font-family:Lexend,system-ui,sans-serif;font-weight:700;font-size:20px;line-height:1.25;margin:6px 0 12px;color:var(--ink)}
+.s-choices{display:flex;flex-direction:column;gap:10px}
+.s-opt{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;width:100%;height:auto;min-height:48px;padding:10px 14px;text-align:left;font-size:17px;line-height:1.35;color:#2a2350}
+.s-opt .s-ot{flex:1 1 160px;min-width:0}
+.s-tag{flex:none;font-size:13px;font-weight:700;letter-spacing:.03em;color:#4a4466}
+.s-opt.no{background:#efe9db;color:#4a4466;cursor:default;box-shadow:0 0 0 1px #d6c8a8;transform:none}
+.s-opt.no .s-ot{text-decoration:line-through;text-decoration-thickness:1px}
+.s-opt.yes{background:#e1f4dc;color:#12391a;cursor:default;box-shadow:0 0 0 2px #2e7d32,0 8px 16px -10px rgba(46,125,50,.6);transform:none}
+.s-opt.yes .s-tag{color:#12391a}
+.s-opt.lock{cursor:default;transform:none;box-shadow:0 0 0 1px #e6dcc6;color:#4a4466}
+.s-opt[aria-disabled=true]:hover{transform:none}
+.s-nav{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.s-nav .btn{min-width:96px}
+.s-nav .s-over{margin-left:auto;background:transparent;box-shadow:none;border-color:transparent;text-decoration:underline;color:var(--accent)}
+.s-nav .s-over:hover{background:#fff}
+
+/* The last scene: the "Your first day" card */
+.s-card{margin:6px 0 0;padding:30px 22px 22px;background:var(--people);transform:rotate(-.6deg)}
+.s-card h3{font-size:22px;margin:0 0 10px}
+.s-card ol{margin:0;padding-left:26px}
+.s-card li{margin:0 0 9px;font-size:17px;line-height:1.45;color:var(--ink)}
+.s-card .s-from{margin:12px 0 0;font-size:14px;color:#4a4466}
+.s-endbtns{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.s-endbtns .btn{flex:1 1 200px;text-align:center}
+.s-endnote{margin:14px 0 0;font-size:15px;color:var(--soft);line-height:1.5}
+.s-endlead{margin:6px 0 12px;font-size:17px;color:var(--body)}
+
+@media (min-width:860px){
+  .s-stage{grid-template-columns:minmax(0,1.12fr) minmax(0,1fr)}
+  .s-top{grid-column:1/-1}
+  .s-left{padding:14px 10px 8px 14px}
+  .s-right{padding:12px 16px 18px 8px}
+  .s-title{font-size:23px}
+}
+@media (max-width:560px){
+  .s-story{width:calc(100% - 24px);padding:30px 12px 14px}
+  .s-left{padding:10px 8px 2px}
+  .s-right{padding:6px 10px 14px}
+  .s-lead{font-size:18px}
+  .s-ipad{left:29.5%;width:38%;padding:2.09cqw}
+  .s-dibs{width:28%}
+  .s-wk{left:70%;width:25%}
+  .s-bub{flex-basis:100%;font-size:16px}
+  .s-nav .btn{flex:1 1 40%}
+  .s-nav .s-over{margin-left:0;flex-basis:100%}
+  .s-card{transform:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .s-dibs.s-hop,.s-tile.glow,.s-wk.fly .wk-f,.s-conf i{animation:none}
+  .s-conf{display:none}
+  .s-hand,.s-hand.on{transform:translate(-50%,-4%)}
+  .s-card{transform:none}
+}
+
+/* Print: when the card is showing, only the card prints, black on white */
+@media print{
+  body:has(#first-day .s-card:not([hidden])){background:#fff!important}
+  body:has(#first-day .s-card:not([hidden])) > :not(main){display:none!important}
+  body:has(#first-day .s-card:not([hidden])) main > :not(#first-day){display:none!important}
+  body:has(#first-day .s-card:not([hidden])) #first-day>:not(.s-mount){display:none!important}
+  body:has(#first-day .s-card:not([hidden])) .s-mount>:not(.s-stage){display:none!important}
+  body:has(#first-day .s-card:not([hidden])) .s-stage>:not(.s-right){display:none!important}
+  body:has(#first-day .s-card:not([hidden])) .s-right>:not(.s-end){display:none!important}
+  body:has(#first-day .s-card:not([hidden])) .s-end>:not(.s-card){display:none!important}
+  body:has(#first-day .s-card:not([hidden])) #first-day{box-shadow:none;background:#fff;padding:0;margin:0;width:auto;max-width:none}
+  body:has(#first-day .s-card:not([hidden])) .s-stage{display:block;border:0;box-shadow:none;background:#fff}
+  body:has(#first-day .s-card:not([hidden])) .s-right{padding:0}
+  body:has(#first-day .s-card:not([hidden])) .s-card{transform:none;background:#fff;color:#000;box-shadow:none;border:3px solid #000;border-radius:0;padding:28px;margin:0;break-inside:avoid;flex:none}
+  body:has(#first-day .s-card:not([hidden])) .s-card .tape{display:none}
+  body:has(#first-day .s-card:not([hidden])) .s-card h3,body:has(#first-day .s-card:not([hidden])) .s-card li,body:has(#first-day .s-card:not([hidden])) .s-card .s-from{color:#000}
+  body:has(#first-day .s-card:not([hidden])) .s-card h3{font-size:28px}
+  body:has(#first-day .s-card:not([hidden])) .s-card li{font-size:20px;margin-bottom:14px}
+}
