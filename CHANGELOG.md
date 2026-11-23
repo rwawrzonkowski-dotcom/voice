@@ -9,6 +9,10 @@ Newest first. Add a line here every time the site changes.
 - About: app version now 3.5; What's new has entries for November 18, 20 and 23.
 - All CSS and JS links now use `?v=20261123a`.
 
+## 2026-11-23: Facebook link on
+
+- `facebookUrl` set to the V.O.I.C.E. AAC page (https://www.facebook.com/61596526118540). Every page's footer now shows a plain "V.O.I.C.E. on Facebook" link. No Facebook scripts.
+
 ## 2026-11-20: Wacker the falcon (hot dog easter egg)
 
 - Figure 4, "Lunch break" sticky note: tap ketchup five times (since the last "New hot dog") and Wacker, a peregrine falcon and Dibs's smug rival, swoops in and takes the hot dog. He sits on it for about 3.5 seconds with a speech bubble, then flies off with it. A tap anywhere in the figure sends him off at once. Dibs ruffles his feathers; Wacker never touches him.
