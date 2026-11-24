@@ -484,8 +484,8 @@ var SCENE = "<rect x=\"0\" y=\"0\" width=\"900\" height=\"370\" fill=\"#f6efe0\"
           return '<button type="button" class="f-sbtn" aria-label="Say ' + esc(it.label) + '" data-a="strip" data-v="' + i + '">' +
             (it.kind === 'object' ? '<span class="f-crop">' + cropSvg(it.vb) + '</span>' : '<img src="' + it.src + '" alt="">') + '<span class="lb">' + esc(it.label) + '</span></button>';
         }).join('') + '</div>' +
-        '<div class="f-g9 f-mb">' + rows.map(function (r) { return tile(r, glow && glow === r.label.toLowerCase() ? ' glow' : ''); }).join('') + '</div></div>' +
-        '<p class="cap">Tap the strip. Photo buttons show the thing itself; other words use the board’s own picture. When a word is also on the main board, its permanent spot glows. The board never moves.</p>';
+        '<div class="f-g9 f-mb">' + rows.map(function (r) { return tile(r, glow && glow === r.label.toLowerCase() ? ' pressed' : ''); }).join('') + '</div></div>' +
+        '<p class="cap">Tap the strip. Photo buttons show the thing itself; other words use the board’s own picture. When a word is also on the main board, its permanent spot presses in. The board never moves.</p>';
     }
     paint($('f7'), h);
   };

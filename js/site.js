@@ -81,10 +81,10 @@
   if (foot) {
     var X = ' rel="noopener noreferrer"';
     foot.innerHTML = '<div class="wrap cols">' +
-      '<div><strong>V.O.I.C.E.</strong> · Variable Output for Individualized Communication and Expression · Free AAC by Richard Wawrzonkowski, M.S., LBA, BCBA' +
+      '<div><strong>V.O.I.C.E.</strong> stands for Variable Output for Individualized Communication and Expression.<br>Free AAC by Richard Wawrzonkowski, M.S., LBA, BCBA' +
       (C.lbaState ? '<br>Licensed Behavior Analyst in ' + esc(C.lbaState) + (C.lbaLicense ? ', license no. ' + esc(C.lbaLicense) : '') + '.' : '') +
-      '<br>No ads, no tracking, no cookies. <a href="' + ROOT + 'privacy.html">Privacy</a> · <a href="' + ROOT + 'about.html#whats-new">What’s new</a>' +
-      (C.facebookUrl ? ' · <a href="' + esc(C.facebookUrl) + '"' + X + '>V.O.I.C.E. on Facebook</a>' : '') +
+      '<br>No ads, no tracking, no cookies.<br><a href="' + ROOT + 'privacy.html">Privacy</a><br><a href="' + ROOT + 'about.html#whats-new">What’s new</a>' +
+      (C.facebookUrl ? '<br><a href="' + esc(C.facebookUrl) + '"' + X + '>V.O.I.C.E. on Facebook</a>' : '') +
       '<br>© 2026 Richard Wawrzonkowski. V.O.I.C.E. and this site are provided as is, without warranty. <span id="foot-egg"></span></div>' +
       '<div><strong>Credits</strong><br>Core vocabulary: Universal Core, Center for Literacy and Disability Studies, UNC-Chapel Hill (<a href="https://project-core.com"' + X + '>Project Core</a>), <a href="https://creativecommons.org/licenses/by-sa/4.0/"' + X + '>CC BY-SA 4.0</a>.' +
       '<br>Symbols: <a href="https://mulberrysymbols.org"' + X + '>Mulberry Symbols</a> by Steve Lee, <a href="https://creativecommons.org/licenses/by-sa/4.0/"' + X + '>CC BY-SA 4.0</a>.' +

@@ -58,15 +58,15 @@
 .s-ipad{position:absolute;left:31.5%;bottom:32%;width:34%;aspect-ratio:4/3;padding:7px;padding:1.87cqw;border-radius:7%/9%;background:var(--ink);box-shadow:0 3px 0 rgba(0,0,0,.25)}
 .s-screen{height:100%;padding:4%;border-radius:3%;background:#fffdf8}
 .s-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:5%;height:100%}
-.s-tile{display:flex;flex-direction:column;align-items:center;justify-content:space-between;min-width:0;padding:6% 2% 4%;border-radius:12%;color:#111;box-shadow:0 1px 0 rgba(0,0,0,.15);transition:transform .18s,box-shadow .18s}
+.s-tile{display:flex;flex-direction:column;align-items:center;justify-content:space-between;min-width:0;padding:6% 2% 4%;border-radius:12%;color:#111;box-shadow:0 3px 0 rgba(42,35,80,.35);transition:transform .3s,box-shadow .3s,filter .3s}
 .s-tile img{width:70%;height:auto;flex:1 1 auto;min-height:0;object-fit:contain}
 .s-tile span{font-weight:700;font-size:7px;font-size:max(6.5px,1.75cqw);line-height:1.05;white-space:nowrap;letter-spacing:-.02em}
 .s-tile:last-child span{font-size:6px;font-size:max(6px,1.5cqw)}
 .k-social{background:var(--social)}.k-action{background:var(--action)}.k-place{background:var(--describing)}
 .s-tile.off{background:#e6e2d8;color:#4a4466}
 .s-tile.off img{filter:grayscale(1);opacity:.5}
-.s-tile.glow{transform:scale(1.14);box-shadow:0 0 0 3px #3b2f9e,0 0 12px 5px rgba(59,47,158,.5);animation:s-glow .5s ease-in-out 2;z-index:2}
-@keyframes s-glow{50%{box-shadow:0 0 0 4px #3b2f9e,0 0 20px 10px rgba(59,47,158,.6)}}
+/* A tapped tile is pressed in: it drops 3px, its paper shadow goes away, thick ink outline, a shade darker. No glow. */
+.s-tile.pressed{transform:translateY(3px);box-shadow:0 0 0 3px #2a2350;filter:brightness(.9);z-index:2}
 .s-stand{position:absolute}
 
 /* The hand that taps (a grown-up's or a child's), shown only while a tile is tapped */
@@ -141,7 +141,8 @@
   .s-card{transform:none}
 }
 @media (prefers-reduced-motion:reduce){
-  .s-dibs.s-hop,.s-tile.glow,.s-wk.fly .wk-f,.s-conf i{animation:none}
+  .s-tile{transition:none}
+  .s-dibs.s-hop,.s-wk.fly .wk-f,.s-conf i{animation:none}
   .s-conf{display:none}
   .s-hand,.s-hand.on{transform:translate(-50%,-4%)}
   .s-card{transform:none}

@@ -93,7 +93,7 @@
     });
   })(lookBtns[k]);
 
-  // ----- Watch the board grow: the app's real stages for the 45-button main page -----
+  // ----- Watch the board grow: the app's stages for the 45-button main page -----
   var grow = document.getElementById('grow');
   if (grow) {
     var NOTES = {

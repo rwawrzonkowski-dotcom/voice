@@ -20,7 +20,7 @@
     { name: 'Lower Wacker', cls: 'l2', n: 7, floor: '#29303c', wall: '#ece9ff', outline: '#0b0d12',
       start: 'Lower Wacker. Even the delivery trucks get lost down here.', win: 'Okay… that was pretty good.' },
     { name: 'Lower Lower Wacker', cls: 'l3', n: 9, floor: '#151823', wall: '#e2deff', outline: '#05060a',
-      start: 'Lower LOWER Wacker. Yes, it’s real. No, I won’t help.', win: 'Fine. FINE. You beat Lower Lower Wacker. I’m telling no one.' }
+      start: 'Lower LOWER Wacker. Yes, it exists. No, I won’t help.', win: 'Fine. FINE. You beat Lower Lower Wacker. I’m telling no one.' }
   ];
   var DEAD = ['Dead end! This is why I fly.', 'Wrong way. Classic Lower Wacker.', 'Ha! You found a wall. Congratulations.', 'Have you tried… not going this way?'];
   var WORDS = [['up', 'place'], ['down', 'place'], ['left', 'place'], ['right', 'place'], ['go', 'action'], ['stop', 'social']];
@@ -88,7 +88,7 @@
       '</div>' +
       '<div class="m-river" aria-hidden="true"></div>' +
     '</div>' +
-    '<p class="m-cap" id="m-cap" hidden>Yes, it’s real.</p>' +
+    '<p class="m-cap" id="m-cap" hidden>Yes, it exists.</p>' +
     '<div class="m-tiles" id="m-tiles" role="group" aria-label="Word tiles">' +
       WORDS.map(function (w) {
         return '<button type="button" class="m-tile k-' + w[1] + '" data-w="' + w[0] + '"' + (KIND[w[0]] === 'place' ? ' aria-pressed="false"' : '') + '><img src="img/symbols/' + w[0] + '.svg" alt=""><span>' + w[0] + '</span></button>';
@@ -98,7 +98,7 @@
       '<p class="m-label" id="m-strip-label">Words you tapped</p>' +
       '<div class="m-strip" role="group" aria-labelledby="m-strip-label"><ol class="m-words" id="m-words"></ol><button type="button" class="btn m-clear" id="m-clear">Clear</button></div>' +
     '</div>' +
-    '<p class="m-stat"><span id="m-lvname"></span> · Moves: <b id="m-moves">0</b> · No timer, no rush.</p>' +
+    '<p class="m-stat"><span id="m-lvname"></span>. Moves: <b id="m-moves">0</b>. No timer, no rush.</p>' +
     '<div class="m-win" id="m-win" hidden>' +
       '<div class="m-windibs"><img class="m-wdibs" src="img/dibs/dibs.svg" alt="Dibs the pigeon"><p class="m-bub" id="m-dibs-t"></p></div>' +
       '<h3 class="m-wh" id="m-win-h" tabindex="-1">You escaped!</h3>' +
@@ -191,9 +191,6 @@
     var n = S.n, W = n * C, L = LEVELS[S.lv], i, x, y, h;
     var vb = (-PAD) + ' ' + (-PAD) + ' ' + (W + 2 * PAD) + ' ' + (W + 2 * PAD);
     h = '<svg class="m-svg" viewBox="' + vb + '" aria-hidden="true" focusable="false">';
-    if (S.lv > 0) h += '<defs>' +
-      '<radialGradient id="m-pool"><stop class="m-poolstop" offset="0" stop-color="#ffb23f" stop-opacity="' + (S.lv === 1 ? '.34' : '.3') + '"/><stop offset="1" stop-color="#ffb23f" stop-opacity="0"/></radialGradient>' +
-      '</defs>';
     h += '<rect class="m-floor" x="' + (-PAD) + '" y="' + (-PAD) + '" width="' + (W + 2 * PAD) + '" height="' + (W + 2 * PAD) + '" fill="' + L.floor + '"/>';
     // cells that are not the start, the exit or on the path of Dibs's first step carry the decorations
     var free = [];
@@ -206,11 +203,13 @@
       // daylight: warm sun patches on a pale sky-blue floor
       for (i = 0; i < 3; i++) h += '<circle cx="' + (free[i][0] * C + 30) + '" cy="' + (free[i][1] * C + 30) + '" r="' + (C * 0.7) + '" fill="#fff6c2" opacity=".7"/>';
     } else {
-      var lamps = S.lv === 1 ? 4 : 3, r = S.lv === 1 ? C * 1.2 : C * 1.05;
+      // street lamps: a post, a lamp head and a flat cut-paper cone of light (crisp edges, no blur, no gradient)
+      var lamps = S.lv === 1 ? 4 : 3, hw = S.lv === 1 ? C * 0.66 : C * 0.56, cone = S.lv === 1 ? '#665d3f' : '#554e35';
       for (i = 0; i < lamps; i++) {
         var lx = free[i][0] * C + 30, ly = free[i][1] * C + 30;
-        h += '<circle class="m-poolc" cx="' + lx + '" cy="' + ly + '" r="' + r + '" fill="url(#m-pool)"/>';
-        h += '<circle cx="' + lx + '" cy="' + (ly - 14) + '" r="4.5" fill="#ffd36b" stroke="#2a2350" stroke-width="1.6"/>';
+        h += '<path class="m-cone" d="M' + (lx - 5) + ' ' + (ly - 15) + 'H' + (lx + 5) + 'L' + (lx + hw) + ' ' + (ly + 28) + 'H' + (lx - hw) + 'Z" fill="' + cone + '"/>';
+        h += '<path d="M' + lx + ' ' + (ly - 30) + 'V' + (ly - 18) + '" stroke="#8b94ad" stroke-width="3" stroke-linecap="butt"/>';
+        h += '<path d="M' + (lx - 7) + ' ' + (ly - 14) + 'a7 7 0 0 1 14 0Z" fill="#ffd36b" stroke="#2a2350" stroke-width="1.6" stroke-linejoin="round"/>';
       }
       if (S.lv === 1) for (i = lamps; i < lamps + 2; i++) {
         var px = free[i][0] * C + 30, py = free[i][1] * C + 38;

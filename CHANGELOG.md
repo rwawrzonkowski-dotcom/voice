@@ -2,6 +2,16 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-23: Style cleanup (fewer dots, no glows, no left borders, no 'real')
+
+Follows Richard's list of overused "AI design" tells.
+
+- Fewer dots: no visible "·" separators left on any page. Home's top line "V.O.I.C.E. · Free AAC for iPad" is gone as a small label; the intro now starts "Free AAC for iPad." The shared footer (`js/site.js`) uses separate lines and short sentences. No-JavaScript nav and footer fallbacks use spaces and sentences. Maze status line and the two Practice games counters use full stops. Guide labels on Videos read "Guide 3 for parents and staff".
+- The word "real" is removed as an adjective from all visible text (pages, games, story, maze, captions). Maze level 3 caption and Wacker's line now say "Yes, it exists."
+- Left-border accent removed from the "Why did that happen?" stories. Each story now shows a place tile (symbol + word: home, store, bath, barber, kitchen, friend's house, living room, car, classroom, bus, hallway, lunch) beside the text, in a plain ink-outlined box. New symbols copied unmodified from the app into `img/symbols/`: `home.svg`, `bath.svg`, `haircut.svg`, `kitchen.svg`, `living-room.svg`, `car.svg`, `classroom.svg`, `bus.svg`, `lunch.svg` (Mulberry), `grocery-store.svg`, `friends-house.svg` (OpenMoji), `hallway.svg` (drawn for the app, CC BY-SA 4.0).
+- Glows replaced by hard paper shapes. Tapped tiles in the First Day story and the Features "photo strip" are now pressed in (drop 3px, paper shadow gone, 3px ink outline, a shade darker, 0.3 s; no animation with reduced motion). Home's "Open V.O.I.C.E." button is a solid round disc with an ink ring and a hard offset shadow, colored per look. Maze street lamps are a post, a lamp head and a flat cut-paper cone (no gradient). Features "glowing" message bar is a crisp ring with a hard offset; the tone-wheel backdrop is a solid disc.
+- All CSS and JS links now use `?v=20261123d` (404.html too).
+
 ## 2026-11-23: Escape Lower Wacker maze
 
 - Practice games now has a 4th game, "Escape Lower Wacker" (`#maze`, with its own jump link). Dibs is lost on Lower Wacker Drive; the player gets him out with six core-word tiles: up, down, left, right, go and stop. Words practiced: direction words, go and stop.

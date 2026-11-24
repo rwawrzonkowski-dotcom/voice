@@ -59,7 +59,7 @@
         { t: 'Tap “help” as you say, “Help? I can help!” Then open it.', ok: 1, tap: 0, who: 'adult', why: 'You showed Sam a word for this exact moment. Next time, Sam might tap it first.' },
         { t: 'Wait until Sam taps “help” alone.', why: 'It’s day one. Show it many times before you expect it.' }] },
     { title: 'The end of day one', end: 1,
-      nar: 'Bedtime. Sam didn’t say a lot today. But you showed six words in real moments, and Sam tapped “more” all by himself.',
+      nar: 'Bedtime. Sam didn’t say a lot today. But you showed six words in everyday moments, and Sam tapped “more” all by himself.',
       wk: 'Fine. FINE. The pigeon was right. …See you at lunch, Dibs.',
       dibs: 'Day one, done. Proud of you!' }
   ];
@@ -71,7 +71,7 @@
     'Keep the iPad close, all day.',
     'Every tap is talking. Answer it.',
     'Make the words work. “Stop” means stop.',
-    'Show words in real moments: snack, bath, play, getting dressed.'];
+    'Show words in everyday moments: snack, bath, play, getting dressed.'];
   var CONF = ['#ffd84d', '#f9cddd', '#c9edc2', '#c6e0f7', '#e0d0f3', '#fddcb2', '#3b2f9e', '#2e7d32'];
   var CHECK = '<svg class="s-chk" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#2e7d32" stroke="#2a2350" stroke-width="1.5"/><path d="M6.5 12.5l4 4 7-8" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
@@ -218,18 +218,18 @@
 
   // ---------- Small effects ----------
   function lightAll(on) { tiles.forEach(function (t) { t.classList.toggle('off', !on); }); }
-  function glow(i) { var t = tiles[i]; t.classList.remove('glow'); void t.offsetWidth; t.classList.add('glow'); }
-  function unglow() { tiles.forEach(function (t) { t.classList.remove('glow'); }); }
+  function press(i) { tiles[i].classList.add('pressed'); }
+  function unpress() { tiles.forEach(function (t) { t.classList.remove('pressed'); }); }
   function showHand(i, who) {
     hand.className = 's-hand at' + i + ' ' + (who === 'kid' ? 'kid' : 'adult');
     void hand.offsetWidth; hand.classList.add('on');
   }
   function hideHand() { hand.classList.remove('on'); }
-  // One tap on tile i: the hand arrives, the tile glows, the word is said (with Sound on).
+  // One tap on tile i: the hand arrives, the tile is pressed in, the word is said (with Sound on).
   function tap(i, who) {
     showHand(i, who);
-    later(function () { glow(i); wordSay(TILES[i][0]); }, reduced() ? 0 : 260);
-    later(function () { hideHand(); unglow(); }, 1000);
+    later(function () { press(i); wordSay(TILES[i][0]); }, reduced() ? 0 : 260);
+    later(function () { hideHand(); unpress(); }, 1000);
   }
   function hop() {
     dibs.classList.remove('s-hop'); void dibs.offsetWidth; dibs.classList.add('s-hop');
@@ -244,7 +244,7 @@
     later(function () { conf.innerHTML = ''; }, 2800);
   }
   function resetCast() {
-    unglow(); hideHand(); conf.innerHTML = '';
+    unpress(); hideHand(); conf.innerHTML = '';
     wk.className = 's-wk'; dibs.classList.remove('s-hop');
   }
 

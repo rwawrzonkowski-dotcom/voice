@@ -87,7 +87,7 @@
     var s = g1, kid = s.d.kid, h = '', fk = null;
     if (s.phase === 'trial') {
       var p = s.pairs[s.t];
-      h += '<p class="g-count">Trial ' + (s.t + 1) + ' of 10 · Picks written down: ' + s.done + '</p>';
+      h += '<p class="g-count">Trial ' + (s.t + 1) + ' of 10. Picks written down: ' + s.done + '</p>';
       h += dots(10, s.t, range(10).map(function (n) { return n < s.t ? 'done' : ''; }));
       if (!s.offered) {
         h += '<div class="g-pair" aria-hidden="true"><div class="g-slot">?</div><div class="g-slot">?</div></div>';
@@ -149,7 +149,7 @@
         (ok ? (top.length > 1 ? 'You put ' + esc(s.d.items[mine].label) + ' first, and it tied for the most picks.' : 'You put ' + esc(s.d.items[mine].label) + ' first, and it was picked the most.')
           : esc(s.d.items[top[0]].label) + (top.length > 1 ? ' (and one more) was' : ' was') + ' picked the most, ' + max + ' of 4 times.') +
         ' The item picked most is the best first reward to try.</p>' +
-        '<p>Like real children, ' + esc(kid) + ' sometimes picks the other item, so the picks can differ a little from the hidden order.</p>' +
+        '<p>Like children, ' + esc(kid) + ' sometimes picks the other item, so the picks can differ a little from the hidden order.</p>' +
         '<p><strong>Favorites change.</strong> Do a quick check often, like before a session or once a day.' +
         (isSchool() ? ' You offered two items at a time and wrote down each pick (paired-stimulus preference assessment).' : '') + '</p>';
       draw('favorite', h, fk);
@@ -212,56 +212,61 @@
     'The item came after the behavior.',
     'Nothing changed around the child, so the behavior seems to feel good by itself.'
   ];
+  var PLACE = {
+    home: ['home.svg', 'home'], store: ['grocery-store.svg', 'store'], bath: ['bath.svg', 'bath'], barber: ['haircut.svg', 'barber'],
+    kitchen: ['kitchen.svg', 'kitchen'], friend: ['friends-house.svg', 'friend’s house'], living: ['living-room.svg', 'living room'],
+    car: ['car.svg', 'car'], classroom: ['classroom.svg', 'classroom'], bus: ['bus.svg', 'bus'], hallway: ['hallway.svg', 'hallway'], lunch: ['lunch.svg', 'lunch']
+  };
   var G2D = {
     parent: [
-      { a: 0, s: 'Dad is on the phone, and Mia is playing alone in her room. She yells, “Dad! Dad! Dad!” over and over. Dad hangs up, comes in, and talks with her about her drawing.',
+      { a: 0, p: 'home', s: 'Dad is on the phone, and Mia is playing alone in her room. She yells, “Dad! Dad! Dad!” over and over. Dad hangs up, comes in, and talks with her about her drawing.',
         w: 'After she yelled, Dad came in and talked with her.',
         h: 'Teach a way to ask for attention, like tapping “look” or saying “come here,” and give lots of attention when things are going well.' },
-      { a: 0, s: 'In the grocery store, Mom stops to chat with a neighbor. Leo drops to the floor and rolls back and forth. Mom turns, kneels down, and talks quietly to him.',
+      { a: 0, p: 'store', s: 'In the grocery store, Mom stops to chat with a neighbor. Leo drops to the floor and rolls back and forth. Mom turns, kneels down, and talks quietly to him.',
         w: 'Mom was talking with the neighbor. After Leo dropped to the floor, she turned and talked to him.',
         h: 'Teach a quick way to ask for Mom’s attention, like a gentle tap on her arm, and give him small bits of attention while you chat.' },
-      { a: 1, s: 'Dad says, “Time to wash your hair.” Noah screams and pushes the cup away. Dad says, “Okay, all done,” and lifts him out of the tub.',
+      { a: 1, p: 'bath', s: 'Dad says, “Time to wash your hair.” Noah screams and pushes the cup away. Dad says, “Okay, all done,” and lifts him out of the tub.',
         w: 'Hair washing was the hard part. After Noah screamed, Dad ended it.',
         h: 'Teach a way to ask for a break or for help, like tapping “stop” or “help,” and make the hard part smaller, like one cup of water at a time with a song.' },
-      { a: 1, s: 'At the barber, Ava is asked to sit still for her haircut. She cries and slides down out of the chair. The barber says, “Okay, we’ll stop,” and Ava walks away from the chair.',
+      { a: 1, p: 'barber', s: 'At the barber, Ava is asked to sit still for her haircut. She cries and slides down out of the chair. The barber says, “Okay, we’ll stop,” and Ava walks away from the chair.',
         w: 'Sitting for the haircut was the hard part. After Ava slid out of the chair, it stopped.',
         h: 'Teach a way to ask for a short break, like tapping “all done,” and practice short pretend haircuts at home with something fun right after.' },
-      { a: 2, s: 'Eli sees the cookie jar on the counter. Mom says, “Cookies are for after dinner.” Eli throws himself on the floor and screams, and Mom says, “Okay, one cookie,” and hands him one.',
+      { a: 2, p: 'kitchen', s: 'Eli sees the cookie jar on the counter. Mom says, “Cookies are for after dinner.” Eli throws himself on the floor and screams, and Mom says, “Okay, one cookie,” and hands him one.',
         w: 'Eli wanted the cookie. After he screamed, he got it.',
         h: 'Teach a way to ask for it, like saying or tapping “want cookie,” and show when it will be ready, like a card that says “after dinner.”' },
-      { a: 2, s: 'At a playdate, Lily wants the red truck, but her cousin is playing with it. Lily grabs it out of her cousin’s hands. Her cousin lets go, and Lily drives the truck across the floor.',
+      { a: 2, p: 'friend', s: 'At a playdate, Lily wants the red truck, but her cousin is playing with it. Lily grabs it out of her cousin’s hands. Her cousin lets go, and Lily drives the truck across the floor.',
         w: 'Lily wanted the truck. After she grabbed it, she had it.',
         h: 'Teach a way to ask for a turn, like saying or tapping “my turn,” and help the kids take turns with a timer.' },
-      { a: 3, s: 'Zoe sits on the couch alone, and no one is asking her for anything. She rubs the soft fringe of her blanket against her cheek for a long time. No one comes over, and nothing is given or taken away.',
+      { a: 3, p: 'living', s: 'Zoe sits on the couch alone, and no one is asking her for anything. She rubs the soft fringe of her blanket against her cheek for a long time. No one comes over, and nothing is given or taken away.',
         w: 'No one came over, and nothing was given or taken away. Zoe does it even when she is alone.',
         h: 'If it isn’t hurting her or getting in the way, it may not need to change. Keep soft things she likes nearby, and talk with her doctor if a behavior is new or causes harm.' },
-      { a: 3, s: 'On a long car ride, Ben taps his fingers fast on the window and hums. He does this on most drives, even when Mom is quiet and no one is talking to him. Nothing is given or taken away when he does it.',
+      { a: 3, p: 'car', s: 'On a long car ride, Ben taps his fingers fast on the window and hums. He does this on most drives, even when Mom is quiet and no one is talking to him. Nothing is given or taken away when he does it.',
         w: 'No one reacted, and nothing was given or taken away. It keeps going when no one is paying attention.',
         h: 'If it isn’t getting in the way, it may not need to change. Bring things he can tap, touch or listen to in the car.' }
     ],
     school: [
-      { a: 0, s: 'The teacher is helping another group while Carlos works at his desk. He calls out, “Ms. Lee! Ms. Lee!” and bangs his pencil on the desk. Ms. Lee walks over and says, “Carlos, I see you. What do you need?”',
+      { a: 0, p: 'classroom', s: 'The teacher is helping another group while Carlos works at his desk. He calls out, “Ms. Lee! Ms. Lee!” and bangs his pencil on the desk. Ms. Lee walks over and says, “Carlos, I see you. What do you need?”',
         w: 'After Carlos called out and banged his pencil, the teacher came over and talked with him.',
         h: 'Teach a way to get the teacher’s attention, like raising a hand or tapping “look,” and visit his desk often when he is working well.' },
-      { a: 0, s: 'On the bus, Priya sits alone while the other students talk with each other. She tosses her hat onto the seat in front of her. A classmate turns around, laughs, and says, “Hey! Give it back!”',
+      { a: 0, p: 'bus', s: 'On the bus, Priya sits alone while the other students talk with each other. She tosses her hat onto the seat in front of her. A classmate turns around, laughs, and says, “Hey! Give it back!”',
         w: 'Priya was not part of the talking. After she tossed her hat, a classmate turned around and talked to her.',
         h: 'Teach a friendly way to join in, like saying or tapping “hi,” and set up a buddy to chat with her on the ride.' },
-      { a: 1, s: 'In math, Owen is handed a worksheet of long division. He puts his head on the desk and pushes the paper onto the floor. The aide picks up the worksheet and says, “Okay, we’ll skip it for now.”',
+      { a: 1, p: 'classroom', s: 'In math, Owen is handed a worksheet of long division. He puts his head on the desk and pushes the paper onto the floor. The aide picks up the worksheet and says, “Okay, we’ll skip it for now.”',
         w: 'The worksheet was the hard part. After Owen put his head down and pushed it away, it was taken away.',
         h: 'Teach a way to ask for help or a break, like tapping “help” or “break,” and make the work smaller or easier at first so he can succeed.' },
-      { a: 1, s: 'The class lines up in the hallway to walk to an assembly. Hana sits down on the floor and will not move. The teacher says, “Okay, you can go back to class,” and the others walk on without her.',
+      { a: 1, p: 'hallway', s: 'The class lines up in the hallway to walk to an assembly. Hana sits down on the floor and will not move. The teacher says, “Okay, you can go back to class,” and the others walk on without her.',
         w: 'Going to the assembly was the hard part. After Hana sat down and would not move, she did not have to go.',
         h: 'Teach a way to say “no” or ask for a break, like tapping “stop” or “break,” and get her ready ahead of time with a picture preview of the assembly.' },
-      { a: 2, s: 'In the lunch line, Marcus asks for chocolate milk, but the worker says, “That kind is all gone.” Marcus yells and kicks the table leg. The worker finds one more carton in the back and hands it to him.',
+      { a: 2, p: 'lunch', s: 'In the lunch line, Marcus asks for chocolate milk, but the worker says, “That kind is all gone.” Marcus yells and kicks the table leg. The worker finds one more carton in the back and hands it to him.',
         w: 'Marcus wanted the chocolate milk. After he yelled and kicked, he got it.',
         h: 'Teach a calm way to ask for what he wants and to handle “all gone,” like tapping “want” and then choosing from what is left.' },
-      { a: 2, s: 'Ruby is told to wait her turn on the class computer. She grabs the mouse out of her classmate’s hand. The teacher moves the classmate over, and Ruby takes over the computer.',
+      { a: 2, p: 'classroom', s: 'Ruby is told to wait her turn on the class computer. She grabs the mouse out of her classmate’s hand. The teacher moves the classmate over, and Ruby takes over the computer.',
         w: 'Ruby wanted the computer. After she grabbed the mouse, she got to use it.',
         h: 'Teach a way to ask for a turn, like saying or tapping “my turn,” and use a visual timer so she can see when her turn is coming.' },
-      { a: 3, s: 'Felix has finished his work and sits at a back table with nothing to do. He rubs the corner of his book against his lips again and again. No one comes over, and nothing is given or taken away.',
+      { a: 3, p: 'classroom', s: 'Felix has finished his work and sits at a back table with nothing to do. He rubs the corner of his book against his lips again and again. No one comes over, and nothing is given or taken away.',
         w: 'No one reacted, and nothing was given or taken away. Felix does it by himself when nothing else is going on.',
         h: 'Offer other things to do with his hands and mouth, like a safe chew tool, and give him something fun to do when he finishes early.' },
-      { a: 3, s: 'Nadia waits at her locker while the hallway is empty. She flicks her fingers in front of her eyes and watches the light through them. No one is around, and nothing changes when she does it.',
+      { a: 3, p: 'hallway', s: 'Nadia waits at her locker while the hallway is empty. She flicks her fingers in front of her eyes and watches the light through them. No one is around, and nothing changes when she does it.',
         w: 'No one was there, and nothing changed. It happens even when no one can react.',
         h: 'If it isn’t hurting her or getting in the way, it may not need to change. If it does get in the way of learning, or it is new, share it with her team.' }
     ]
@@ -287,9 +292,10 @@
       return;
     }
     var answered = s.ans >= 0;
-    h += '<p class="g-count">Story ' + (s.i + 1) + ' of 8 · Correct so far: ' + s.score + '</p>';
+    h += '<p class="g-count">Story ' + (s.i + 1) + ' of 8. Correct so far: ' + s.score + '</p>';
     h += dots(8, s.i, s.marks);
-    h += '<div class="g-story"><p>' + esc(cur.s) + '</p></div>';
+    var pl = PLACE[cur.p] || ['places.svg', 'place'];
+    h += '<div class="g-story"><span class="g-where"><img src="img/symbols/' + pl[0] + '" alt="" width="40" height="40"><span>' + esc(pl[1]) + '</span></span><p>' + esc(cur.s) + '</p></div>';
     h += '<p class="g-q" id="g-why-q">Why did the child do it? Pick the best answer.</p>';
     h += '<ul class="g-opts" aria-labelledby="g-why-q">' + FN.map(function (f, i) {
       var cls = '', tag = '';
@@ -336,7 +342,7 @@
             bad: [['See how dinners feel this month.', 'A feeling is not a count. Two people could feel differently.'], ['Count every word Sam says all day.', 'That counts more than your goal. Count only the thing in your goal.']] },
           { q: 'Is that a reasonable next step from where Sam is now?', good: 'On at least 4 of 5 chances.', yes: 'It is more than Sam does now, but not a giant jump.',
             bad: [['On all 5 chances, every dinner, starting tomorrow.', 'That is a big jump from 2 of 5. Smaller steps are easier to win.'], ['On at least 2 of 5 chances.', 'Sam already does that. A goal should be a little more than now.']] },
-          { q: 'Why does this matter in Sam’s day?', good: 'Asking for what he wants at dinner makes meals smoother and gives Sam a way to be heard.', yes: 'It helps Sam in a real moment of his day.',
+          { q: 'Why does this matter in Sam’s day?', good: 'Asking for what he wants at dinner makes meals smoother and gives Sam a way to be heard.', yes: 'It helps Sam during his day.',
             bad: [['Because a skills chart says so.', 'A chart can help, but the goal should matter in Sam’s own day.'], ['Because the neighbor’s child can do it.', 'Compare Sam to Sam, not to other children.']] },
           { q: 'By when?', good: 'By March 1, for 3 dinners in a row.', yes: 'A date and a clear finish line tell you when to check.',
             bad: [['Someday soon.', 'Without a date, no one knows when to check.'], ['By tomorrow night.', 'That is too quick to learn something new. Pick a date far enough to practice.']] }
@@ -349,9 +355,9 @@
             bad: [['Be more talkative.', 'That is hard to see, and it means different things to different people. Name the exact talking.'], ['Say every word clearly.', '“Clearly” depends on who is listening, and tapping a talker counts too. Name the exact words or taps.']] },
           { q: 'How will you count it?', good: 'After each snack, make a tally mark: did Sam use 2 words together, yes or no?', yes: 'A quick yes or no after each snack is easy to keep up.',
             bad: [['Count all the words Sam says in a day.', 'That is a lot to count and it is more than your goal. Count only the talking in your goal.'], ['Guess at the end of the week.', 'A guess forgets things. Write it down right after each snack.']] },
-          { q: 'Is that a reasonable next step from where Sam is now?', good: 'At least 5 of 10 snack times.', yes: 'It is a real step up from 1 of 10, and still reachable.',
+          { q: 'Is that a reasonable next step from where Sam is now?', good: 'At least 5 of 10 snack times.', yes: 'It is a step up from 1 of 10, and still reachable.',
             bad: [['Every snack time, from now on.', 'That is a big jump from 1 of 10. Smaller steps are easier to win.'], ['At 1 of 10 snack times.', 'Sam already does that. A goal should be a little more than now.']] },
-          { q: 'Why does this matter in Sam’s day?', good: 'Using more words helps Sam get what he wants and be understood by family and friends.', yes: 'It helps Sam be understood in a real moment of his day.',
+          { q: 'Why does this matter in Sam’s day?', good: 'Using more words helps Sam get what he wants and be understood by family and friends.', yes: 'It helps Sam be understood during his day.',
             bad: [['Because other kids his age use longer sentences.', 'Compare Sam to Sam, not to other children.'], ['Because it would be nice.', 'That is too vague. Say how it helps Sam’s day.']] },
           { q: 'By when?', good: 'By January 31, two weeks in a row.', yes: 'A date and a time to keep it up tell you when to check.',
             bad: [['Whenever he is ready.', 'Without a date, no one knows when to check.'], ['By the end of today.', 'That is too quick to learn something new. Pick a date far enough to practice.']] }
@@ -366,7 +372,7 @@
             bad: [['Notice if mornings feel easier.', 'A feeling is not a count. Write down what you see.'], ['Ask a friend if Sam seems more independent.', 'Someone else’s opinion is not a count. Count what you see.']] },
           { q: 'Is that a reasonable next step from where Sam is now?', good: 'On at least 4 of 5 mornings.', yes: 'It is more than Sam does now, but not a giant jump.',
             bad: [['On all 5 mornings, with no reminders at all.', 'That is a big jump from 2 of 5. Smaller steps are easier to win.'], ['On at least 2 of 5 mornings.', 'Sam already does that. A goal should be a little more than now.']] },
-          { q: 'Why does this matter in Sam’s day?', good: 'Dressing on his own makes busy mornings smoother and helps Sam feel proud and in charge.', yes: 'It helps Sam in a real part of his day.',
+          { q: 'Why does this matter in Sam’s day?', good: 'Dressing on his own makes busy mornings smoother and helps Sam feel proud and in charge.', yes: 'It helps Sam in a part of his day.',
             bad: [['Because his cousin already does it.', 'Compare Sam to Sam, not to other children.'], ['Because it would make mornings easier for the adults.', 'That may be a bonus, but the goal should matter to Sam too.']] },
           { q: 'By when?', good: 'By February 15, for 2 weeks in a row.', yes: 'A date and a clear finish line tell you when to check.',
             bad: [['Eventually.', 'Without a date, no one knows when to check.'], ['By tomorrow morning.', 'That is too quick to learn something new. Pick a date far enough to practice.']] }
@@ -381,9 +387,9 @@
             bad: [['Follow all directions.', '“All directions” is too broad. Name one kind of direction in one setting.'], ['Be more compliant.', '“Compliant” is a label, not something you can see. Describe what Jordan does.']] },
           { q: 'How will you measure it?', good: 'For each direction, mark yes or no on a teacher data sheet: did Jordan begin within 1 minute?', yes: 'Each opportunity is counted the same way every time.',
             bad: [['The teacher’s overall impression at the end of the term.', 'An impression is not a count. Measure each opportunity.'], ['Count how many times the direction had to be repeated.', 'Repeats are worth noting, but they do not show whether Jordan began within a set time.']] },
-          { q: 'Is that a reasonable next step from where Jordan is now?', good: 'In 4 of 5 opportunities.', yes: 'It is a real step up from 2 of 5 without being a giant jump.',
+          { q: 'Is that a reasonable next step from where Jordan is now?', good: 'In 4 of 5 opportunities.', yes: 'It is a step up from 2 of 5 without being a giant jump.',
             bad: [['In 5 of 5 opportunities, every day, starting next week.', 'That is a big jump from 2 of 5. Smaller steps are easier to win.'], ['In 2 of 5 opportunities.', 'Jordan already does that. A goal should be a little more than now.']] },
-          { q: 'Why does this matter in Jordan’s day?', good: 'Starting work quickly lets Jordan finish more of his math, keep up with class, and show what he knows.', yes: 'It connects to Jordan’s real school day.',
+          { q: 'Why does this matter in Jordan’s day?', good: 'Starting work quickly lets Jordan finish more of his math, keep up with class, and show what he knows.', yes: 'It connects to Jordan’s school day.',
             bad: [['Because the plan needs another goal on the page.', 'A goal belongs there because it helps the student, not to fill a page.'], ['Because the other students do it.', 'Compare Jordan to Jordan’s own past, not to classmates.']] },
           { q: 'By when?', good: 'By the end of the second grading period, across 3 consecutive data days.', yes: 'A date and a way to confirm it tell the team when to check.',
             bad: [['Sometime this year.', 'Without a date, no one knows when to check.'], ['By Friday.', 'That is too quick to learn something new. Pick a date far enough to teach.']] }
@@ -396,9 +402,9 @@
             bad: [['Communicate more with others.', 'That is too broad. Pick one clear message in one setting.'], ['Speak in complete sentences.', 'That leaves out students who use signs, pictures or a talker. Any way of communicating counts.']] },
           { q: 'How will you measure it?', good: 'Each time the task gets hard, mark yes or no on the staff data sheet: did Jordan ask for help?', yes: 'Every opportunity is counted, in any form of communication.',
             bad: [['Ask staff if he seems to communicate better.', 'An impression is not a count. Measure each opportunity.'], ['Count only the words Jordan says out loud.', 'That leaves out signs, pictures and talker taps. Count every way he communicates.']] },
-          { q: 'Is that a reasonable next step from where Jordan is now?', good: 'On at least 6 of 10 opportunities.', yes: 'It is a real step up from 1 of 10 without being a giant jump.',
+          { q: 'Is that a reasonable next step from where Jordan is now?', good: 'On at least 6 of 10 opportunities.', yes: 'It is a step up from 1 of 10 without being a giant jump.',
             bad: [['On 10 of 10 opportunities, starting next week.', 'That is a big jump from 1 of 10. Smaller steps are easier to win.'], ['On 1 of 10 opportunities.', 'Jordan already does that. A goal should be a little more than now.']] },
-          { q: 'Why does this matter in Jordan’s day?', good: 'Asking for help lets Jordan get unstuck, stay in class, and rely less on adults guessing what he needs.', yes: 'It connects to Jordan’s real school day.',
+          { q: 'Why does this matter in Jordan’s day?', good: 'Asking for help lets Jordan get unstuck, stay in class, and rely less on adults guessing what he needs.', yes: 'It connects to Jordan’s school day.',
             bad: [['Because speech goals are common.', 'A goal should fit this student’s day, not what is common.'], ['Because the teacher wants a quieter room.', 'The goal should help Jordan, not only the room.']] },
           { q: 'By when?', good: 'By the end of the school year, across 3 consecutive data days.', yes: 'A date and a way to confirm it tell the team when to check.',
             bad: [['At some point.', 'Without a date, no one knows when to check.'], ['By next week.', 'That is too quick to learn something new. Pick a date far enough to teach.']] }
@@ -411,9 +417,9 @@
             bad: [['Pay attention more.', '“Pay attention” can’t be seen. Describe what on-task looks like.'], ['Not get distracted.', 'This says what NOT to do. Say what Jordan will do.']] },
           { q: 'How will you measure it?', good: 'Use a timer and a data sheet. Write how many minutes in a row Jordan kept working in each session.', yes: 'Minutes in a row is clear and easy to compare.',
             bad: [['The teacher’s feeling about how he is doing.', 'A feeling is not a count. Measure what you see.'], ['Count how many times he looks away.', 'That counts the problem, not the goal. Measure how long he works.']] },
-          { q: 'Is that a reasonable next step from where Jordan is now?', good: '5 minutes in a row, in 4 of 5 sessions.', yes: 'It is a real step up from 2 minutes without being a giant jump.',
+          { q: 'Is that a reasonable next step from where Jordan is now?', good: '5 minutes in a row, in 4 of 5 sessions.', yes: 'It is a step up from 2 minutes without being a giant jump.',
             bad: [['20 minutes in a row, starting next week.', 'That is a big jump from 2 minutes. Smaller steps are easier to win.'], ['2 minutes in a row.', 'Jordan already does that. A goal should be a little more than now.']] },
-          { q: 'Why does this matter in Jordan’s day?', good: 'Staying with his work gives Jordan time to finish assignments and learn the lesson.', yes: 'It connects to Jordan’s real school day.',
+          { q: 'Why does this matter in Jordan’s day?', good: 'Staying with his work gives Jordan time to finish assignments and learn the lesson.', yes: 'It connects to Jordan’s school day.',
             bad: [['Because teachers like quiet students.', 'The goal should help Jordan, not only the adults.'], ['Because the class is moving ahead.', 'Compare Jordan to Jordan’s own past, not to the class.']] },
           { q: 'By when?', good: 'By the end of the third grading period, across 2 consecutive weeks.', yes: 'A date and a way to confirm it tell the team when to check.',
             bad: [['Sometime later.', 'Without a date, no one knows when to check.'], ['By tomorrow.', 'That is too quick to learn something new. Pick a date far enough to teach.']] }

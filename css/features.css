@@ -115,7 +115,7 @@ button.f-c{cursor:pointer}
 .f-twbar .f-chip{font-size:18px;min-height:40px}
 .f-twmood{display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 3px;border-radius:999px;background:#fff;box-shadow:0 0 0 1.5px var(--accent);font-size:13px;font-weight:800;color:var(--accent)}
 .f-twmood img{width:24px;height:24px}
-.f-twring{pointer-events:none;position:absolute;left:50%;top:0;width:320px;height:320px;margin-left:-160px;margin-top:-110px;z-index:6;border-radius:50%;background:radial-gradient(circle,rgba(255,253,248,.97) 0 62%,rgba(255,253,248,0) 70%);animation:f-twin .2s ease-out}
+.f-twring{pointer-events:none;position:absolute;left:50%;top:0;width:320px;height:320px;margin-left:-160px;margin-top:-110px;z-index:6;border-radius:50%;background:#fffdf8;box-shadow:0 0 0 2px #e2d8c2;animation:f-twin .2s ease-out}
 @keyframes f-twin{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
 .f-twspot{pointer-events:auto;position:absolute;width:78px;height:78px;margin:-39px 0 0 -39px;border-radius:50%;border:0;padding:0;background:#fff;box-shadow:0 0 0 1px #e6dcc6,0 8px 16px -10px rgba(70,50,20,.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;font:inherit;color:var(--ink);touch-action:none;transition:transform .15s,box-shadow .2s}
 .f-twspot img{width:38px;height:38px;pointer-events:none}
@@ -167,7 +167,8 @@ button.f-c{cursor:pointer}
 .f-sbtn .lb{font-size:12px;font-weight:800;color:#111;white-space:nowrap}
 .f-mb{background:#fff;border-radius:10px;padding:6px}
 .f-mb .f-c{box-shadow:none;opacity:.9}
-.f-mb .f-c.glow{opacity:1;box-shadow:0 0 0 4px #fde047,0 0 18px 4px rgba(253,224,71,.9);transition:box-shadow .2s}
+.f-mb .f-c{transition:transform .3s,box-shadow .3s,filter .3s}
+.f-mb .f-c.pressed{opacity:1;transform:translateY(3px);box-shadow:0 0 0 3px #2a2350;filter:brightness(.9)}
 .f-bigbtn{min-height:52px;font-size:18px}
 
 /* build a board */
@@ -180,7 +181,7 @@ button.f-c{cursor:pointer}
 .f-bbwrap{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start}
 .f-bbstage{position:relative;flex:1.5 1 440px;min-width:0;border-radius:16px;padding:10px;transition:background-color .4s}
 .f-bbbar{display:flex;align-items:center;gap:6px;min-height:50px;padding:6px 8px;border-radius:10px;margin-bottom:8px;transition:background-color .4s,box-shadow .3s}
-.f-bbbar.glowing{box-shadow:0 0 0 3px #fde047,0 0 22px 6px rgba(253,224,71,.75)}
+.f-bbbar.glowing{box-shadow:0 0 0 3px #fde047,0 6px 0 3px #b89b00}
 .f-bbmsg{flex:1;display:flex;flex-wrap:wrap;gap:5px;align-items:center;min-width:0}
 .f-bbchip{display:inline-flex;align-items:center;min-height:34px;padding:0 10px;border-radius:7px;font-weight:700;font-size:16px;transition:background-color .2s}
 .f-bbshow{min-height:44px;min-width:44px;padding:0 12px;border-radius:8px;border:2px solid currentColor;background:transparent;color:inherit;font:inherit;font-weight:800;cursor:pointer}
@@ -289,7 +290,7 @@ button.f-c{cursor:pointer}
 }
 @media (prefers-reduced-motion:reduce){
   .f-flash,.f-conf{display:none}
-  .f-owl,.f-dial .arm,.f-meter b,.f-fade .ring,.f-fade img.cr,.f-bbstage,.f-bbbar,.f-bbgrid,.f-bbt,.f-bbt img,.f-bbt span,.f-bbbig,.f-dopt,.f-preset,.f-twspot,.f-twbar,.f-twowl,.f-hcell{transition:none}
+  .f-owl,.f-dial .arm,.f-meter b,.f-fade .ring,.f-fade img.cr,.f-bbstage,.f-bbbar,.f-bbgrid,.f-bbt,.f-bbt img,.f-bbt span,.f-bbbig,.f-dopt,.f-preset,.f-mb .f-c,.f-twspot,.f-twbar,.f-twowl,.f-hcell{transition:none}
   .f-shake,.f-cheer,.f-twring,.f-pop,.f-dogdibs.nope,.f-dogdibs.yum,.f-dogdibs.ruffle{animation:none}
   .f-wk.swoop,.f-wk.leave,.f-wk.swoop .wk-f,.f-wk.leave .wk-f{animation:none}
   .f-wk,.f-wkbub{transition:opacity .12s}

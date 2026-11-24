@@ -35,7 +35,7 @@
   body.v-print-all .v-quick{display:none!important}
 }
 
-/* A real video in a guide (stored with the site; no outside players) */
+/* A video in a guide (stored with the site; no outside players) */
 .v-video{position:relative;margin:12px 0 18px;padding:10px;border-radius:8px;background:var(--paper,#fffdf8);box-shadow:0 14px 26px -20px rgba(70,50,20,.6),0 0 0 1px #ece2cc}
 .v-video .tape{top:-12px;left:24px;margin-left:0}
 .v-video video{display:block;width:100%;height:auto;border-radius:6px;background:#fbf6ea}
