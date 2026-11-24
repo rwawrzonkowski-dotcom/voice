@@ -1,4 +1,4 @@
-// Practice games page: three short games. Nothing is saved, nothing is sent, no network calls.
+// Practice games page: four short games. Nothing is saved, nothing is sent, no network calls.
 // Everything lives in memory and resets when the page closes.
 (function () {
   'use strict';

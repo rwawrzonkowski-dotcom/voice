@@ -2,6 +2,18 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-23: Escape Lower Wacker maze
+
+- Practice games now has a 4th game, "Escape Lower Wacker" (`#maze`, with its own jump link). Dibs is lost on Lower Wacker Drive; the player gets him out with six core-word tiles: up, down, left, right, go and stop. Words practiced: direction words, go and stop.
+- A new maze is made every play (randomized depth-first, always solvable, one entrance on the left, one exit on the right with a drawn hot dog stand awning and an EXIT sign). Three levels in a `.seg`: Upper Wacker 5x5 (daylight, river at the edge), Lower Wacker 7x7 (dim, lamp pools, puddles), Lower Lower Wacker 9x9 (darkest, a few amber lamps, "Yes, it's real."; 8x8 on phones where 9 across would make cells smaller than 36px). Levels 2 and 3 unlock after a win, in the page only; nothing is saved.
+- Tiles: up, down, left, right, go, stop. Direction tiles set the way Dibs faces (a yellow arrow on Dibs shows it). "Go" walks cell by cell (about 180 ms each; with reduced motion Dibs jumps cell to cell, no gliding) until a wall, a crossing (more than two openings), a dead end or the exit. "Stop" halts him at once. A message bar shows the last four words with a Clear button. Moves = word taps (an arrow key or swipe counts as two: direction + go; Space counts as one). No timer.
+- Also: arrow keys (direction + go) and Space (stop) while the maze or a tile has focus; swipe on the maze does the same as an arrow key. Sound switch (off by default) speaks words with the site's on-device voice.
+- Wacker heckles from a girder (never chases or takes anything here): a line at each level start, a rotating line at dead ends, a line on each win. Spoken lower (pitch 0.6) with Sound on. Dibs says "Made it! Hot dog time!" on a win, with a small hop and confetti (none with reduced motion). The win panel shows moves used, Play again and Next level.
+- The live region narrates level start, each move result and the win. Adult tip follows the Parent / School staff switch.
+- New files: `js/maze.js`, `css/maze.css` (loaded on Practice games only). With `?test` in the address, `window.VOICE_MAZE_TEST` shows the maze (for the site's own tests); without it nothing is exposed.
+- New symbols copied unmodified from the V.O.I.C.E. app into `img/symbols/` (sources from the app's `data/image-sources.json`, all CC BY-SA 4.0): `down.svg` (Mulberry), `left.svg` (Mulberry), `right.svg` (Mulberry). Already on the site: `up.svg` (Mulberry), `go.svg` (Mulberry), `stop.svg` (OpenMoji, 1F6D1 stop sign). Tile colors follow the app: up/down/left/right blue (place), go green (action), stop pink (social).
+- Practice games page text now says "four" games. All CSS and JS links now use `?v=20261123c` (404.html too).
+
 ## 2026-11-23: Dibs's First Day story
 
 - Get started now opens with "Dibs's First Day", a tap-through story in six short scenes. Sam gets a talker; the visitor chooses what the grown-up does (start with six words, show don't test, treat every tap as talking, make "stop" work, show "help" before helping). Wrong choices get a gentle "Not quite" and stay visible but marked; the right one makes Dibs hop and shows a reason.
