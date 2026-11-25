@@ -2,6 +2,10 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-25: Photo Mode as a claude.ai artifact
+
+- Photo mode also runs as a private claude.ai artifact (a copy of `photo-mode/` with fonts beside it). Inside an artifact the page cannot start downloads, so `js/ui.js` now saves photos and scene files through the viewer's downloads capability when it is there; everywhere else it downloads as before. The offline cache and home-screen install only work from the published site.
+
 ## 2026-11-25: Photo Mode round 2 (more characters, emotes, holding, photo backdrops)
 
 - New paper puppets from the V.O.I.C.E. app drawings, used as drawn and only cut into parts to pose: Chance, Hiram, Ivy, Monty and Sue (`photo-mode/art/`, with the drawings' own README). Also a plain Pigeon extra (Dibs's shape with a solid black neck band) and the L in all 8 line colors.

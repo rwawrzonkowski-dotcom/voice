@@ -500,6 +500,7 @@
   }
   UI.closeModals = function () { $('resultModal').hidden = true; $('confirmModal').hidden = true; $('pickModal').hidden = true; confirmCb = null; };
   $('resBack').addEventListener('click', closeResult);
+  $('resDownload').addEventListener('click', function (e) { if (dlApi && resRec) { e.preventDefault(); download(resRec.blob, resRec.name); } });
   $('resShare').addEventListener('click', function () {
     if (!resRec) return;
     navigator.share({ files: [new File([resRec.blob], resRec.name, { type: 'image/png' })], title: 'DIBS photo' }).catch(function () {});
@@ -541,7 +542,14 @@
       $('rollHint').textContent = list.length ? 'Tap a photo to open it again. The last 12 stay on this device.' : 'Your last 12 photos will stay here on this device.';
     });
   }
+  /* Inside a claude.ai artifact the page cannot start downloads itself; the viewer's downloads capability saves instead. */
+  var dlApi = null;
+  try { if (window.claude && window.claude.use) window.claude.use('downloads').then(function (d) { dlApi = d; }, function () {}); } catch (e) { dlApi = null; }
   function download(blob, name) {
+    if (dlApi) {
+      dlApi.save({ filename: name, data: blob }).catch(function (e) { if (!e || e.code !== 'declined') App.msg('The file could not be saved here.'); });
+      return;
+    }
     var url = URL.createObjectURL(blob), a = document.createElement('a');
     a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
