@@ -2,6 +2,34 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-25: Photo Mode as a claude.ai artifact
+
+- Photo mode also runs as a private claude.ai artifact (a copy of `photo-mode/` with fonts beside it). Inside an artifact the page cannot start downloads, so `js/ui.js` now saves photos and scene files through the viewer's downloads capability when it is there; everywhere else it downloads as before. The offline cache and home-screen install only work from the published site.
+
+## 2026-11-25: Photo Mode round 2 (more characters, emotes, holding, photo backdrops)
+
+- New paper puppets from the V.O.I.C.E. app drawings, used as drawn and only cut into parts to pose: Chance, Hiram, Ivy, Monty and Sue (`photo-mode/art/`, with the drawings' own README). Also a plain Pigeon extra (Dibs's shape with a solid black neck band) and the L in all 8 line colors.
+- Dibs's neck band in photo mode follows the Chicago flag (white, light blue stripes, red six-pointed stars). The site's `img/dibs/` drawings are unchanged.
+- The redrawn Dibs eye expressions (happy, wink) are removed so every drawing stays as made. Old saved scenes still load.
+- Emotes for every character: 12 pop-up paper emotes above the head, plus body moves (Bounce, Tilt, Lean in, Shiver, Slump).
+- Holding and wearing: any prop, symbol or uploaded image can be held in a hand or wing and moves with the pose ("Give to", "Let go"). Costumes (two caps, horns, scarf, hockey stick, football) snap to the head, neck or hand of each critter.
+- Photo backdrop: take a picture with the phone camera or choose one. Size, position, distance, flat-on-floor, and floor modes (Paper, Photo only with shadows on the photo, Hidden). Saved with the scene.
+- Height off the ground is at the top of every selected item (0 to 8) with a drag handle in the scene; raised items drop their paper stand and can hang on a stick or a string.
+- 3D speech bubbles: Speech, Thought, Shout and Sign cutouts with editable text, color and tail. The flat sticker bubbles stay.
+- Offline cache is now `dibs-photo-mode-v2`. NOTICE.md lists the new drawings (CC BY-SA 4.0, credit "Richard Wawrzonkowski, V.O.I.C.E.").
+
+## 2026-11-25: DIBS Photo Mode (social media tool)
+
+- New `photo-mode/` tool, not linked from the site menu, `noindex`. Build a 3D paper diorama and take pictures for Instagram, Threads, TikTok, YouTube and X posts and covers.
+- Characters stand as die-cut paper cutouts with a white paper edge, a folded stand and cast shadows. Dibs (six body colors) and Wacker are paper puppets with nine poses (Stand, Wave, Shrug, Proud, Peek, Hop, Look, Point and more) plus sliders for head, wings, lean, hop and expression. Dibs on the L, Wacker flying, all word symbols and your own uploaded images can be added as props.
+- Six layered cut-paper sets: Paper sweep, Chicago skyline, L platform, Lower Wacker, Hot dog stand, Chicago River.
+- Camera: orbit or fly (drag, pinch, keys, on-screen joystick on phones), focal length 14 to 200 mm, aperture f/1.4 to f/22 with depth of field, tap to focus, roll, exposure, thirds grid.
+- Light presets (Morning, Noon, Golden hour, Blue hour, Lower Wacker night, Studio), sun direction, warmth, fill, shadow edge and a spotlight. Look filters (Warm, Cool, Newsprint, B&W, Faded film, Chicago night, Pop), vignette and paper grain.
+- Stickers (speech and thought bubbles, labels, tape, symbols, uploads) and seven paper frames. Aspect ratios with export sizes per platform, safe-area guides for 9:16, circle guides for profile pictures.
+- Take photo makes a PNG at the platform size (1x or 2x) with Download and Share. Scenes autosave on the device; named scenes, a photo roll and `.dibsscene.json` export and import.
+- Works offline: opens from a folder with no internet, and on the published site a service worker (`photo-mode/sw.js`, cache `dibs-photo-mode-v1`; bump it when files change) caches everything after one visit. Can be added to a phone home screen (`manifest.webmanifest`).
+- three.js r170 (MIT) bundled locally in `photo-mode/vendor/`; NOTICE.md updated. Built-in art is packed into `photo-mode/js/assets.js` by `photo-mode/tools/build-assets.js` (re-run it after changing `img/dibs`, `img/wacker` or `img/symbols`).
+
 ## 2026-11-24: Menu, progress, Features start, guide shelf, faster loading
 
 - Menu has five items: Get started, Features, Learn (Videos and guides, Questions, Practice games), For clinicians, and the Open V.O.I.C.E. button last. About and Privacy moved to the footer (pages and addresses unchanged). Learn is a disclosure button (`aria-expanded`, `aria-controls`): click or Enter opens a small panel, Escape closes it and returns focus to the button, Tab out or a click elsewhere closes it. Pages inside Learn get `aria-current="page"` and the Learn button gets `aria-current="true"`. On phones (820px and narrower) the bar is one row: logo (icon only at 440px and narrower), the hidden-word egg slot, Open V.O.I.C.E. and a Menu button that opens a full-width paper panel; Learn's three pages sit indented inside it. `js/site.js` moves the panel after the Menu button in the page order on phones so Tab order matches the look. 404.html still uses `data-root`. No-JavaScript nav fallbacks updated on every page; the no-JavaScript footer now lists About and Privacy.
