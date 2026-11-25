@@ -12,6 +12,13 @@
       return '<button type="button" class="dot" aria-label="Step ' + (i + 1) + '">' + (i + 1) + '</button>';
     }).join('') + '</div>' +
     '<button type="button" class="btn solid" id="st-next">Next</button>';
+  // "Step 2 of 5" at the top of every step, plus a polite announcement for screen readers when the step changes.
+  steps.forEach(function (s, i) {
+    var p = document.createElement('p'); p.className = 'step-of'; p.textContent = 'Step ' + (i + 1) + ' of ' + steps.length;
+    s.insertBefore(p, s.firstChild);
+  });
+  var live = document.createElement('p'); live.className = 'sr'; live.id = 'st-live'; live.setAttribute('role', 'status'); live.setAttribute('aria-live', 'polite');
+  nav.parentNode.insertBefore(live, nav);
   var back = document.getElementById('st-back'), next = document.getElementById('st-next');
   var dots = nav.querySelectorAll('.dot');
   var all = document.getElementById('st-all');
@@ -23,6 +30,7 @@
     nav.hidden = showAll;
     if (all) { all.firstChild.textContent = showAll ? 'Show one step at a time' : 'Show all steps on one page'; all.classList.toggle('on', showAll); }
     if (focus) {
+      live.textContent = 'Step ' + (cur + 1) + ' of ' + steps.length + ': ' + steps[cur].querySelector('h2').textContent;
       var h = steps[cur].querySelector('h2'); h.tabIndex = -1; h.focus({ preventScroll: true });
       steps[cur].scrollIntoView({ block: 'start' });
       try { history.replaceState(null, '', '#step-' + (cur + 1)); } catch (e) {}

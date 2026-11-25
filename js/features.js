@@ -951,4 +951,13 @@ var SCENE = "<rect x=\"0\" y=\"0\" width=\"900\" height=\"370\" fill=\"#f6efe0\"
   });
 
   for (var n = 1; n <= 16; n++) draw(n);
+
+  // A link to a figure or a section opens the folded section that holds it, then scrolls there.
+  function openForHash() {
+    var id = decodeURIComponent((location.hash || '').slice(1));
+    var t = id && document.getElementById(id);
+    var d = t && t.closest && t.closest('details');
+    if (d && !d.open) { d.open = true; t.scrollIntoView(); }
+  }
+  openForHash(); window.addEventListener('hashchange', openForHash);
 })();

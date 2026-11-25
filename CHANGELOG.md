@@ -2,6 +2,17 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-24: Menu, progress, Features start, guide shelf, faster loading
+
+- Menu has five items: Get started, Features, Learn (Videos and guides, Questions, Practice games), For clinicians, and the Open V.O.I.C.E. button last. About and Privacy moved to the footer (pages and addresses unchanged). Learn is a disclosure button (`aria-expanded`, `aria-controls`): click or Enter opens a small panel, Escape closes it and returns focus to the button, Tab out or a click elsewhere closes it. Pages inside Learn get `aria-current="page"` and the Learn button gets `aria-current="true"`. On phones (820px and narrower) the bar is one row: logo (icon only at 440px and narrower), the hidden-word egg slot, Open V.O.I.C.E. and a Menu button that opens a full-width paper panel; Learn's three pages sit indented inside it. `js/site.js` moves the panel after the Menu button in the page order on phones so Tab order matches the look. 404.html still uses `data-root`. No-JavaScript nav fallbacks updated on every page; the no-JavaScript footer now lists About and Privacy.
+- Mini scenes: six small inline SVG drawings in `js/site.js` (Dibs beside an iPad, a board of four tiles, a film strip, a speech bubble with a question mark, a maze corner with a hot dog stand awning, a clipboard with a data sheet). Hidden from screen readers. They show in the phone menu panel and the desktop Learn panel; the desktop bar stays clean.
+- Time labels as plain text under titles: Dibs's First Day (About 2 minutes.), Find the favorite (3), Why did that happen? (5), Build a goal (4), Escape Lower Wacker (A few minutes per level.), and each guide video, read from the files with ffprobe (all rounded to 1 minute: 46 to 60 seconds). The First Day intro no longer says "two-minute".
+- Get started: each step starts with "Step N of 5"; a polite status line announces the step and its title when it changes. Step dots stay.
+- Features: new "Start with these" section with four demos first (board grows, hold dial, say it with feeling, scene maker). The other twelve stay under their section headings, each folded behind a `details` disclosure showing the title, one plain line and the number of examples (Show and Hide). Opening one leaves the others alone. Jump links and `#figN` links open the right section. Visible "Figure N" labels removed (internal ids and `data-fig` numbers unchanged); the heat map text names the demos instead of numbers. The "Scenes" section is gone because its only demo moved to the top. The Teaching and Adults hidden-word eggs now sit inside their folded sections. Privacy page no longer says "Figure 15".
+- Videos and guides: the "Videos are coming" box is gone. New "Pick a guide" shelf of 11 poster cards (title and length) with CSS scroll-snap, Previous and Next buttons, mouse drag, and Tab through the cards; a card jumps to its guide below (the full guides are unchanged). Smooth scrolling is off with reduced motion.
+- Faster on phones: every video is `preload="none"` with its poster; static images below the first screen use `loading="lazy" decoding="async"`.
+- All CSS and JS links now use `?v=20261124a` (404.html too).
+
 ## 2026-11-23: Style cleanup (fewer dots, no glows, no left borders, no 'real')
 
 Follows Richard's list of overused "AI design" tells.

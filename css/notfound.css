@@ -14,3 +14,4 @@
 @keyframes nf-look{0%,100%{transform:rotate(-8deg) translateX(0)}30%{transform:rotate(8deg) translateX(8px)}65%{transform:rotate(-12deg) translateX(-6px)}}
 @media (prefers-reduced-motion:reduce){.nf-dibs img{animation:none}}
 @media (max-width:420px){.nf-wacker img{width:96px;height:96px}.nf-bubble{margin-bottom:40px}}
+@media (max-width:640px){.nf .p-sec{transform:none}}
