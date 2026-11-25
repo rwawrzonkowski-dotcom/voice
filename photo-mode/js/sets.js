@@ -333,7 +333,8 @@
 
   SETS.sweep = { name: 'Paper sweep', sky: '#fbf6ea', floor: '#fbf6ea', cyc: true, layers: function () { return []; } };
 
-  DP.SET_LIST = ['sweep', 'skyline', 'lplatform', 'wacker', 'hotdog', 'river'];
+  SETS.photo = { name: 'Your photo', sky: '#fbf6ea', floor: '#fbf6ea', photo: true, layers: function () { return []; } };
+  DP.SET_LIST = ['sweep', 'skyline', 'lplatform', 'wacker', 'hotdog', 'river', 'photo'];
   DP.SET_INFO = SETS;
   DP.PALETTE = [
     { n: 'Cream', c: '#fbf6ea' }, { n: 'White', c: '#fffdf8' }, { n: 'Yellow', c: '#fff3a8' }, { n: 'Green', c: '#c9edc2' },
@@ -441,11 +442,14 @@
       floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0, -14); floor.receiveShadow = true;
       var ft = DP.paperTexture().clone(); ft.needsUpdate = true; ft.repeat.set(13, 10); floorMat.map = ft; res.texs.push(ft);
       group.add(floor);
+      res.floor = floor;
       // sky wall
+      if (!def.photo) {
       var skyMat = new THREE.MeshStandardMaterial({ color: def.sky, roughness: 1, map: DP.paperTexture() });
       var sky = new THREE.Mesh(new THREE.PlaneGeometry(120, 60), skyMat);
       sky.position.set(0, 20, -26); sky.receiveShadow = true;
       group.add(sky);
+      }
     }
     res.setColor = function (hex) { if (cyc) { cyc.material.color.set(hex); } };
     res.sky = new THREE.Color(cyc ? base : def.sky);

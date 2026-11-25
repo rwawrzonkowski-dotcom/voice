@@ -22,7 +22,7 @@
   function lib(id, name, svg, group, o) { LIB.push({ id: id, name: name, svg: svg, group: group || 'shapes', plain: o && o.plain }); }
   DP.buildStickerLib = function () {
     if (LIB.length) return LIB;
-    var dibsHead = DP.PUPPETS.dibs.make(0).headFn('open', 0), wackHead = DP.PUPPETS.wacker.make().headFn('open', 0);
+    var dibsHead = DP.PUPPETS.dibs.make(0).head, wackHead = DP.PUPPETS.wacker.make().head;
     lib('dibs-head', 'Dibs', sv('<circle cx="50" cy="50" r="47" fill="#fff3a8" ' + SW + '/><g transform="translate(50 52) scale(1.5) translate(-50 -37)">' + inner(dibsHead) + '</g>'), 'badges');
     lib('wacker-head', 'Wacker', sv('<circle cx="50" cy="50" r="47" fill="#c6e0f7" ' + SW + '/><g transform="translate(52 52) scale(1.32) translate(-38 -36)">' + inner(wackHead) + '</g>'), 'badges');
     lib('chi-star', 'Chicago star', sv('<polygon points="' + star(50, 52, 46, 23, 6, -Math.PI / 2) + '" fill="#ff0000"/>'), 'badges');

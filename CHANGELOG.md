@@ -2,6 +2,18 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-25: Photo Mode round 2 (more characters, emotes, holding, photo backdrops)
+
+- New paper puppets from the V.O.I.C.E. app drawings, used as drawn and only cut into parts to pose: Chance, Hiram, Ivy, Monty and Sue (`photo-mode/art/`, with the drawings' own README). Also a plain Pigeon extra (Dibs's shape with a solid black neck band) and the L in all 8 line colors.
+- Dibs's neck band in photo mode follows the Chicago flag (white, light blue stripes, red six-pointed stars). The site's `img/dibs/` drawings are unchanged.
+- The redrawn Dibs eye expressions (happy, wink) are removed so every drawing stays as made. Old saved scenes still load.
+- Emotes for every character: 12 pop-up paper emotes above the head, plus body moves (Bounce, Tilt, Lean in, Shiver, Slump).
+- Holding and wearing: any prop, symbol or uploaded image can be held in a hand or wing and moves with the pose ("Give to", "Let go"). Costumes (two caps, horns, scarf, hockey stick, football) snap to the head, neck or hand of each critter.
+- Photo backdrop: take a picture with the phone camera or choose one. Size, position, distance, flat-on-floor, and floor modes (Paper, Photo only with shadows on the photo, Hidden). Saved with the scene.
+- Height off the ground is at the top of every selected item (0 to 8) with a drag handle in the scene; raised items drop their paper stand and can hang on a stick or a string.
+- 3D speech bubbles: Speech, Thought, Shout and Sign cutouts with editable text, color and tail. The flat sticker bubbles stay.
+- Offline cache is now `dibs-photo-mode-v2`. NOTICE.md lists the new drawings (CC BY-SA 4.0, credit "Richard Wawrzonkowski, V.O.I.C.E.").
+
 ## 2026-11-25: DIBS Photo Mode (social media tool)
 
 - New `photo-mode/` tool, not linked from the site menu, `noindex`. Build a 3D paper diorama and take pictures for Instagram, Threads, TikTok, YouTube and X posts and covers.

@@ -51,6 +51,8 @@
   function nid(p) { return p + (Date.now().toString(36)) + (uid++).toString(36); }
   App.nid = nid;
 
+  function defaultPhoto() { return { data: '', name: '', size: 1, x: 0, y: 0, dist: 8, floor: 'paper', flat: false }; }
+  App.defaultPhoto = defaultPhoto;
   function defaultLook() { return { filter: 0, strength: 1, brightness: 0, contrast: 1, saturation: 1, vignette: 0, vigStyle: 0, grain: 0.15 }; }
   function lightFrom(p) {
     var L = { preset: p.id, az: p.az, el: p.el, i: p.i, k: p.k, fill: p.fill, sky: p.sky, gnd: p.gnd, soft: p.soft, spot: { on: false, at: 'item', cone: 38, i: 1.4, color: '#ffffff' } };
@@ -59,8 +61,10 @@
   }
   App.lightFrom = lightFrom;
   function newItem(kind, o) {
-    var it = { id: nid('i'), kind: kind, x: 0, y: 0, z: 0, yaw: 0, tilt: 0, scale: 1, flip: false };
-    if (kind === 'dibs' || kind === 'wacker') it.pose = DP.defaultPose();
+    var it = { id: nid('i'), kind: kind, x: 0, y: 0, z: 0, yaw: 0, tilt: 0, scale: 1, flip: false, mount: 'none', move: 'none', emote: null, attach: [] };
+    if (DP.isPuppet(kind)) it.pose = DP.defaultPose();
+    var kd = DP.kindDefaults(kind);
+    for (var kk in kd) it[kk] = kd[kk];
     for (var k in o) it[k] = o[k];
     return it;
   }
@@ -70,9 +74,10 @@
       v: 1, name: 'Starter scene',
       set: { id: 'hotdog', color: '#fbf6ea' },
       items: [
-        { id: 'i-dibs', kind: 'dibs', x: -0.95, y: 0, z: 0.3, yaw: 10, tilt: 0, scale: 1, flip: false, pose: wave },
-        { id: 'i-wacker', kind: 'wacker', x: 1.0, y: 0, z: -0.2, yaw: -8, tilt: 0, scale: 1.05, flip: false, pose: DP.defaultPose() }
+        { id: 'i-dibs', kind: 'dibs', x: -0.95, y: 0, z: 0.3, yaw: 10, tilt: 0, scale: 1, flip: false, pose: wave, mount: 'none', move: 'none', emote: null, attach: [] },
+        { id: 'i-wacker', kind: 'wacker', x: 1.0, y: 0, z: -0.2, yaw: -8, tilt: 0, scale: 1.05, flip: false, pose: DP.defaultPose(), mount: 'none', move: 'none', emote: null, attach: [] }
       ],
+      photo: defaultPhoto(),
       uploads: {},
       cam: { tx: 0.05, ty: 1.2, tz: 0, yaw: 0.04, pitch: 0.13, dist: 5.4, roll: 0, mode: 'orbit' },
       lens: { mm: 35, fnum: 2.8, focus: { mode: 'item', id: 'i-dibs', dist: 5.4, point: [0, 1, 0] }, exposure: 0, grid: false },
@@ -88,10 +93,34 @@
   /* make any loaded scene safe: fill gaps, clamp numbers, drop unknown things */
   function num(v, d, lo, hi) { v = typeof v === 'number' && isFinite(v) ? v : d; return Math.max(lo, Math.min(hi, v)); }
   function str(v, d, n) { return typeof v === 'string' ? v.slice(0, n || 200) : d; }
+  var SLOTS = ['handL', 'handR', 'head', 'neck', 'feet'];
+  App.SLOTS = SLOTS;
+  function okKind(k, ups) {
+    if (DP.isPuppet(k) || k === 'dibsTrain' || k === 'wackerFly') return true;
+    if (k.indexOf('symbol:') === 0) return !!A.symbols[k.slice(7)];
+    if (k.indexOf('upload:') === 0) return !!ups[k.slice(7)];
+    if (k.indexOf('the-l:') === 0) return !!A.theL[k.slice(6)];
+    if (k.indexOf('costume:') === 0) return !!DP.costumeInfo(k.slice(8));
+    if (k.indexOf('bubble:') === 0) return DP.BUBBLES.some(function (b) { return b.id === k.slice(7); });
+    return false;
+  }
+  function moveOk(m) { return DP.MOVES.some(function (x) { return x.id === m; }) ? m : 'none'; }
+  function bubbleFields(n, src, shape) {
+    var d = DP.bubbleDefaults(shape);
+    n.text = typeof src.text === 'string' ? src.text.slice(0, 160) : d.text;
+    n.color = /^#[0-9a-f]{6}$/i.test(src.color) ? src.color : d.color;
+    n.tail = ['left', 'right', 'down', 'none'].indexOf(src.tail) >= 0 ? src.tail : d.tail;
+  }
   App.clean = function (s) {
     var d = starterScene(), o = {};
     if (!s || typeof s !== 'object') return d;
     o.v = 1; o.name = str(s.name, 'Scene', 60);
+    o.photo = defaultPhoto();
+    var ph = s.photo;
+    if (ph && typeof ph === 'object') {
+      o.photo = { data: (typeof ph.data === 'string' && /^data:image\/(png|jpeg|webp);base64,/.test(ph.data)) ? ph.data : '', name: str(ph.name, '', 60), size: num(ph.size, 1, 0.3, 3), x: num(ph.x, 0, -12, 12), y: num(ph.y, 0, -8, 12), dist: num(ph.dist, 8, 1, 30),
+        floor: (ph.floor === 'shadow' || ph.floor === 'hidden') ? ph.floor : 'paper', flat: !!ph.flat };
+    }
     o.set = { id: DP.SET_INFO[s.set && s.set.id] ? s.set.id : 'sweep', color: /^#[0-9a-f]{6}$/i.test(s.set && s.set.color) ? s.set.color : '#fbf6ea' };
     o.uploads = {};
     var ups = s.uploads || {};
@@ -103,15 +132,25 @@
     (Array.isArray(s.items) ? s.items : []).slice(0, 60).forEach(function (it) {
       if (!it || typeof it.kind !== 'string') return;
       var k = it.kind;
-      var okKind = k === 'dibs' || k === 'wacker' || k === 'dibsTrain' || k === 'wackerFly' ||
-        (k.indexOf('symbol:') === 0 && A.symbols[k.slice(7)]) || (k.indexOf('upload:') === 0 && o.uploads[k.slice(7)]);
-      if (!okKind) return;
-      var n = { id: str(it.id, nid('i'), 40).replace(/[^\w-]/g, ''), kind: k, x: num(it.x, 0, -40, 40), y: num(it.y, 0, -2, 10), z: num(it.z, 0, -40, 40), yaw: num(it.yaw, 0, -360, 360), tilt: num(it.tilt, 0, -60, 60), scale: num(it.scale, 1, 0.1, 6), flip: !!it.flip };
-      if (k === 'dibs' || k === 'wacker') {
-        var p = it.pose || {}, dp = DP.defaultPose();
-        n.pose = { preset: str(p.preset, 'stand', 20), head: num(p.head, 0, -60, 60), wingA: num(p.wingA, 0, 0, 170), wingB: num(p.wingB, 0, 0, 170), lean: num(p.lean, 0, -40, 40), bend: num(p.bend, 0, -40, 40), hop: num(p.hop, 0, 0, 1), look: num(p.look, 0, -1, 1) | 0, expr: (p.expr === 'happy' || p.expr === 'wink') ? p.expr : 'open', color: Math.max(0, Math.min(DP.DIBS_COLORS.length - 1, (p.color | 0))) };
-        if (k === 'wacker') n.pose.color = 0;
+      if (!okKind(k, o.uploads)) return;
+      var n = { id: str(it.id, nid('i'), 40).replace(/[^\w-]/g, ''), kind: k, x: num(it.x, 0, -40, 40), y: num(it.y, 0, 0, 8), z: num(it.z, 0, -40, 40), yaw: num(it.yaw, 0, -360, 360), tilt: num(it.tilt, 0, -60, 60), scale: num(it.scale, 1, 0.1, 6), flip: !!it.flip,
+        mount: (it.mount === 'stick' || it.mount === 'string') ? it.mount : 'none', move: moveOk(it.move) };
+      if (DP.isPuppet(k)) {
+        var p = it.pose || {}, def = DP.PUPPETS[k], nc = def.colors ? def.colors.length : 1;
+        n.pose = { preset: str(p.preset, 'stand', 20), head: num(p.head, 0, -60, 60), wingA: num(p.wingA, 0, 0, 170), wingB: num(p.wingB, 0, 0, 170), lean: num(p.lean, 0, -40, 40), bend: num(p.bend, 0, -40, 40), hop: num(p.hop, 0, 0, 1), look: num(p.look, 0, -1, 1) | 0, color: Math.max(0, Math.min(nc - 1, (p.color | 0))) };
+        // old saves had a face (expr) field. The eyes are never redrawn now, so it is ignored.
       }
+      if (k.indexOf('bubble:') === 0) bubbleFields(n, it, k.slice(7));
+      var em = it.emote && DP.emoteInfo(it.emote.id);
+      n.emote = em ? { id: em.id, x: num(it.emote.x, 0, -1.5, 1.5), s: num(it.emote.s, 1, 0.4, 2.5) } : null;
+      n.attach = [];
+      if (DP.isPuppet(k)) (Array.isArray(it.attach) ? it.attach : []).slice(0, 8).forEach(function (a) {
+        if (!a || typeof a.kind !== 'string' || SLOTS.indexOf(a.slot) < 0) return;
+        if (!okKind(a.kind, o.uploads) || a.kind.indexOf('the-l:') === 0 || DP.isPuppet(a.kind) || a.kind === 'dibsTrain' || a.kind === 'wackerFly') return;
+        var na = { id: str(a.id, nid('a'), 40).replace(/[^\w-]/g, ''), kind: a.kind, slot: a.slot, s: num(a.s, 1, 0.2, 4), r: num(a.r, 0, -180, 180), ox: num(a.ox, 0, -60, 60), oy: num(a.oy, 0, -60, 60) };
+        if (a.kind.indexOf('bubble:') === 0) bubbleFields(na, a, a.kind.slice(7));
+        n.attach.push(na);
+      });
       o.items.push(n);
     });
     var c = s.cam || {};
@@ -302,7 +341,79 @@
       if (seq !== setSeq) { res.dispose(); return; }
       if (setObj) { scene.remove(setObj.group); setObj.dispose(); }
       setObj = res; scene.add(res.group);
+      if (res.floor) res.floorMat0 = res.floor.material;
+      App.applyPhoto();
       App.invalidate();
+    });
+  };
+
+  /* ---------- your photo as a backdrop ---------- */
+  var photoObj = null, shadowMat = null, photoSeq = 0;
+  function clearPhoto() {
+    if (photoObj) { scene.remove(photoObj.mesh); photoObj.mesh.material.dispose(); photoObj.tex.dispose(); photoObj = null; }
+  }
+  App.photoAspect = function () { return photoObj ? photoObj.aspect : 1; };
+  App.applyPhoto = function () {
+    if (!state || !setObj) return Promise.resolve();
+    var ph = state.photo, on = state.set.id === 'photo';
+    // the floor: paper, an invisible shadow catcher, or gone
+    if (setObj.floor) {
+      var f = setObj.floor, mode = on ? ph.floor : 'paper';
+      if (mode === 'shadow') {
+        if (!shadowMat) shadowMat = new THREE.ShadowMaterial({ color: 0x2a2350, opacity: 0.5, depthWrite: false });
+        f.material = shadowMat; f.visible = true;
+      } else { f.material = setObj.floorMat0; f.visible = mode !== 'hidden'; }
+    }
+    if (!on || !ph.data) { clearPhoto(); App.invalidate(); return Promise.resolve(); }
+    var seq = ++photoSeq;
+    function place() {
+      var m = photoObj.mesh, H = (ph.flat ? 18 : 12) * ph.size, W = H * photoObj.aspect;
+      m.scale.set(W, H, 1);
+      if (ph.flat) {
+        m.rotation.set(-Math.PI / 2, 0, 0);
+        m.position.set(ph.x, ph.floor === 'paper' ? 0.006 : -0.012, -(ph.dist - 8) - ph.y);
+      } else {
+        m.rotation.set(0, 0, 0);
+        m.position.set(ph.x, 0.3 + ph.y, -ph.dist);
+      }
+      App.invalidate();
+    }
+    if (photoObj && photoObj.data === ph.data) { place(); return Promise.resolve(); }
+    return DP.loadImage(ph.data).then(function (im) {
+      if (seq !== photoSeq) return;
+      clearPhoto();
+      var t = new THREE.Texture(im); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = DP.maxAniso; t.needsUpdate = true;
+      var mat = new THREE.MeshBasicMaterial({ map: t });
+      var mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
+      mesh.userData.photo = true;
+      scene.add(mesh);
+      photoObj = { mesh: mesh, tex: t, data: ph.data, aspect: (im.naturalWidth || 4) / (im.naturalHeight || 3) };
+      place();
+    }, function () { App.msg('That picture could not be loaded.'); });
+  };
+  /* a picture from the camera or the library, scaled down to 2048 px */
+  App.setPhotoFile = function (file) {
+    return new Promise(function (resolve) {
+      if (!file || !/^image\//.test(file.type)) { App.msg('Pick a picture file.'); return resolve(false); }
+      var fr = new FileReader();
+      fr.onload = function () {
+        DP.loadImage(fr.result).then(function (im) {
+          var w = im.naturalWidth || 1024, h = im.naturalHeight || 768, k = Math.min(1, 2048 / Math.max(w, h));
+          var c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+          c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+          state.photo.data = c.toDataURL('image/jpeg', 0.9);
+          // start big enough to fill the frame
+          var D = rig.s.dist + state.photo.dist, visH = 2 * D * Math.tan(camera.fov * D2R / 2), visW = visH * camera.aspect, asp = w / h;
+          state.photo.size = Math.max(0.3, Math.min(3, Math.ceil(Math.max(visH * 1.3, visW * 1.15 / asp) / 12 * 20) / 20));
+          state.photo.x = 0; state.photo.y = 0;
+          state.photo.name = (file.name || 'Photo').replace(/\.[^.]+$/, '').slice(0, 40) || 'Photo';
+          if (state.photo.floor === 'paper') state.photo.floor = 'shadow';
+          var go = state.set.id === 'photo' ? Promise.resolve() : App.setBackdrop('photo');
+          go.then(function () { return App.applyPhoto(); }).then(function () { App.save(); resolve(true); if (App.ui) App.ui.photoChanged(); });
+        }, function () { App.msg('That picture could not be read.'); resolve(false); });
+      };
+      fr.onerror = function () { App.msg('That picture could not be read.'); resolve(false); };
+      fr.readAsDataURL(file);
     });
   };
   App.setBackdropColor = function (hex) {
@@ -346,6 +457,7 @@
     var it = newItem(kind, { x: Math.round(p.x * 20) / 20, z: Math.round(p.z * 20) / 20 });
     // do not stack exactly on another item
     var tries = 0;
+    if (kind.indexOf('the-l:') === 0) it.z -= 3;
     while (tries++ < 8 && state.items.some(function (o) { return Math.abs(o.x - it.x) < 0.25 && Math.abs(o.z - it.z) < 0.25; })) { it.x += 0.45; }
     if (extra) for (var k in extra) it[k] = extra[k];
     state.items.push(it);
@@ -357,6 +469,59 @@
     var it = JSON.parse(JSON.stringify(src)); it.id = nid('i'); it.x += 0.5; it.z += 0.15;
     state.items.push(it); App.sel = it.id;
     App.addItemObj(it).then(function () { App.save(); if (App.ui) { App.ui.itemsChanged(); App.ui.selectionChanged(); } });
+  };
+  /* rebuild one item after its picture changed (speech bubble words, for example) */
+  App.rebuildItem = function (id) { var it = findItem(id); if (it) return App.addItemObj(it); };
+
+  /* ---- holding and wearing ---- */
+  function slotOf(costume) { return costume.slot === 'hand' ? 'handR' : costume.slot; }
+  App.attachTo = function (targetId, rec) {
+    var t = findItem(targetId); if (!t || !DP.isPuppet(t.kind)) return null;
+    t.attach = (t.attach || []).filter(function (a) { return a.slot !== rec.slot; });
+    rec.id = rec.id || nid('a'); rec.s = rec.s || 1; rec.r = rec.r || 0; rec.ox = rec.ox || 0; rec.oy = rec.oy || 0;
+    t.attach.push(rec);
+    App.applyItem(t.id); App.save();
+    return rec;
+  };
+  App.wear = function (targetId, costumeId) {
+    var t = findItem(targetId), cs = DP.costumeInfo(costumeId); if (!t || !cs) return;
+    var slot = slotOf(cs);
+    if (cs.slot === 'hand') { var rOcc = (t.attach || []).filter(function (a) { return a.slot === 'handR'; })[0]; slot = rOcc && rOcc.kind !== 'costume:' + costumeId ? 'handL' : 'handR'; }
+    var same = (t.attach || []).filter(function (a) { return a.kind === 'costume:' + costumeId; })[0];
+    if (same) { App.detach(targetId, same.id); return; }
+    App.attachTo(targetId, { kind: 'costume:' + costumeId, slot: slot });
+  };
+  App.detach = function (targetId, attId) {
+    var t = findItem(targetId); if (!t) return;
+    t.attach = (t.attach || []).filter(function (a) { return a.id !== attId; });
+    App.applyItem(t.id); App.save();
+  };
+  /* Give a prop in the scene to a character: the prop becomes part of the character */
+  App.giveItem = function (itemId, targetId, slot) {
+    var src = findItem(itemId), t = findItem(targetId);
+    if (!src || !t || !DP.isPuppet(t.kind) || src.id === t.id) return false;
+    var k = src.kind;
+    if (!(k.indexOf('symbol:') === 0 || k.indexOf('upload:') === 0 || k.indexOf('costume:') === 0 || k.indexOf('bubble:') === 0)) { App.msg('That can not be held.'); return false; }
+    var rec = { kind: k, slot: slot };
+    if (k.indexOf('bubble:') === 0) { rec.text = src.text; rec.color = src.color; rec.tail = src.tail; }
+    App.attachTo(targetId, rec);
+    App.removeItem(itemId); App.select(targetId);
+    return true;
+  };
+  App.letGo = function (targetId, attId) {
+    var t = findItem(targetId), o = App.objs[targetId]; if (!t || !o) return;
+    var a = (t.attach || []).filter(function (x) { return x.id === attId; })[0]; if (!a) return;
+    var w = o.attachWorld(attId), info = DP.kindInfo(a.kind);
+    App.detach(targetId, attId);
+    if (!info) return;
+    var S = DP.PUPPETS[t.kind].size, cs = a.kind.indexOf('costume:') === 0 ? DP.costumeInfo(a.kind.slice(8)) : null;
+    var worldH = cs ? S * (cs.hand || 0.6) : (a.kind.indexOf('bubble:') === 0 ? S * 0.6 : S * 0.5);
+    var sc = Math.max(0.25, Math.min(3, worldH * (a.s || 1) * t.scale / info.h));
+    var extra = { x: w ? w.x : t.x, z: w ? w.z : t.z, y: Math.max(0, (w ? w.y : 0) - info.h * sc * 0.5), scale: sc, yaw: t.yaw };
+    if (a.kind.indexOf('bubble:') === 0) { extra.text = a.text; extra.color = a.color; extra.tail = a.tail; extra.y = Math.max(0.6, extra.y); }
+    var it = newItem(a.kind, extra);
+    state.items.push(it); App.sel = it.id;
+    return App.addItemObj(it).then(function () { App.save(); if (App.ui) { App.ui.itemsChanged(); App.ui.selectionChanged(); } });
   };
   App.applyItem = function (id) {
     var it = findItem(id), o = App.objs[id];
@@ -372,8 +537,81 @@
     var it = App.sel && findItem(App.sel), o = it && App.objs[App.sel];
     if (!o) { ring.visible = false; return; }
     var r = Math.max(0.45, (o.w || 1) * 0.62) * it.scale;
-    ring.scale.set(r, r, 1); ring.position.set(it.x, 0.03, it.z); ring.visible = true;
+    ring.scale.set(r, r, 1); ring.position.set(it.x, it.y + 0.03, it.z); ring.visible = true;
+    ring.userData.r = r;
+    App.updateHandle();
   };
+  /* the height tab: a small paper tab on the selection ring. Drag it up or down to lift the item. */
+  App.updateHandle = function () {
+    var hg = $('hgt'); if (!hg) return;
+    var it = App.sel && findItem(App.sel);
+    if (!it || !ring.visible || !camera) { hg.hidden = true; return; }
+    var v = new THREE.Vector3(it.x + ring.userData.r, it.y + 0.03, it.z);
+    camera.updateMatrixWorld(true);
+    v.project(camera);
+    var x = (v.x + 1) / 2 * frame.w, y = (1 - v.y) / 2 * frame.h;
+    if (v.z > 1 || x < 14 || y < 14 || x > frame.w - 14 || y > frame.h - 14) { x = Math.max(22, Math.min(frame.w - 22, x)); y = Math.max(22, Math.min(frame.h - 22, y)); }
+    hg.hidden = false; hg.style.left = x + 'px'; hg.style.top = y + 'px';
+    updateGive(it);
+  };
+  /* a prop standing near a character gets a small "Give to" button on the picture */
+  var giveTarget = null;
+  function updateGive(it) {
+    var gb = $('giveBtn'); if (!gb) return;
+    giveTarget = null;
+    if (/^(symbol|upload|costume|bubble):/.test(it.kind)) {
+      var best = null, bd = 2.2;
+      state.items.forEach(function (o) {
+        if (!DP.isPuppet(o.kind)) return;
+        var d = Math.hypot(o.x - it.x, o.z - it.z); if (d < bd) { bd = d; best = o; }
+      });
+      giveTarget = best;
+    }
+    if (!giveTarget) { gb.hidden = true; return; }
+    var o = App.objs[it.id], v = new THREE.Vector3(it.x, it.y + (o ? o.h * it.scale : 1) + 0.15, it.z).project(camera);
+    var x = Math.max(60, Math.min(frame.w - 60, (v.x + 1) / 2 * frame.w)), y = Math.max(22, Math.min(frame.h - 22, (1 - v.y) / 2 * frame.h));
+    gb.textContent = 'Give to ' + DP.kindInfo(giveTarget.kind).name;
+    gb.hidden = false; gb.style.left = x + 'px'; gb.style.top = y + 'px';
+  }
+  function wireGive() {
+    var gb = $('giveBtn');
+    gb.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+    gb.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var it = App.sel && findItem(App.sel); if (!it || !giveTarget) return;
+      var occ = (giveTarget.attach || []).some(function (a) { return a.slot === 'handR'; });
+      var name = DP.kindInfo(giveTarget.kind).name;
+      if (App.giveItem(it.id, giveTarget.id, occ ? 'handL' : 'handR')) App.msg('Given to ' + name + '. Find it in the Pose tab under Holding.');
+    });
+  }
+  function wireHandle() {
+    var hg = $('hgt'), st = null;
+    hg.addEventListener('pointerdown', function (e) {
+      var it = App.sel && findItem(App.sel); if (!it) return;
+      e.preventDefault(); e.stopPropagation(); hg.setPointerCapture(e.pointerId);
+      camera.updateMatrixWorld(true);
+      var a = new THREE.Vector3(it.x, it.y, it.z).project(camera), b = new THREE.Vector3(it.x, it.y + 1, it.z).project(camera);
+      var ppu = Math.max(8, Math.abs(b.y - a.y) / 2 * frame.h);
+      st = { id: it.id, y: e.clientY, h: it.y, ppu: ppu, pid: e.pointerId };
+      hg.classList.add('drag');
+    });
+    hg.addEventListener('pointermove', function (e) {
+      if (!st || e.pointerId !== st.pid) return;
+      var it = findItem(st.id); if (!it) return;
+      it.y = Math.max(0, Math.min(8, Math.round((st.h + (st.y - e.clientY) / st.ppu) * 100) / 100));
+      App.applyItem(it.id); App.bump();
+      if (App.ui) App.ui.itemMoved();
+    });
+    function end(e) { if (!st || e.pointerId !== st.pid) return; st = null; hg.classList.remove('drag'); App.save(); }
+    hg.addEventListener('pointerup', end); hg.addEventListener('pointercancel', end);
+    hg.addEventListener('keydown', function (e) {
+      var it = App.sel && findItem(App.sel); if (!it) return;
+      var d = e.key === 'ArrowUp' ? 0.1 : (e.key === 'ArrowDown' ? -0.1 : 0);
+      if (!d) return;
+      e.preventDefault(); e.stopPropagation();
+      it.y = Math.max(0, Math.min(8, Math.round((it.y + d) * 100) / 100)); App.applyItem(it.id); App.save(); if (App.ui) App.ui.itemMoved();
+    });
+  }
   function pickAt(cx, cy) {
     var r = gl.getBoundingClientRect();
     var ndc = new THREE.Vector2(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
@@ -398,6 +636,11 @@
     var list = [];
     Object.keys(App.objs).forEach(function (id) { App.objs[id].root.updateMatrixWorld(true); list = list.concat(App.objs[id].hitMeshes()); });
     raycaster.intersectObjects(list, false).forEach(function (h) { if (h.distance < bd && DP.maskHit(h)) { bd = h.distance; best = h.point.clone(); } });
+    if (photoObj) {
+      photoObj.mesh.updateMatrixWorld(true);
+      var ph = raycaster.intersectObject(photoObj.mesh, false)[0];
+      if (ph && ph.distance < bd) { bd = ph.distance; best = ph.point.clone(); }
+    }
     if (setObj) {
       setObj.group.updateMatrixWorld(true);
       var hits = raycaster.intersectObject(setObj.group, true);
@@ -496,6 +739,7 @@
     p.toScreen = true; p.seed = 0;
     post.render(scene, camera, p);
     App.positionReticle();
+    App.updateHandle();
     if (App.ui && App.ui.afterRender) App.ui.afterRender();
   }
 
@@ -576,7 +820,7 @@
 
   /* ---------- scene save and load ---------- */
   App.serialize = function () {
-    var s = JSON.parse(JSON.stringify({ v: 1, name: state.name, set: state.set, items: state.items, uploads: state.uploads, lens: state.lens, light: state.light, look: state.look, stickers: state.stickers, frame: state.frame }));
+    var s = JSON.parse(JSON.stringify({ v: 1, name: state.name, set: state.set, items: state.items, uploads: state.uploads, lens: state.lens, light: state.light, look: state.look, stickers: state.stickers, frame: state.frame, photo: state.photo }));
     s.cam = rig.get();
     return s;
   };
@@ -669,7 +913,7 @@
     });
     DP.onOverlayAssets = function () { overlay.render(); };
     DP.onChange = function () { App.invalidate(); };
-    wirePointer();
+    wirePointer(); wireHandle(); wireGive();
     state = App.state = starterScene();
     overlay.st = state;
     var ro = window.ResizeObserver ? new ResizeObserver(function () { App.layout(); }) : null;

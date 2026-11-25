@@ -12,6 +12,7 @@ These parts of the site are not owned by Richard Wawrzonkowski. They are used un
 | Dibs the pigeon drawings (Dibs, and Dibs riding the L) | `img/dibs/` | Richard Wawrzonkowski | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), the same license the V.O.I.C.E. app uses for its critter drawings |
 | OpenDyslexic font (used unmodified; Reserved Font Name kept) | `fonts/opendyslexic-*` | Abbie Gonzalez | SIL Open Font License 1.1 (`fonts/OFL-opendyslexic.txt`) |
 | three.js 3D library | `photo-mode/vendor/three.min.js` | three.js authors ([threejs.org](https://threejs.org)) | MIT (`photo-mode/vendor/LICENSE-three.txt`) |
+| The Chicago critters (Chance, Hiram, Ivy, Monty, Sue), their costumes and the L train drawings | `photo-mode/art/` | Richard Wawrzonkowski, "Richard Wawrzonkowski, V.O.I.C.E." when shared | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); the critters nod to Chicago animals and places but are original drawings, not affiliated with any team, school, museum or the CTA |
 
 Symbol files are stored unmodified; the website sometimes shows them dimmed or recolored with CSS. The site is not affiliated with or endorsed by Project Core, the University of North Carolina, Mulberry Symbols or OpenMoji.
 

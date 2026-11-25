@@ -27,6 +27,8 @@
         <div id="bannerSafe"></div>
       </div>
       <div id="reticle" aria-hidden="true"></div>
+      <button type="button" id="hgt" class="hgt" aria-label="Height tab. Drag up or down to lift the selected item" title="Drag up or down to lift" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L6 10h12zM12 21l-6-7h12z"/></svg></button>
+      <button type="button" id="giveBtn" class="givebtn" hidden>Give</button>
       <div id="flash" aria-hidden="true"></div>
     </div>
     <div id="fly" hidden>
@@ -75,6 +77,21 @@
   </div>
 </div>
 
+<div id="pickModal" class="modal" hidden>
+  <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="pkTitle">
+    <h2 id="pkTitle">Put something on</h2>
+    <input type="text" id="pkFind" placeholder="Find a prop" aria-label="Find a prop" autocomplete="off">
+    <div class="propgrid" id="pkGrid"></div>
+    <div class="dlgbtns">
+      <button type="button" id="pkUpload" class="btn">Add your image</button>
+      <button type="button" id="pkClose" class="btn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fileHold" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
+<input type="file" id="filePhotoCam" accept="image/*" capture="environment" hidden>
+<input type="file" id="filePhoto" accept="image/*" hidden>
 <input type="file" id="fileProp" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
 <input type="file" id="fileSticker" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
 <input type="file" id="fileScene" accept=".json,application/json" hidden>
@@ -83,6 +100,7 @@
 <script src="vendor/three.min.js"></script>
 <script src="js/assets.js"></script>
 <script src="js/store.js"></script>
+<script src="js/extras.js"></script>
 <script src="js/puppets.js"></script>
 <script src="js/sets.js"></script>
 <script src="js/dof.js"></script>

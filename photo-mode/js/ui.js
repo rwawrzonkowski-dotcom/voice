@@ -53,35 +53,69 @@
       return '<button type="button" class="setbtn" data-act="set" data-v="' + id + '" aria-pressed="false"><span class="pv" style="background:linear-gradient(to bottom,' + d.sky + ' 0 58%,' + d.floor + ' 58% 100%)"></span><span class="nm">' + d.name + '</span></button>';
     }).join('');
     var h = {};
+    var charList = DP.PUPPET_LIST.concat(['dibsTrain', 'wackerFly']);
+    var charChips = charList.map(function (k) {
+      var info = DP.kindInfo(k), svg = info.puppet ? DP.charSvg(k) : info.svg;
+      return '<button type="button" class="chip thumb" data-act="add" data-v="' + k + '"><img alt="" src="' + svgData(svg) + '">' + info.name + '</button>';
+    }).join('');
+    var lChips = DP.THE_L.map(function (c) {
+      return '<button type="button" class="chip lchip" data-act="addl" data-v="' + c + '" aria-label="Add the L, ' + DP.L_NAMES[c] + '"><i style="background:' + DP.L_COLORS[c] + '"></i>' + cap(c) + '</button>';
+    }).join('');
+    var bubChips = DP.BUBBLES.map(function (b) { return chip('addbub', b.id, b.name); }).join('');
     h.scene =
       '<div class="group"><h3>Backdrop</h3><div class="fgrid" style="margin-bottom:10px">' + setHtml + '</div>' +
-      '<div id="sweepColors" hidden>' + swatches('bdcolor', PAL, 'Paper color') + '</div></div>' +
-      '<div class="group"><h3>Add a character</h3><div class="chips" id="charChips">' +
-      ['dibs:Dibs', 'dibsTrain:Dibs on the L', 'wacker:Wacker', 'wackerFly:Wacker flying'].map(function (s) {
-        var p = s.split(':'), info = DP.kindInfo(p[0]);
-        var svg = info.svg || (p[0] === 'dibs' ? A.characters.dibs : A.characters.wacker);
-        return '<button type="button" class="chip thumb" data-act="add" data-v="' + p[0] + '"><img alt="" src="' + svgData(svg) + '">' + p[1] + '</button>';
-      }).join('') + '</div>' +
+      '<div id="sweepColors" hidden>' + swatches('bdcolor', PAL, 'Paper color') + '</div>' +
+      '<div id="photoBox" hidden><h3>Your photo</h3><div class="row"><button type="button" class="btn" data-act="photocam">Take a picture</button><button type="button" class="btn" data-act="photofile">Choose a picture</button></div>' +
+      '<p class="hint" id="photoHint">Take a picture or choose one. It goes behind your characters.</p>' +
+      '<div id="photoCtl">' + field('psize', 'Size', 0.3, 3, 0.05) + field('px', 'Left or right', -12, 12, 0.1) + field('py', 'Up or down', -8, 12, 0.1) + field('pdist', 'Distance', 1, 30, 0.5) +
+      '<h3>Floor</h3>' + seg('pfloor', [['paper', 'Paper floor'], ['shadow', 'Photo only'], ['hidden', 'Hidden']], 'Floor') +
+      '<p class="hint">Photo only keeps the shadows and hides the paper.</p>' + tog('pflat', 'Flat on floor') + '</div></div></div>' +
+      '<div class="group"><h3>Add a character</h3><div class="chips" id="charChips">' + charChips + '</div>' +
+      '<h3>Add the L</h3><div class="chips">' + lChips + '</div>' +
+      '<h3>Add a speech bubble</h3><div class="chips">' + bubChips + '</div>' +
       '<h3>Add a prop</h3><input type="text" id="propFind" placeholder="Find a prop" aria-label="Find a prop" autocomplete="off" style="margin-bottom:8px">' +
       '<div class="propgrid" id="propGrid">' + propHtml + '</div>' +
       '<button type="button" class="btn" data-act="uploadprop">Add your image</button></div>' +
       '<div class="group"><h3>In the scene</h3><ul class="items" id="itemList"></ul>' +
       '<div id="itemCtl" hidden>' +
-      field('x', 'Left or right', -12, 12, 0.05) + field('z', 'Closer or farther', -14, 10, 0.05) + field('y', 'Height', 0, 4, 0.05) +
-      field('yaw', 'Turn', -180, 180, 1) + field('tilt', 'Tilt', -40, 40, 1) + field('scale', 'Size', 0.3, 3, 0.05) +
+      '<h3 id="selName">Selected</h3>' +
+      field('y', 'Height off the ground', 0, 8, 0.05) +
+      '<div id="mountBox"><h3>Mount</h3>' + seg('mount', [['none', 'None'], ['stick', 'Stick'], ['string', 'String']], 'Mount') + '</div>' +
+      field('x', 'Left or right', -12, 12, 0.05) + field('z', 'Closer or farther', -14, 10, 0.05) +
+      field('yaw', 'Turn', -180, 180, 1) + field('tilt', 'Tilt', -40, 40, 1) + field('scale', 'Size', 0.2, 4, 0.05) +
       '<div class="row">' + tog('flip', 'Flip left and right').replace('class="tog"', 'class="tog" style="margin:0"') + '</div>' +
+      '<div id="bubbleBox" hidden><h3>Bubble words</h3><label for="bubText" class="small">Words</label><textarea id="bubText" maxlength="160" aria-label="Bubble words"></textarea>' +
+      '<h3>Bubble color</h3>' + swatches('bubcolor', PAL, 'Bubble color') + '<div id="bubTail"><h3>Tail</h3>' + seg('bubtail', [['left', 'Left'], ['right', 'Right'], ['down', 'Down'], ['none', 'None']], 'Tail') + '</div></div>' +
+      '<div id="giveBox" hidden><h3>Give to</h3><select id="giveTarget" aria-label="Give to which character"></select><div class="chips" style="margin-top:8px">' + chip('give', 'handL', 'Left hand') + chip('give', 'handR', 'Right hand') + chip('give', 'head', 'Head') + '</div></div>' +
       '<div class="row"><button type="button" class="btn" data-act="dup">Duplicate</button><button type="button" class="btn danger" data-act="del">Delete</button></div>' +
-      '</div><p class="hint" id="itemHint">Tap an item in the picture to pick it, then drag it along the floor.</p></div>';
+      '</div><p class="hint" id="itemHint">Tap an item in the picture to pick it, then drag it along the floor. Drag the small tab on its ring to lift it.</p></div>';
 
+    var emoteChips = chip('emote', 'none', 'None') + DP.EMOTES.map(function (e) {
+      return '<button type="button" class="chip thumb" data-act="emote" data-v="' + e.id + '" aria-pressed="false"><img alt="" src="' + svgData(e.svg) + '">' + e.name + '</button>';
+    }).join('');
+    var wearChips = DP.COSTUMES.map(function (c) {
+      return '<button type="button" class="chip thumb" data-act="wear" data-v="' + c.id + '" aria-pressed="false"><img alt="" src="' + svgData(A.costumes[c.id]) + '">' + c.name + '</button>';
+    }).join('');
     h.pose =
-      '<div id="poseNone"><p class="hint">Poses work on Dibs and Wacker standing up. Pick one in the picture or here.</p><div class="chips" id="poseChooser"></div></div>' +
-      '<div id="poseBox" hidden><div class="group"><h3 id="poseName">Pose</h3><div class="chips">' +
+      '<div id="poseNone"><p class="hint">Pick a character in the picture or here. Poses and costumes work on the critters, emotes work on anything.</p><div class="chips" id="poseChooser"></div></div>' +
+      '<div id="poseBox" hidden><h3 id="poseName" style="margin:0 0 8px">Pose</h3>' +
+      '<div id="poseSec"><div class="group"><h3>Pose</h3><div class="chips">' +
       DP.POSES.map(function (p) { return chip('pose', p.id, p.name); }).join('') + '</div></div>' +
       '<div class="group">' + field('head', 'Head tilt', -40, 40, 1) + field('wingA', 'Left wing', 0, 160, 1) + field('wingB', 'Right wing', 0, 160, 1) +
       field('lean', 'Lean left or right', -25, 25, 1) + field('bend', 'Lean back or forward', -25, 25, 1) + field('hop', 'Hop', 0, 1, 0.05) + '</div>' +
       '<div class="group"><h3>Looking</h3>' + seg('look', [['-1', 'Left'], ['0', 'Front'], ['1', 'Right']], 'Looking') +
-      '<h3>Face</h3><div id="faceSeg">' + seg('face', [['open', 'Open'], ['happy', 'Happy'], ['wink', 'Wink']], 'Face') + '</div>' +
-      '<div id="bodyColors"><h3>Body color</h3>' + swatches('body', DP.DIBS_COLORS.map(function (c, i) { return [String(i), c.sw, c.name]; }), 'Body color') + '</div></div></div>';
+      '<div id="bodyColors"><h3>Body color</h3><div id="bodySw"></div></div></div></div>' +
+      '<div class="group" id="emoteSec"><h3>Emote</h3><div class="chips">' + emoteChips + '</div>' +
+      '<div id="emoteCtl">' + field('emx', 'Left or right of head', -1.5, 1.5, 0.05) + field('ems', 'Emote size', 0.4, 2.5, 0.05) + '</div>' +
+      '<h3>Move</h3><div class="chips">' + DP.MOVES.map(function (m) { return chip('move', m.id, m.name); }).join('') + '</div>' +
+      '<p class="hint">Choosing an emote also picks a move. Change the move on its own if you like.</p></div>' +
+      '<div class="group" id="holdSec"><h3>Holding</h3><div class="chips">' +
+      chip('holdin', 'handL', 'Hold in left hand') + chip('holdin', 'handR', 'Hold in right hand') + chip('holdin', 'head', 'On head') + chip('holdin', 'neck', 'Around neck') + chip('holdin', 'feet', 'At feet') + '</div>' +
+      '<div class="chips" id="attList" style="margin-top:8px"></div>' +
+      '<div id="attCtl" hidden>' + field('asize', 'Held size', 0.2, 3, 0.05) + field('arot', 'Held turn', -180, 180, 1) + field('aox', 'Held left or right', -40, 40, 1) + field('aoy', 'Held up or down', -40, 40, 1) +
+      '<div id="attBub" hidden><label for="attText" class="small">Bubble words</label><textarea id="attText" maxlength="160" aria-label="Held bubble words"></textarea></div>' +
+      '<div class="row"><button type="button" class="btn" data-act="letgo">Let go</button><button type="button" class="btn danger" data-act="takeoff">Take off</button></div></div></div>' +
+      '<div class="group" id="wearSec"><h3>Wear</h3><div class="chips">' + wearChips + '</div><p class="hint">Hats and horns sit on the head, the scarf goes around the neck, the stick and football go in a hand.</p></div></div>';
 
     h.camera =
       '<div class="group"><h3>Moving the camera</h3>' + seg('mode', [['orbit', 'Orbit'], ['fly', 'Fly']], 'Camera mode') +
@@ -199,6 +233,14 @@
     F[id] = { get: function () { var it = selItem(); return it && it.pose ? it.pose[key] : undefined; },
       set: function (v) { var it = selItem(); if (!it || !it.pose) return; it.pose[key] = v; it.pose.preset = 'custom'; App.applyItem(it.id); markPressed(); }, fmt: fmt };
   }
+  function photoField(key, fmt) {
+    return { get: function () { return S().photo[key]; }, set: function (v) { S().photo[key] = v; App.applyPhoto(); }, fmt: fmt };
+  }
+  var attSel = null;
+  function selAtt() { var it = selItem(); if (!it || !it.attach) return null; for (var i = 0; i < it.attach.length; i++) if (it.attach[i].id === attSel) return it.attach[i]; return null; }
+  function attField(id, key, fmt) {
+    F[id] = { get: function () { var a = selAtt(); return a ? a[key] : undefined; }, set: function (v) { var a = selAtt(), it = selItem(); if (a && it) { a[key] = v; App.applyItem(it.id); } }, fmt: fmt };
+  }
   function lightField(id, key, fmt) {
     F[id] = { get: function () { return S().light[key]; }, set: function (v) { S().light[key] = v; S().light.preset = 'custom'; App.applyLight(); markPressed(); }, fmt: fmt };
   }
@@ -209,6 +251,10 @@
   function deg(v) { return Math.round(v) + '°'; }
   function defineFields() {
     itemField('x', 'x', function (v) { return v.toFixed(2); }); itemField('z', 'z', function (v) { return v.toFixed(2); }); itemField('y', 'y', function (v) { return v.toFixed(2); });
+    F.psize = photoField('size', function (v) { return v.toFixed(2) + 'x'; }); F.px = photoField('x', function (v) { return v.toFixed(1); }); F.py = photoField('y', function (v) { return v.toFixed(1); }); F.pdist = photoField('dist', function (v) { return v.toFixed(1); });
+    F.emx = { get: function () { var it = selItem(); return it && it.emote ? it.emote.x : 0; }, set: function (v) { var it = selItem(); if (it && it.emote) { it.emote.x = v; App.applyItem(it.id); } }, fmt: function (v) { return v.toFixed(2); } };
+    F.ems = { get: function () { var it = selItem(); return it && it.emote ? it.emote.s : 1; }, set: function (v) { var it = selItem(); if (it && it.emote) { it.emote.s = v; App.applyItem(it.id); } }, fmt: function (v) { return v.toFixed(2) + 'x'; } };
+    attField('asize', 's', function (v) { return v.toFixed(2) + 'x'; }); attField('arot', 'r', deg); attField('aox', 'ox', function (v) { return Math.round(v); }); attField('aoy', 'oy', function (v) { return Math.round(v); });
     itemField('yaw', 'yaw', deg); itemField('tilt', 'tilt', deg); itemField('scale', 'scale', function (v) { return v.toFixed(2) + 'x'; });
     poseField('head', 'head', deg); poseField('wingA', 'wingA', deg); poseField('wingB', 'wingB', deg); poseField('lean', 'lean', deg); poseField('bend', 'bend', deg); poseField('hop', 'hop', pct);
     F.mm = { get: function () { return Math.log(S().lens.mm / 14) / Math.log(200 / 14) * 1000; }, set: function (v) { S().lens.mm = Math.round(14 * Math.pow(200 / 14, v / 1000)); App.applyLens(); App.positionReticle(); App.invalidate(); markPressed(); }, fmt: function () { return S().lens.mm + ' mm'; } };
@@ -232,6 +278,7 @@
         $('o-' + id).textContent = F[id].fmt ? F[id].fmt(F[id].get() === undefined ? v : v) : v;
         App.bump(); App.save();
         if (id === 'x' || id === 'z' || id === 'y' || id === 'scale') App.updateRing();
+        if (id === 'y') syncMount();
         if (id === 'mm' || id === 'fn') App.showReticle();
       });
     });
@@ -264,8 +311,17 @@
     setPressed('flip', null, it && it.flip);
     setPressed('pose', pose ? pose.preset : '');
     setPressed('look', pose ? pose.look : '');
-    setPressed('face', pose ? pose.expr : '');
     setPressed('body', pose ? pose.color : '');
+    setPressed('emote', it ? (it.emote ? it.emote.id : 'none') : '');
+    setPressed('move', it ? (it.move || 'none') : '');
+    setPressed('mount', it ? (it.mount || 'none') : '');
+    setPressed('pfloor', st.photo.floor); setPressed('pflat', null, st.photo.flat);
+    var worn = it && it.attach ? it.attach.map(function (a) { return a.kind; }) : [];
+    var wl = content.querySelectorAll('[data-act="wear"]');
+    for (var wi = 0; wi < wl.length; wi++) wl[wi].setAttribute('aria-pressed', worn.indexOf('costume:' + wl[wi].getAttribute('data-v')) >= 0 ? 'true' : 'false');
+    setPressed('att', attSel);
+    var bub = it && it.kind.indexOf('bubble:') === 0;
+    if (bub) { setPressed('bubcolor', it.color); setPressed('bubtail', it.tail); }
     setPressed('mode', App.rig.mode);
     setPressed('mm', st.lens.mm); setPressed('fn', st.lens.fnum);
     setPressed('tapfocus', null, !!App.tapFocus);
@@ -291,22 +347,82 @@
     });
     if (!S().items.length) ul.innerHTML = '<li class="hint">The scene is empty. Add a character above.</li>';
   }
-  function syncSelection() {
+  var NOUN = { chance: 'arm', sue: 'arm' };
+  var lastBodyKind = '';
+  function syncMount() {
     var it = selItem();
+    $('mountBox').hidden = !(it && it.y > 0.05);
+  }
+  function renderAtt() {
+    var it = selItem(), list = it && it.attach ? it.attach : [], box = $('attList');
+    var names = { handL: 'left hand', handR: 'right hand', head: 'head', neck: 'neck', feet: 'feet' };
+    box.innerHTML = '';
+    if (attSel && !list.some(function (a) { return a.id === attSel; })) attSel = null;
+    if (!attSel && list.length) attSel = list[0].id;
+    list.forEach(function (a) {
+      var info = DP.kindInfo(a.kind), nm = info ? (info.upload ? 'Picture' : info.name) : a.kind;
+      box.insertAdjacentHTML('beforeend', '<button type="button" class="chip" data-act="att" data-v="' + esc(a.id) + '" aria-pressed="' + (a.id === attSel) + '">' + esc(cap(nm)) + ', ' + names[a.slot] + '</button>');
+    });
+    $('attCtl').hidden = !list.length;
+    var a = selAtt();
+    $('attBub').hidden = !(a && a.kind.indexOf('bubble:') === 0);
+    if (a && a.kind.indexOf('bubble:') === 0 && document.activeElement !== $('attText')) $('attText').value = a.text || '';
+  }
+  function renderBodyColors(def, kind) {
+    var key = kind + '|' + (def.colors ? def.colors.length : 0);
+    if (key === lastBodyKind) return;
+    lastBodyKind = key;
+    $('bodyColors').hidden = !def.colors;
+    $('bodySw').innerHTML = def.colors ? swatches('body', def.colors.map(function (c, i) { return [String(i), c.sw || def.main || '#cccccc', c.name]; }), 'Body color') : '';
+  }
+  function syncSelection() {
+    var it = selItem(), puppet = !!(it && DP.isPuppet(it.kind)), bub = !!(it && it.kind.indexOf('bubble:') === 0);
     $('itemCtl').hidden = !it; $('itemHint').hidden = !!it;
-    $('poseNone').hidden = !!(it && it.pose); $('poseBox').hidden = !(it && it.pose);
-    if (it && it.pose) {
-      var puppet = it.kind === 'dibs';
-      $('poseName').textContent = DP.kindInfo(it.kind).name + ', pose';
-      $('f-wingB').parentNode.hidden = !puppet;
-      content.querySelector('label[for="f-wingA"]').textContent = puppet ? 'Left wing' : 'Wing';
-      $('bodyColors').hidden = !puppet;
-      $('faceSeg').querySelector('[data-v="wink"]').hidden = !puppet;
+    var canEmote = !!(it && !bub);
+    $('poseNone').hidden = canEmote; $('poseBox').hidden = !canEmote;
+    if (it) {
+      var info = DP.kindInfo(it.kind);
+      $('selName').textContent = info.upload ? 'Selected: Picture' : 'Selected: ' + info.name;
+      syncMount();
+      $('bubbleBox').hidden = !bub;
+      if (bub) { $('bubTail').hidden = it.kind === 'bubble:sign' || it.kind === 'bubble:shout'; if (document.activeElement !== $('bubText')) $('bubText').value = it.text || ''; }
+      // give a prop to a character
+      var holdable = /^(symbol|upload|costume|bubble):/.test(it.kind);
+      var targets = S().items.filter(function (i) { return DP.isPuppet(i.kind); });
+      $('giveBox').hidden = !(holdable && targets.length);
+      if (holdable && targets.length) {
+        var sel = $('giveTarget'), prev = sel.value; sel.innerHTML = '';
+        targets.forEach(function (t, n) { var o = document.createElement('option'); o.value = t.id; o.textContent = DP.kindInfo(t.kind).name + (targets.filter(function (z) { return z.kind === t.kind; }).length > 1 ? ' ' + (targets.filter(function (z) { return z.kind === t.kind; }).indexOf(t) + 1) : ''); sel.appendChild(o); });
+        if (prev && targets.some(function (t) { return t.id === prev; })) sel.value = prev;
+      }
+    }
+    if (canEmote) {
+      var def = puppet ? DP.PUPPETS[it.kind] : null;
+      $('poseName').textContent = (it.kind.indexOf('upload:') === 0 ? 'Picture' : DP.kindInfo(it.kind).name) + (puppet ? ', pose and costumes' : ', emote');
+      $('poseSec').hidden = !puppet; $('holdSec').hidden = !puppet; $('wearSec').hidden = !puppet;
+      $('emoteCtl').hidden = !it.emote;
+      if (puppet) {
+        var n = NOUN[it.kind] || 'wing', w = def.wings;
+        $('f-wingA').parentNode.hidden = w === 0; $('f-wingB').parentNode.hidden = w < 2;
+        content.querySelector('label[for="f-wingA"]').textContent = w === 2 ? 'Left ' + n : cap(n);
+        content.querySelector('label[for="f-wingB"]').textContent = 'Right ' + n;
+        renderBodyColors(def, it.kind);
+        renderAtt();
+      }
     }
     var ch = $('poseChooser'); ch.innerHTML = '';
-    S().items.filter(function (i) { return i.pose; }).forEach(function (i) { ch.insertAdjacentHTML('beforeend', chip('pick', i.id, DP.kindInfo(i.kind).name + (S().items.filter(function (z) { return z.kind === i.kind; }).length > 1 ? ' ' + (S().items.filter(function (z) { return z.kind === i.kind; }).indexOf(i) + 1) : ''))); });
-    if (!ch.children.length) ch.innerHTML = '<p class="hint">There is no Dibs or Wacker in the scene. Add one in the Scene tab.</p>';
+    var cand = S().items.filter(function (i) { return i.kind.indexOf('bubble:') !== 0 && !/^(symbol|costume):/.test(i.kind); });
+    cand.forEach(function (i) {
+      var same = S().items.filter(function (z) { return z.kind === i.kind; });
+      var nm = i.kind.indexOf('upload:') === 0 ? 'Picture' : DP.kindInfo(i.kind).name;
+      ch.insertAdjacentHTML('beforeend', chip('pick', i.id, nm + (same.length > 1 ? ' ' + (same.indexOf(i) + 1) : '')));
+    });
+    if (!ch.children.length) ch.innerHTML = '<p class="hint">There is no character in the scene. Add one in the Scene tab.</p>';
     syncFields(); markPressed(); renderItemList();
+    var ph = S().photo, on = S().set.id === 'photo';
+    $('photoBox').hidden = !on;
+    $('photoCtl').hidden = !ph.data;
+    $('photoHint').hidden = !!ph.data;
   }
   function syncCamera() {
     syncFields(); markPressed();
@@ -382,7 +498,7 @@
     $('cfTitle').textContent = title; $('cfText').textContent = text; $('cfYes').textContent = yes; $('cfNo').textContent = no; confirmCb = cb;
     lastFocus = document.activeElement; $('confirmModal').hidden = false; $('cfNo').focus();
   }
-  UI.closeModals = function () { $('resultModal').hidden = true; $('confirmModal').hidden = true; confirmCb = null; };
+  UI.closeModals = function () { $('resultModal').hidden = true; $('confirmModal').hidden = true; $('pickModal').hidden = true; confirmCb = null; };
   $('resBack').addEventListener('click', closeResult);
   $('resShare').addEventListener('click', function () {
     if (!resRec) return;
@@ -390,10 +506,10 @@
   });
   $('cfNo').addEventListener('click', function () { $('confirmModal').hidden = true; confirmCb = null; if (lastFocus && lastFocus.focus) lastFocus.focus(); });
   $('cfYes').addEventListener('click', function () { var cb = confirmCb; $('confirmModal').hidden = true; confirmCb = null; if (cb) cb(); });
-  ['resultModal', 'confirmModal'].forEach(function (id) {
+  ['resultModal', 'confirmModal', 'pickModal'].forEach(function (id) {
     $(id).addEventListener('keydown', function (e) {
       if (e.key !== 'Tab') return;
-      var f = $(id).querySelectorAll('a[href],button:not([hidden])'); if (!f.length) return;
+      var f = $(id).querySelectorAll('a[href],button:not([hidden]),input:not([hidden])'); if (!f.length) return;
       var first = f[0], last = f[f.length - 1];
       if (e.shiftKey && document.activeElement === first) { last.focus(); e.preventDefault(); }
       else if (!e.shiftKey && document.activeElement === last) { first.focus(); e.preventDefault(); }
@@ -432,6 +548,34 @@
   }
   function safeName(n) { return (n || 'scene').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').toLowerCase() || 'scene'; }
 
+  /* ---------- speech bubbles: redraw after a short pause ---------- */
+  var rebuildTimer = 0;
+  function rebuildSoon(id) {
+    clearTimeout(rebuildTimer);
+    rebuildTimer = setTimeout(function () { App.rebuildItem(id); App.save(); }, 220);
+  }
+
+  /* ---------- the prop picker for Holding ---------- */
+  var pickSlot = 'handR', pickBuilt = false;
+  function openPicker(slot) {
+    pickSlot = slot;
+    if (!pickBuilt) {
+      pickBuilt = true;
+      var first = ['stick', 'football'].map(function (c) {
+        return '<button type="button" data-v="costume:' + c + '" data-name="' + c + '" aria-label="Hold ' + c + '" title="' + c + '"><img alt="" src="' + svgData(A.costumes[c]) + '"></button>';
+      }).join('');
+      $('pkGrid').innerHTML = first + Object.keys(A.symbols).map(function (n) {
+        return '<button type="button" data-v="symbol:' + n + '" data-name="' + n.replace(/-/g, ' ') + '" aria-label="Hold ' + n.replace(/-/g, ' ') + '" title="' + n.replace(/-/g, ' ') + '"><img alt="" decoding="async" loading="lazy" src="' + svgData(A.symbols[n]) + '"></button>';
+      }).join('');
+    }
+    var names = { handL: 'left hand', handR: 'right hand', head: 'the head', neck: 'the neck', feet: 'the feet' };
+    $('pkTitle').textContent = 'Put something on ' + (slot === 'handL' || slot === 'handR' ? 'the ' : '') + names[slot];
+    $('pkFind').value = ''; var els = $('pkGrid').children; for (var i = 0; i < els.length; i++) els[i].hidden = false;
+    lastFocus = document.activeElement;
+    $('pickModal').hidden = false; $('pkFind').focus();
+  }
+  function closePicker() { $('pickModal').hidden = true; if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+
   /* ---------- actions ---------- */
   var act = {
     set: function (v) {
@@ -439,10 +583,32 @@
       App.setBackdrop(v).then(function () { App.save(); });
       if (v === 'wacker' && st.light.preset !== 'night') { st.light = App.lightFrom(App.LIGHTS[4]); App.applyLight(); App.msg('Light changed to Lower Wacker night. Change it in Light.'); syncAll(); }
       else if (prev === 'wacker' && st.light.preset === 'night') { st.light = App.lightFrom(App.LIGHTS[1]); App.applyLight(); syncAll(); }
-      markPressed();
+      syncSelection();
     },
+    photocam: function () { $('filePhotoCam').click(); },
+    photofile: function () { $('filePhoto').click(); },
+    pfloor: function (v) { S().photo.floor = v; App.applyPhoto(); markPressed(); App.save(); },
+    pflat: function () { S().photo.flat = !S().photo.flat; App.applyPhoto(); markPressed(); App.save(); },
+    addl: function (v) { App.addItem('the-l:' + v); },
+    addbub: function (v) { App.addItem('bubble:' + v).then(function () { App.msg('Added. Change its words in the Scene tab.'); }); },
+    mount: function (v) { var it = selItem(); if (it) { it.mount = v; App.applyItem(it.id); App.save(); markPressed(); } },
+    emote: function (v) {
+      var it = selItem(); if (!it) return;
+      if (v === 'none') { it.emote = null; }
+      else { var e = DP.emoteInfo(v); it.emote = { id: v, x: it.emote ? it.emote.x : 0, s: it.emote ? it.emote.s : 1 }; it.move = e.move; }
+      App.applyItem(it.id); App.save(); syncSelection();
+    },
+    move: function (v) { var it = selItem(); if (it) { it.move = v; App.applyItem(it.id); App.save(); markPressed(); } },
+    wear: function (v) { if (App.sel) { App.wear(App.sel, v); syncSelection(); } },
+    holdin: function (v) { if (App.sel) openPicker(v); },
+    att: function (v) { attSel = v; renderAtt(); syncFields(); markPressed(); },
+    letgo: function () { var a = selAtt(); if (a && App.sel) { var id = App.sel; App.letGo(id, a.id); attSel = null; } },
+    takeoff: function () { var a = selAtt(); if (a && App.sel) { App.detach(App.sel, a.id); attSel = null; syncSelection(); } },
+    bubcolor: function (v) { var it = selItem(); if (it) { it.color = v; markPressed(); rebuildSoon(it.id); } },
+    bubtail: function (v) { var it = selItem(); if (it) { it.tail = v; markPressed(); rebuildSoon(it.id); } },
+    give: function (v) { var it = selItem(); if (!it) return; var t = $('giveTarget').value; if (t && App.giveItem(it.id, t, v)) { App.msg('Given. Find it in the Pose tab under Holding.'); } },
     bdcolor: function (v) { App.setBackdropColor(v); markPressed(); },
-    add: function (v) { App.addItem(v).then(function () { if (v === 'dibs' || v === 'wacker') App.msg('Added. Try the Pose tab.'); }); },
+    add: function (v) { App.addItem(v).then(function () { if (DP.isPuppet(v)) App.msg('Added. Try the Pose tab.'); }); },
     prop: function (v) { App.addItem('symbol:' + v); },
     uploadprop: function () { $('fileProp').click(); },
     pick: function (v) { App.select(v); },
@@ -455,7 +621,6 @@
       App.applyItem(it.id); App.save(); syncFields(); markPressed();
     },
     look: function (v) { var it = selItem(); if (it && it.pose) { it.pose.look = parseInt(v, 10); it.pose.preset = 'custom'; App.applyItem(it.id); App.save(); markPressed(); } },
-    face: function (v) { var it = selItem(); if (it && it.pose) { it.pose.expr = v; it.pose.preset = 'custom'; App.applyItem(it.id); App.save(); markPressed(); } },
     body: function (v) { var it = selItem(); if (it && it.pose) { it.pose.color = parseInt(v, 10); App.applyItem(it.id); App.save(); markPressed(); } },
     mode: function (v) { App.rig.setMode(v); App.bump(); syncCamera(); App.save(); },
     mm: function (v) { S().lens.mm = parseInt(v, 10); App.applyLens(); App.showReticle(); App.invalidate(); syncFields(); markPressed(); App.save(); },
@@ -549,12 +714,13 @@
 
   UI.itemsChanged = function () { renderItemList(); syncSelection(); };
   UI.selectionChanged = function () { syncSelection(); };
-  UI.itemMoved = function () { if (!syncPend) { syncPend = true; requestAnimationFrame(function () { syncPend = false; syncFields(); }); } };
+  UI.itemMoved = function () { if (!syncPend) { syncPend = true; requestAnimationFrame(function () { syncPend = false; syncFields(); syncMount(); }); } };
   UI.cameraChanged = function () { syncCamera(); };
   UI.cameraMoved = function () { if (!syncPend) { syncPend = true; requestAnimationFrame(function () { syncPend = false; if (curTab === 'camera') { syncFields(); $('camHeight').textContent = 'Camera height: ' + (App.rig.camera.position.y * App.UNIT_MM / 1000).toFixed(2) + ' m'; } }); } };
   UI.tapFocusChanged = function () { markPressed(); };
   UI.stickersChanged = function () { syncSticker(); };
   UI.stickerSelected = function () { syncSticker(); if (selSticker() && curTab !== 'stickers' && !isPhone()) { /* keep the tab, the sticker has its own handles */ } };
+  UI.photoChanged = function () { syncSelection(); };
   UI.rollChanged = function () { if (curTab === 'save') refreshRoll(); };
   UI.stateLoaded = function () { syncAll(); $('sceneName').value = S().name === 'Starter scene' ? '' : S().name; };
   UI.ready = function () { syncAll(); };
@@ -564,6 +730,32 @@
     $('propFind').addEventListener('input', function () {
       var q = this.value.trim().toLowerCase(), els = $('propGrid').children;
       for (var i = 0; i < els.length; i++) els[i].hidden = q && els[i].getAttribute('data-name').indexOf(q) < 0;
+    });
+    $('bubText').addEventListener('input', function () { var it = selItem(); if (it && it.kind.indexOf('bubble:') === 0) { it.text = this.value; rebuildSoon(it.id); } });
+    $('attText').addEventListener('input', function () { var a = selAtt(), it = selItem(); if (a && it) { a.text = this.value; App.applyItem(it.id); App.save(); } });
+    $('pkFind').addEventListener('input', function () {
+      var q = this.value.trim().toLowerCase(), els = $('pkGrid').children;
+      for (var i = 0; i < els.length; i++) els[i].hidden = q && els[i].getAttribute('data-name').indexOf(q) < 0;
+    });
+    $('pkGrid').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-v]'); if (!b || !App.sel) return;
+      App.attachTo(App.sel, { kind: b.getAttribute('data-v'), slot: pickSlot });
+      var it = selItem(); attSel = it && it.attach.length ? it.attach[it.attach.length - 1].id : null;
+      closePicker(); syncSelection();
+    });
+    $('pkClose').addEventListener('click', closePicker);
+    $('pkUpload').addEventListener('click', function () { $('fileHold').click(); });
+    $('fileHold').addEventListener('change', function () {
+      var f = this.files[0]; this.value = '';
+      readUpload(f, function (id) {
+        if (!App.sel) return;
+        App.attachTo(App.sel, { kind: 'upload:' + id, slot: pickSlot });
+        var it = selItem(); attSel = it && it.attach.length ? it.attach[it.attach.length - 1].id : null;
+        closePicker(); syncSelection();
+      });
+    });
+    ['filePhotoCam', 'filePhoto'].forEach(function (id) {
+      $(id).addEventListener('change', function () { var f = this.files[0]; this.value = ''; if (f) App.setPhotoFile(f); });
     });
     $('stkText').addEventListener('input', function () { var s = selSticker(); if (s) { s.text = this.value; App.overlay.render(); App.save(); } });
     $('frameText').addEventListener('input', function () { S().frame.text = this.value; App.overlay.render(); App.save(); });

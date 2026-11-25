@@ -1,6 +1,6 @@
 # DIBS Photo Mode
 
-A photo mode for making social posts and cover pictures. Dibs and Wacker stand in a small 3D paper diorama as flat cutouts. You pose them, move a 3D camera, set the lens and the light, add stickers and a frame, and take a PNG for the platform you pick.
+A photo mode for making social posts and cover pictures. Dibs, Wacker, a plain pigeon and the Chicago critters (Chance, Hiram, Ivy, Monty and Sue) stand in a small 3D paper diorama as flat cutouts. You pose them, give them emotes, costumes and props to hold, move a 3D camera, set the lens and the light, add stickers and a frame, and take a PNG for the platform you pick.
 
 It works offline. Nothing is loaded from other sites and nothing is uploaded.
 
@@ -11,8 +11,13 @@ It works offline. Nothing is loaded from other sites and nothing is uploaded.
 
 ## Using it
 
-- **Scene**: pick a backdrop, add Dibs, Wacker, props or your own picture. Tap an item to select it, drag it along the floor, or use the sliders (left or right, closer or farther, height, turn, tilt, size).
-- **Pose**: presets and sliders for Dibs and Wacker (head, wings, lean, hop), plus face and body color for Dibs.
+- **Scene**: pick a backdrop, or use your own photo (see below). Add a character, the L (eight line colors), a speech bubble, a prop or your own picture. Tap an item in the picture to pick it, drag it along the floor, or use the sliders. **Height off the ground** is the first slider for a selected item, and a small paper tab on its ring does the same when you drag it up or down (works with a finger). A raised item loses its paper stand and can hang from a **Stick** or a **String**.
+- **Your photo** (Backdrop, last tile): **Take a picture** opens the camera on a phone, **Choose a picture** opens the library. The picture becomes a big backdrop that keeps its shape (large pictures are scaled to 2048 px). Size, left or right, up or down and distance move it. **Floor** is Paper floor, Photo only (the floor turns invisible and only catches shadows, so the characters cast shadows onto your photo) or Hidden. **Flat on floor** lays the picture down as the ground, for photos taken looking down. The picture is saved with the scene and with exported files.
+- **Speech bubbles**: Speech bubble, Thought bubble, Shout bubble and Sign on a stick are paper cutouts in the 3D scene. Type the words (several lines are fine, the type shrinks to fit), pick a color and a tail side. They can float, be turned and sized like any item, or be given to a character so they float by its head. The old flat bubbles in Stickers are still there.
+- **Pose**: for the critters, presets and sliders (head, wings or arms, lean, hop), looking left or right and body color (Sue and the L keep their own colors). Eyes are never redrawn: the characters are cut into parts and the parts move.
+  - **Emote**: a paper pop-up above the head (heart, two hearts, exclaim, question, music note, sweat drop, sleepy, steam, idea, laughing, tears, shivering) with sliders for left or right of the head and size. Each emote picks a body **Move** (Bounce, Tilt, Lean in, Shiver, Slump), and you can change the move on its own. Emotes also work on Dibs on the L, Wacker flying, props and your own pictures.
+  - **Holding**: hold any prop or your own picture in the left or right hand, on the head, around the neck or at the feet. A held item moves with the pose and has its own size, turn and offset sliders, **Let go** drops it into the scene where it is. In the Scene tab, a selected prop has **Give to** for the same thing.
+  - **Wear**: caps, horns, scarf, stick and football snap to the head, neck or a hand. Each critter has its own fit. One costume per place.
 - **Camera**: Orbit (drag to go around, scroll or pinch to move closer, right-drag or two fingers to slide) or Fly (drag to look, pad or W A S D, Q and E to move). Lens 14 to 200 mm, aperture f/1.4 to f/22 (blur follows the thin-lens formula), tap to focus, focus distance, camera tilt, exposure, thirds grid.
 - **Light**: time of day presets, sun direction and warmth, fill light, shadow edge, spotlight.
 - **Look**: filters (Warm, Cool, Newsprint, B&W, Faded film, Chicago night, Pop), brightness, contrast, color, vignette, paper grain.
@@ -30,8 +35,9 @@ Plain HTML, CSS and JavaScript with no build step at runtime. three.js (MIT) is 
 | File | What it does |
 |---|---|
 | `index.html`, `css/photo.css` | The page and styles |
-| `js/assets.js` | **Generated.** The Dibs, Wacker and symbol drawings as SVG text. Run `node photo-mode/tools/build-assets.js` from the repo root after changing any drawing in `img/dibs`, `img/wacker` or `img/symbols`. |
-| `js/puppets.js` | Paper cutouts (die-cut edge, cardstock back, stand) and the Dibs and Wacker puppets |
+| `js/assets.js` | **Generated.** The Dibs, Wacker, critter, costume, L and symbol drawings as SVG text. Run `node photo-mode/tools/build-assets.js` from the repo root after changing any drawing in `img/dibs`, `img/wacker`, `img/symbols` or `photo-mode/art`. |
+| `js/puppets.js` | Paper cutouts (die-cut edge, cardstock back, stand), the puppets (each drawing is cut into parts by its own SVG elements), anchors for held and worn items, body moves |
+| `js/extras.js` | Emote cutouts, costumes, the L list and the 3D speech bubble drawing |
 | `js/sets.js` | The backdrops, drawn as layers of flat paper at different depths |
 | `js/dof.js` | Depth of field (thin-lens blur), filters, vignette and grain in one pass |
 | `js/controls.js` | Orbit and fly camera and touch gestures |
@@ -42,4 +48,4 @@ Plain HTML, CSS and JavaScript with no build step at runtime. three.js (MIT) is 
 
 Why the drawings are stored as text: browsers block textures loaded from image files when a page is opened straight from disk. Text works everywhere.
 
-Dibs, Wacker and the symbols keep the licenses in `NOTICE.md`. Anything you add stays on your device.
+Dibs, Wacker, the critters, costumes, the L and the symbols keep the licenses in `NOTICE.md`; the drawing rules for `art/` are in `art/README.txt`. In photo mode only, Dibs wears a Chicago flag neck band (white, two light blue stripes, red six-pointed stars) and the Pigeon a solid black one; the drawings in `img/dibs` are unchanged. Anything you add stays on your device.
