@@ -11,6 +11,7 @@ These parts of the site are not owned by Richard Wawrzonkowski. They are used un
 | Atkinson Hyperlegible font | `fonts/atkinson-*` | Braille Institute of America | SIL Open Font License 1.1 (`fonts/OFL-atkinson-hyperlegible.txt`) |
 | Dibs the pigeon drawings (Dibs, and Dibs riding the L) | `img/dibs/` | Richard Wawrzonkowski | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), the same license the V.O.I.C.E. app uses for its critter drawings |
 | OpenDyslexic font (used unmodified; Reserved Font Name kept) | `fonts/opendyslexic-*` | Abbie Gonzalez | SIL Open Font License 1.1 (`fonts/OFL-opendyslexic.txt`) |
+| three.js 3D library | `photo-mode/vendor/three.min.js` | three.js authors ([threejs.org](https://threejs.org)) | MIT (`photo-mode/vendor/LICENSE-three.txt`) |
 
 Symbol files are stored unmodified; the website sometimes shows them dimmed or recolored with CSS. The site is not affiliated with or endorsed by Project Core, the University of North Carolina, Mulberry Symbols or OpenMoji.
 

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DIBS Photo Mode</title>
+<meta name="description" content="Pose Dibs and Wacker as paper cutouts in a little Chicago diorama, move the camera, and take a photo for a post or cover.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#fbf6ea">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'none'; worker-src 'self'; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="../img/icons/icon-192.png">
+<link rel="apple-touch-icon" href="../img/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="css/photo.css">
+</head>
+<body>
+<div id="app">
+  <main id="stage" aria-label="Photo preview">
+    <p id="frameInfo" class="frameinfo"></p>
+    <div id="frameBox">
+      <canvas id="gl" aria-label="3D scene"></canvas>
+      <canvas id="ov" tabindex="0" aria-label="Scene view. Drag to move the camera. Arrow keys move the selected item."></canvas>
+      <div id="guides" aria-hidden="true">
+        <div id="gridLines"></div>
+        <div id="safeZones"></div>
+        <div id="circleGuide"></div>
+        <div id="bannerSafe"></div>
+      </div>
+      <div id="reticle" aria-hidden="true"></div>
+      <div id="flash" aria-hidden="true"></div>
+    </div>
+    <div id="fly" hidden>
+      <div id="joy" aria-label="Move joystick"><div id="joyKnob"></div></div>
+      <div class="flybtns">
+        <button type="button" id="flyUp" class="btn sq" aria-label="Move camera up">Up</button>
+        <button type="button" id="flyDown" class="btn sq" aria-label="Move camera down">Down</button>
+      </div>
+    </div>
+    <div id="msg" role="status" aria-live="polite"></div>
+    <button type="button" id="shutter" class="shutter" aria-label="Take photo">
+      <span class="disc"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13.5" r="3.6"/><path d="M8 7l1.5-3h5L16 7"/></svg></span>
+      <span class="shutlabel">Take photo</span>
+    </button>
+  </main>
+  <aside id="panel" data-open="true" aria-label="Tools">
+    <div id="tabs" role="tablist" aria-label="Tool tabs"></div>
+    <div id="sheet">
+      <button type="button" id="sheetToggle" class="sheettoggle" aria-expanded="true" aria-controls="content">Hide tools</button>
+      <div id="content"></div>
+    </div>
+  </aside>
+</div>
+
+<div id="resultModal" class="modal" hidden>
+  <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="resTitle">
+    <h2 id="resTitle">Your photo</h2>
+    <div class="resimg"><img id="resImg" alt="The photo you just took"></div>
+    <p id="resInfo" class="small"></p>
+    <div class="dlgbtns">
+      <a id="resDownload" class="btn primary" download="dibs.png" href="#">Download</a>
+      <button type="button" id="resShare" class="btn" hidden>Share</button>
+      <button type="button" id="resBack" class="btn">Back to scene</button>
+    </div>
+  </div>
+</div>
+
+<div id="confirmModal" class="modal" hidden>
+  <div class="dlg small" role="dialog" aria-modal="true" aria-labelledby="cfTitle">
+    <h2 id="cfTitle">Start a new scene?</h2>
+    <p id="cfText">Your current scene is saved automatically, but it will be replaced.</p>
+    <div class="dlgbtns">
+      <button type="button" id="cfYes" class="btn primary">Start new scene</button>
+      <button type="button" id="cfNo" class="btn">Keep this one</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fileProp" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
+<input type="file" id="fileSticker" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
+<input type="file" id="fileScene" accept=".json,application/json" hidden>
+
+<noscript><p style="padding:24px">Photo mode needs JavaScript.</p></noscript>
+<script src="vendor/three.min.js"></script>
+<script src="js/assets.js"></script>
+<script src="js/store.js"></script>
+<script src="js/puppets.js"></script>
+<script src="js/sets.js"></script>
+<script src="js/dof.js"></script>
+<script src="js/controls.js"></script>
+<script src="js/stickers.js"></script>
+<script src="js/app.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
