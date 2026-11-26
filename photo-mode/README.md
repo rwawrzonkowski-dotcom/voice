@@ -38,7 +38,14 @@ Keyboard: Delete removes the selected item, arrow keys nudge it (Shift for bigge
 - **Captions** draw in an L sign bar inside the safe area. **Sound** is your own file, off until you turn it on, and is mixed into the export.
 - **Export**: every frame is drawn one at a time, then played into a recorder at an exact 30 frames each second (.webm, or .mp4 where the browser needs it). Fast, half size is for phones. Save poster makes a PNG.
 - **Saving**: the movie saves itself in the browser (IndexedDB, store `movies`). Named copies, and `.dibsmovie.json` export and import, are in the Movie tab.
-- **Files**: `movie.html`, `css/movie.css`, `js/movie.js` (data, timeline maths, playback, export), `js/movie-ui.js` (screen), `js/movie-showcase.js` (the showcase).
+- **Quick tab** (first tab, and the one showing on a phone): short command lists for each character, so a busy parent can make a scene without keyframes.
+  - **Commands**: pick a character, tap Add a command (Walk path, Wave, Say, Hop, Look, Wait, Wear, a pose, an emote or a recipe). Commands run in order for each character, and characters run side by side. Drag the handle, or use Up and Down, to reorder. Tap a command to change it. Each row shows its time ("1.5 sec"). Say takes 2.5 sec plus 0.06 sec for each letter. The shot grows to fit its commands (the movie stops at 60 sec, with a plain warning).
+  - **Draw path**: tap Draw path, then drag on the floor. The path shows as a dashed ribbon in the editor only (never in a picture or the video). It is simplified, then the character faces its direction of travel (limited, because a paper card cannot turn edge on), waddles on twos, and settles with a small squash. Speed is Slow, Normal or Fast. Camera follows is a switch on the command.
+  - **Auto camera** (a switch on the Quick tab): a wide shot of everyone, then a smooth ease and a gentle push in (about 10 to 14 percent closer) on whoever is talking, with focus on them. It holds half a second before the cut. A camera key you set by hand turns it off.
+  - **Script**: type `Dibs: Hey Chicago!` (a line is spoken), `Dibs: shrug, question` (known pose and emote words, `wait 2`, `walk`, `wear blue cap`, `look left`, `hop`, `wave`), `Dibs (wave): Hi!` (wave, then say) and `Scene: Hot dog stand` or `--- L platform` (a new shot). Characters missing from the shot are added, facing the camera and spaced apart. Lines play in order, one at a time. Unknown words become a gentle note under the box. Build asks first if the shot already has commands, and Undo brings them back.
+  - **Recipes**: Save as recipe keeps one character's list (paths are saved relative to where it starts). Add a command, then Recipes, applies one to the picked character. Walk in and say hi, Big reveal and Wacker heckle come with the tool. Saved recipes live in IndexedDB (store `recipes`, database version 3).
+  - **How it works**: commands live on the shot (`shot.actions`, `shot.autoCamera`, saved in `.dibsmovie.json`; older files without them still open). `MM.compileActions` rebuilds the keys they stand for on ordinary tracks, each marked `gen: true`, whenever a list changes. Keys you make by hand are never touched. Changing a generated key in the timeline makes it yours.
+- **Files**: `movie.html`, `css/movie.css`, `js/movie.js` (data, timeline maths, playback, export), `js/movie-actions.js` (command lists, auto camera, script, recipes), `js/movie-ui.js` (screen), `js/movie-quick.js` (the Quick tab), `js/movie-showcase.js` (the showcase).
 
 ## How it is built
 
@@ -54,7 +61,7 @@ Plain HTML, CSS and JavaScript with no build step at runtime. three.js (MIT) is 
 | `js/dof.js` | Depth of field (thin-lens blur), filters, vignette and grain in one pass |
 | `js/controls.js` | Orbit and fly camera and touch gestures |
 | `js/stickers.js` | Stickers and paper frames, drawn in 2D over the picture |
-| `js/store.js` | Saving in the browser (IndexedDB) |
+| `js/store.js` | Saving in the browser (IndexedDB: scenes, photo roll, autosave, movies, recipes) |
 | `js/app.js`, `js/ui.js` | The scene, capture and the tool panel |
 | `sw.js`, `manifest.webmanifest` | Offline cache and install on a phone. Raise `CACHE` in `sw.js` whenever a file changes. |
 

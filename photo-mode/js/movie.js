@@ -127,11 +127,13 @@
       var d = tr && describe(tr.target);
       if (!d) return;
       var keys = [];
-      (Array.isArray(tr.keys) ? tr.keys : []).slice(0, 400).forEach(function (k) {
+      (Array.isArray(tr.keys) ? tr.keys : []).slice(0, 700).forEach(function (k) {
         if (!k || !isNum(k.t)) return;
         var v = cleanKeyValue(d, k.v);
         if (v === undefined) return;
-        keys.push({ t: r4(clamp(k.t, 0, dur)), v: v, ease: EASES.indexOf(k.ease) >= 0 ? k.ease : 'easeInOut' });
+        var nk = { t: r4(clamp(k.t, 0, dur)), v: v, ease: EASES.indexOf(k.ease) >= 0 ? k.ease : 'easeInOut' };
+        if (k.gen === true) nk.gen = true;      // made by the Quick action list, rebuilt whenever the list changes
+        keys.push(nk);
       });
       if (!keys.length) return;
       keys.sort(function (a, b) { return a.t - b.t; });
@@ -151,6 +153,9 @@
       var dur = clamp(isNum(s.duration) ? s.duration : 4, 0.5, left);
       left -= dur;
       var shot = { id: typeof s.id === 'string' ? s.id.replace(/[^\w-]/g, '').slice(0, 30) || nid('s') : nid('s'), name: typeof s.name === 'string' ? s.name.slice(0, 40) : 'Shot ' + (i + 1), duration: r4(dur), scene: s.scene, tracks: cleanTracks(s.tracks, dur) };
+      if (MM.cleanActions) { var acts = MM.cleanActions(s.actions); if (Object.keys(acts).length) shot.actions = acts; }
+      if (s.autoCamera === true) shot.autoCamera = true;
+      if (isNum(s.actDur) && shot.actions) { shot.actDur = r4(clamp(s.actDur, 0.5, MAX_DUR)); if (isNum(s.preDur)) shot.preDur = r4(clamp(s.preDur, 0.5, MAX_DUR)); }
       if (typeof s.thumb === 'string' && /^data:image\/(jpeg|png);base64,/.test(s.thumb) && s.thumb.length < 60000) shot.thumb = s.thumb;
       m.shots.push(shot);
     });
@@ -180,6 +185,7 @@
      so the change starts at t and not at the start of the shot. */
   MM.setKey = function (shot, target, t, v, ease, anchorValue) {
     var d = describe(target); if (!d) return null;
+    if (d.group === 'camera' && shot.autoCamera && MM.autoCameraOff && ['pos', 'target', 'focus'].indexOf(d.field) >= 0) MM.autoCameraOff(shot);
     var tr = MM.getTrack(shot, target, true), isNew = !tr.keys.length;
     t = clamp(snapT(t), 0, shot.duration);
     var cv = cleanKeyValue(d, v);
@@ -188,9 +194,9 @@
       var av = cleanKeyValue(d, anchorValue);
       if (av !== undefined) tr.keys.push({ t: 0, v: av, ease: ease || 'easeInOut' });
     }
-    var i = MM.keyAt(tr, t);
-    if (i >= 0) { tr.keys[i].v = cv; if (ease) tr.keys[i].ease = ease; return tr.keys[i]; }
-    var k = { t: t, v: cv, ease: ease || 'easeInOut' };
+    var i = MM.keyAt(tr, t), k;
+    if (i >= 0) { k = tr.keys[i]; k.v = cv; if (ease) k.ease = ease; delete k.gen; return k; }
+    k = { t: t, v: cv, ease: ease || 'easeInOut' };
     tr.keys.push(k);
     tr.keys.sort(function (a, b) { return a.t - b.t; });
     return k;
@@ -206,7 +212,7 @@
     t = clamp(snapT(t), 0, shot.duration);
     var other = MM.keyAt(tr, t);
     if (other >= 0 && other !== index) return index;   // keep two keys off the same frame
-    k.t = t;
+    k.t = t; delete k.gen;
     tr.keys.sort(function (a, b) { return a.t - b.t; });
     return tr.keys.indexOf(k);
   };
@@ -243,7 +249,7 @@
     var dx = pos[0] - tg[0], dy = pos[1] - tg[1], dz = pos[2] - tg[2], d = Math.hypot(dx, dy, dz) || 0.001;
     return { tx: tg[0], ty: tg[1], tz: tg[2], yaw: Math.atan2(dx, dz), pitch: Math.asin(clamp(dy / d, -1, 1)), dist: d };
   }
-  MM.camToPT = camToPT; MM.ptToCam = ptToCam;
+  MM.camToPT = camToPT; MM.ptToCam = ptToCam; MM.cleanTracks = cleanTracks;
   function baseFromScene(sc) {
     var pt = camToPT(sc.cam), b = { cam: clone(sc.cam), camPos: pt.pos, camTarget: pt.target, mm: sc.lens.mm, fstop: sc.lens.fnum, exposure: sc.lens.exposure, focus: clone(sc.lens.focus), roll: sc.cam.roll || 0,
       light: clone(sc.light), filter: sc.look.filter, items: {} };
@@ -561,6 +567,8 @@
     var shot = MM.cur(), m = MM.movie;
     var others = MM.total() - shot.duration;
     d = clamp(Math.round(d * 2) / 2, 0.5, Math.min(MAX_DUR - others, MAX_DUR));
+    var need = MM.actionNeeded ? MM.actionNeeded(shot) : 0;
+    if (need && d < need - 1e-6 && d < shot.duration) { App.msg('The Quick list needs ' + (Math.round(need * 10) / 10) + ' sec. Shorten the list to make the shot shorter.', 3600); return; }
     if (d === shot.duration) { if (MM.total() >= MAX_DUR - 1e-6) App.msg('A movie can be 60 sec long.'); return; }
     MM.pushUndo();
     shot.duration = d;
@@ -571,7 +579,7 @@
   };
 
   /* shot picture for the strip, taken at the middle of the shot */
-  function thumbFor(shot, force) {
+  function thumbFor(shot, force, keepSel) {
     if (!shot || (shot.thumb && !force)) return;
     var live = MM.cur() === shot;
     if (!live || MM.loading) return;
@@ -579,7 +587,7 @@
     try {
       var p = MM.platformInfo(MM.movie.platform), h = 128, w = Math.round(h * p.w / p.h);
       MM.applyAt(shot.duration * 0.5);
-      App.select(null);
+      if (!keepSel) App.select(null);
       var cv = App.renderToCanvas(w, h, { taps: 24, overlay: true });
       MM.applyAt(keepT);
       var t = document.createElement('canvas'); t.width = w; t.height = h; t.getContext('2d').drawImage(cv, 0, 0);

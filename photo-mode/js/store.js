@@ -1,10 +1,10 @@
-/* DIBS Photo Mode: saving. IndexedDB holds the autosave, named scenes, the photo roll and (movie maker) movies.
+/* DIBS Photo Mode: saving. IndexedDB holds the autosave, named scenes, the photo roll and (movie maker) movies and saved recipes.
    If the browser blocks storage (private window), everything keeps working for the session. */
 (function () {
   'use strict';
   var DP = window.DP = window.DP || {};
-  var DB = 'dibs-photo-mode', VER = 2;
-  var dbp = null, mem = { scenes: {}, roll: {}, auto: {}, movies: {} }, broken = false;
+  var DB = 'dibs-photo-mode', VER = 3;
+  var dbp = null, mem = { scenes: {}, roll: {}, auto: {}, movies: {}, recipes: {} }, broken = false;
 
   function open() {
     if (dbp) return dbp;
@@ -18,6 +18,7 @@
           if (!d.objectStoreNames.contains('roll')) d.createObjectStore('roll', { keyPath: 'id' });
           if (!d.objectStoreNames.contains('auto')) d.createObjectStore('auto', { keyPath: 'id' });
           if (!d.objectStoreNames.contains('movies')) d.createObjectStore('movies', { keyPath: 'id' });   // version 2: the movie maker
+          if (!d.objectStoreNames.contains('recipes')) d.createObjectStore('recipes', { keyPath: 'id' }); // version 3: saved Quick recipes
         };
         var done = false;
         rq.onsuccess = function () {

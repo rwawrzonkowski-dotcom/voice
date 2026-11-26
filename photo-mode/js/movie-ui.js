@@ -5,6 +5,7 @@
   var DP = window.DP, App = DP.app, MM = DP.movie, A = window.DIBS_ASSETS;
   var $ = function (id) { return document.getElementById(id); };
   var UI = App.ui = {};
+  UI.ext = { act: {} };       // movie-quick.js adds the Quick tab here
   var S = function () { return App.state; };
   var FPS = MM.FPS;
   var COARSE = window.matchMedia && matchMedia('(pointer:coarse)').matches;
@@ -177,7 +178,7 @@
         h += '<div class="tl-row"><span class="tl-lab">' + esc(ln.label) + '</span><div class="tl-lane" data-target="' + esc(ln.tr.target) + '">';
         ln.tr.keys.forEach(function (k, i) {
           var sel = selKey && selKey.target === ln.tr.target && Math.abs(selKey.t - k.t) < 0.5 / FPS;
-          h += '<button type="button" class="tl-key' + (sel ? ' sel' : '') + (k.v === null || k.v === false ? ' off' : '') + '" data-target="' + esc(ln.tr.target) + '" data-t="' + k.t + '" style="left:' + (k.t / dur * 100) + '%" aria-label="' + esc(ln.label + ' key at ' + fmt(k.t, 2) + ' sec. ' + keyTitle(ln.tr, k)) + '" aria-pressed="' + sel + '"><i></i></button>';
+          h += '<button type="button" class="tl-key' + (sel ? ' sel' : '') + (k.v === null || k.v === false ? ' off' : '') + (k.gen ? ' gen' : '') + '" data-target="' + esc(ln.tr.target) + '" data-t="' + k.t + '" style="left:' + (k.t / dur * 100) + '%" aria-label="' + esc(ln.label + ' key at ' + fmt(k.t, 2) + ' sec. ' + keyTitle(ln.tr, k)) + '" aria-pressed="' + sel + '"><i></i></button>';
         });
         h += '</div></div>';
       });
@@ -282,6 +283,7 @@
     } else {
       h += '<div class="kb-row"><span class="kb-lab">Value</span><span class="kb-val wide">' + esc(keyTitle(c.tr, k)) + '</span></div>';
     }
+    if (k.gen) h += '<p class="hint">This key comes from the Quick list. Change the list to change it. If you change it here, it becomes yours and the list leaves it alone.</p>';
     h += '<div class="kb-row"><button type="button" class="btn danger small" data-kb="del">Delete key</button></div>';
     el.hidden = false; el.innerHTML = h;
   }
@@ -292,7 +294,7 @@
       var a = b.getAttribute('data-kb'), c = curKey(); if (!c && a !== 'close') return;
       if (a === 'close') { selKey = null; renderKeyBar(); renderTimeline(true); return; }
       if (a === 'del') { MM.pushUndo(); MM.removeKey(MM.cur(), selKey.target, c.i); selKey = null; MM.touch(); renderKeyBar(); renderTimeline(true); MM.seek(MM.t); return; }
-      if (a === 'ease') { MM.pushUndo(); c.k.ease = b.getAttribute('data-v'); MM.touch(); renderKeyBar(); MM.seek(MM.t); return; }
+      if (a === 'ease') { MM.pushUndo(); c.k.ease = b.getAttribute('data-v'); delete c.k.gen; MM.touch(); renderKeyBar(); MM.seek(MM.t); return; }
       if (a === 'back' || a === 'fwd') {
         MM.pushUndo();
         var ni = MM.moveKey(MM.cur(), selKey.target, c.i, c.k.t + (a === 'fwd' ? 1 : -1) / FPS);
@@ -345,7 +347,7 @@
   }
 
   /* ---------- tool tabs ---------- */
-  var TABS = [['shot', 'Shot'], ['item', 'Item'], ['camera', 'Camera'], ['look', 'Look'], ['text', 'Text'], ['sound', 'Sound'], ['movie', 'Movie']];
+  var TABS = [['quick', 'Quick'], ['shot', 'Shot'], ['item', 'Item'], ['camera', 'Camera'], ['look', 'Look'], ['text', 'Text'], ['sound', 'Sound'], ['movie', 'Movie']];
   function chip(act, v, label, extra) { return '<button type="button" class="chip" data-act="' + act + '" data-v="' + esc(v) + '" aria-pressed="false"' + (extra || '') + '>' + label + '</button>'; }
   function seg(act, list, label) { return '<div class="seg" role="group" aria-label="' + label + '">' + list.map(function (o) { return '<button type="button" data-act="' + act + '" data-v="' + o[0] + '" aria-pressed="false">' + o[1] + '</button>'; }).join('') + '</div>'; }
   function field(id, label, min, max, step) { return '<div class="field"><label for="f-' + id + '">' + label + '</label><output id="o-' + id + '" for="f-' + id + '"></output><input type="range" id="f-' + id + '" data-f="' + id + '" min="' + min + '" max="' + max + '" step="' + step + '"></div>'; }
@@ -363,11 +365,21 @@
   function setOpen(o) {
     panel.setAttribute('data-open', o ? 'true' : 'false');
     $('mmSheetToggle').setAttribute('aria-expanded', o ? 'true' : 'false');
+    syncCompact();
     setTimeout(function () { App.layout(); MM.paintCaption(); }, 30);
   }
+  /* on a phone the Quick list shares the screen with the picture, so the timeline lanes step aside while it is open */
+  function syncCompact() {
+    var side = $('mmSide'), on = isPhone() && tab === 'quick' && panel.getAttribute('data-open') === 'true' ? '1' : '0';
+    if (side.getAttribute('data-compact') !== on) { side.setAttribute('data-compact', on); setTimeout(function () { App.layout(); MM.paintCaption(); }, 30); }
+  }
+  window.addEventListener('resize', syncCompact);
   function setTab(t) {
     tab = t;
     Array.prototype.forEach.call(tabsEl.children, function (b) { b.setAttribute('aria-selected', b.getAttribute('data-tab') === t ? 'true' : 'false'); });
+    var sb = tabsEl.querySelector('[aria-selected=true]');
+    if (sb && (sb.offsetLeft < tabsEl.scrollLeft || sb.offsetLeft + sb.offsetWidth > tabsEl.scrollLeft + tabsEl.clientWidth)) tabsEl.scrollLeft = Math.max(0, sb.offsetLeft - 24);
+    syncCompact();
     renderPanel();
   }
 
@@ -392,7 +404,8 @@
     fieldDefs = {};
     var h = '', it = selItem(), shot = MM.cur();
     if (!shot) { content.innerHTML = ''; return; }
-    if (tab === 'shot') h = panelShot(shot);
+    if (tab === 'quick') h = UI.ext.quickPanel ? UI.ext.quickPanel() : '';
+    else if (tab === 'shot') h = panelShot(shot);
     else if (tab === 'item') h = panelItem(it);
     else if (tab === 'camera') h = panelCamera();
     else if (tab === 'look') h = panelLook();
@@ -400,8 +413,10 @@
     else if (tab === 'sound') h = panelSound();
     else h = panelMovie();
     content.innerHTML = h;
+    panel.setAttribute('data-tab', tab);
     syncFields();
     if (tab === 'movie') refreshSaved();
+    if (tab === 'quick' && UI.ext.quickAfter) UI.ext.quickAfter();
   }
 
   /* ---- Shot ---- */
@@ -520,6 +535,7 @@
   function panelMovie() {
     return '<div class="group"><h3>This movie</h3><div class="row"><button type="button" class="btn" data-act="poster">Save poster picture</button><button type="button" class="btn" data-act="safe" aria-pressed="false">Show safe area</button></div>' +
       '<p class="hint">The poster is the picture you see now, at full size. The safe area marks where apps put their buttons.</p></div>' +
+      '<div class="group"><h3>Typed script</h3><div class="row"><button type="button" class="btn" data-act="openscript">Script</button></div><p class="hint">Type lines like Dibs: Hey Chicago! and build the commands for a shot.</p></div>' +
       '<div class="group"><h3>Saved movies</h3><div class="row"><input type="text" id="mvName" maxlength="60" aria-label="Name for the saved movie" placeholder="Name"><button type="button" class="btn" data-act="savemovie">Save a copy</button></div><ul class="scenes" id="mvList"></ul>' +
       '<p class="hint">The movie also saves itself on this device.</p></div>' +
       '<div class="group"><h3>Files</h3><div class="row"><button type="button" class="btn" data-act="expfile">Export movie file</button><button type="button" class="btn" data-act="impfile">Import movie file</button></div></div>' +
@@ -730,7 +746,7 @@
   function wireContent() {
     content.addEventListener('click', function (e) {
       var b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
-      var a = act[b.getAttribute('data-act')]; if (a) a(b.getAttribute('data-v'), b);
+      var name = b.getAttribute('data-act'), a = act[name] || UI.ext.act[name]; if (a) a(b.getAttribute('data-v'), b);
     });
     content.addEventListener('input', function (e) {
       var t = e.target;
@@ -857,7 +873,7 @@
 
   /* ---------- hooks that app.js calls ---------- */
   var refreshTimer = 0;
-  function refreshSoon() { clearTimeout(refreshTimer); refreshTimer = setTimeout(function () { if (!MM.loading) { if (tab === 'item' || tab === 'camera') renderPanel(); } }, 60); }
+  function refreshSoon() { clearTimeout(refreshTimer); refreshTimer = setTimeout(function () { if (!MM.loading) { if (tab === 'item' || tab === 'camera' || tab === 'quick') renderPanel(); } }, 60); }
   UI.afterRender = function () {};
   UI.cameraChanged = function () { edited('camera.focus'); syncFields(); };
   UI.cameraMoved = function () {
@@ -952,8 +968,9 @@
   buildTop(); buildTabs(); wireShots(); wireTimeline(); wireKeyBar(); wireContent(); wireFiles(); wireExport(); wireKeys();
   App.pad = { t: isPhone() ? 8 : 14, b: isPhone() ? 10 : 14, s: isPhone() ? 10 : 16 };
   window.addEventListener('resize', function () { App.pad = { t: isPhone() ? 8 : 14, b: isPhone() ? 10 : 14, s: isPhone() ? 10 : 16 }; });
-  setTab('item');
-  setOpen(!isPhone());
+  UI.h = { esc: esc, svgData: svgData, isPhone: isPhone, secs: secs, itemName: itemName, puppets: puppets, selItem: selItem, setTab: setTab, setOpen: setOpen, renderPanel: renderPanel, renderTimeline: renderTimeline, renderShots: renderShots, renderKeyBar: renderKeyBar, updateTime: updateTime, afterMovieLoaded: function () { afterMovieLoaded(); }, getTab: function () { return tab; }, undoBurst: undoBurst };
+  setTab(isPhone() ? 'quick' : 'item');
+  setOpen(true);
   MM.start().then(function () {
     if ('serviceWorker' in navigator && (location.protocol === 'http:' || location.protocol === 'https:')) window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
   });

@@ -2,6 +2,16 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-26: Movie Maker quick scene tools
+
+- New Quick tab (first on phones) so a scene takes a few taps:
+  - Draw path: trace a line on the floor and the character waddles along it, facing where it walks, with an optional camera follow.
+  - Commands: a list per character (Walk path, Wave, Say, Emote, Pose, Hop, Look, Wait, Wear) that runs in order and writes the keys and timing. Characters run at the same time. Hand-made keys are kept.
+  - Auto camera: frames each speaker with a gentle push-in and focus. A manual camera key turns it off.
+  - Script: type lines like "Dibs: Hey Chicago!" or "Dibs: shrug, question"; "Scene: Hot dog stand" starts a new shot. Unknown words get a plain note.
+  - Recipes: save a command list and reuse it on any character. Three built in: Walk in and say hi, Big reveal, Wacker heckle.
+- New files `js/movie-actions.js` and `js/movie-quick.js`. IndexedDB version 3 adds a `recipes` store (older data upgrades). Offline cache is now `dibs-photo-mode-v4`. Old `.dibsmovie.json` files still open.
+
 ## 2026-11-26: DIBS Movie Maker
 
 - New `photo-mode/movie.html`: turn photo mode scenes into short paper-diorama movies, fully offline. It loads the same scripts as photo mode, so every character, pose, emote, costume, held prop, set, backdrop, bubble, light and filter is available, and no drawing is changed.
