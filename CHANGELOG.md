@@ -2,6 +2,13 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-26: Photo Mode round 3 (Chicago backdrops, moving backgrounds, papercraft detail)
+
+- Seven new cut-paper backdrops: Lakefront at sunset, Michigan Avenue with the Water Tower, Riverwalk with bridges up, Pier with a Ferris wheel, Bungalow alley in snow (with a dibs chair), Ivy brick ballpark wall (generic scoreboard), and a Deep dish pizza parlor. No Bean, no logos, no brand names. Each suggests a light ("suggest light" in the Scene tab). The six older sets now tile seamlessly.
+- Background motion in the Scene tab: Off (default), Matte pan (layers slide at depth-based speeds, like a multiplane matte painting) and Paper loop (a seamless repeating strip, like the spinning paper backgrounds of old cartoons). Speed, direction, Play and Pause. Starts paused with reduced motion, pauses when the tab is hidden, and a photo freezes the frame. `App.setBackgroundTime(seconds)` sets the motion phase for future skit rendering. Saved with the scene.
+- Craft detail in the Look tab: Crafty (default) adds corrugated cardboard edges with flutes, a rough cut edge, slight curl, deckled tops on set layers, brass brads at puppet joints, tape and glue tabs on the stands. Clean keeps the earlier look. Character drawings are unchanged.
+- New file `photo-mode/js/craft.js`. Offline cache is now `dibs-photo-mode-v3`. Old saved scenes load as Crafty with motion off.
+
 ## 2026-11-25: Photo Mode as a claude.ai artifact
 
 - Photo mode also runs as a private claude.ai artifact (a copy of `photo-mode/` with fonts beside it). Inside an artifact the page cannot start downloads, so `js/ui.js` now saves photos and scene files through the viewer's downloads capability when it is there; everywhere else it downloads as before. The offline cache and home-screen install only work from the published site.

@@ -53,7 +53,9 @@
 
   function defaultPhoto() { return { data: '', name: '', size: 1, x: 0, y: 0, dist: 8, floor: 'paper', flat: false }; }
   App.defaultPhoto = defaultPhoto;
-  function defaultLook() { return { filter: 0, strength: 1, brightness: 0, contrast: 1, saturation: 1, vignette: 0, vigStyle: 0, grain: 0.15 }; }
+  function defaultLook() { return { filter: 0, strength: 1, brightness: 0, contrast: 1, saturation: 1, vignette: 0, vigStyle: 0, grain: 0.15, craft: true }; }
+  function defaultMotion() { return { mode: 'off', speed: 0.5, dir: -1, playing: true, pos: 0 }; }
+  App.defaultMotion = defaultMotion;
   function lightFrom(p) {
     var L = { preset: p.id, az: p.az, el: p.el, i: p.i, k: p.k, fill: p.fill, sky: p.sky, gnd: p.gnd, soft: p.soft, spot: { on: false, at: 'item', cone: 38, i: 1.4, color: '#ffffff' } };
     if (p.spot) L.spot = { on: p.spot.on, at: p.spot.at, cone: p.spot.cone, i: p.spot.i, color: p.spot.color };
@@ -83,6 +85,7 @@
       lens: { mm: 35, fnum: 2.8, focus: { mode: 'item', id: 'i-dibs', dist: 5.4, point: [0, 1, 0] }, exposure: 0, grid: false },
       light: lightFrom(App.LIGHTS[2]),
       look: defaultLook(),
+      motion: defaultMotion(),
       stickers: [],
       frame: { platform: 'ig-post', style: 'none', text: '', scale: 1, safe: false }
     };
@@ -163,7 +166,9 @@
       sky: /^#[0-9a-f]{6}$/i.test(g.sky) ? g.sky : '#e6f0ff', gnd: /^#[0-9a-f]{6}$/i.test(g.gnd) ? g.gnd : '#efe6d2', soft: Math.max(0, Math.min(3, num(g.soft, 1, 0, 3) | 0)),
       spot: { on: !!sp.on, at: sp.at === 'camera' ? 'camera' : 'item', cone: num(sp.cone, 38, 8, 80), i: num(sp.i, 1.4, 0, 6), color: /^#[0-9a-f]{6}$/i.test(sp.color) ? sp.color : '#ffffff' } };
     var k2 = s.look || {};
-    o.look = { filter: Math.max(0, Math.min(7, num(k2.filter, 0, 0, 7) | 0)), strength: num(k2.strength, 1, 0, 1), brightness: num(k2.brightness, 0, -1, 1), contrast: num(k2.contrast, 1, 0.5, 1.5), saturation: num(k2.saturation, 1, 0, 2), vignette: num(k2.vignette, 0, 0, 1), vigStyle: k2.vigStyle ? 1 : 0, grain: num(k2.grain, 0.15, 0, 1) };
+    o.look = { filter: Math.max(0, Math.min(7, num(k2.filter, 0, 0, 7) | 0)), strength: num(k2.strength, 1, 0, 1), brightness: num(k2.brightness, 0, -1, 1), contrast: num(k2.contrast, 1, 0.5, 1.5), saturation: num(k2.saturation, 1, 0, 2), vignette: num(k2.vignette, 0, 0, 1), vigStyle: k2.vigStyle ? 1 : 0, grain: num(k2.grain, 0.15, 0, 1), craft: k2.craft !== false };
+    var mo = s.motion || {};
+    o.motion = { mode: (mo.mode === 'pan' || mo.mode === 'loop') ? mo.mode : 'off', speed: num(mo.speed, 0.5, 0.05, 3), dir: mo.dir > 0 ? 1 : -1, playing: mo.playing !== false, pos: num(mo.pos, 0, -1000000, 1000000) };
     o.stickers = [];
     (Array.isArray(s.stickers) ? s.stickers : []).slice(0, 60).forEach(function (st) {
       if (!st || typeof st !== 'object') return;
@@ -343,12 +348,13 @@
       setObj = res; scene.add(res.group);
       if (res.floor) res.floorMat0 = res.floor.material;
       App.applyPhoto();
+      App.applyMotion();
       App.invalidate();
     });
   };
 
   /* ---------- your photo as a backdrop ---------- */
-  var photoObj = null, shadowMat = null, photoSeq = 0;
+  var photoObj = null, shadowMat = null, photoSeq = 0, photoOff = 0;
   function clearPhoto() {
     if (photoObj) { scene.remove(photoObj.mesh); photoObj.mesh.material.dispose(); photoObj.tex.dispose(); photoObj = null; }
   }
@@ -371,10 +377,10 @@
       m.scale.set(W, H, 1);
       if (ph.flat) {
         m.rotation.set(-Math.PI / 2, 0, 0);
-        m.position.set(ph.x, ph.floor === 'paper' ? 0.006 : -0.012, -(ph.dist - 8) - ph.y);
+        m.position.set(ph.x + photoOff, ph.floor === 'paper' ? 0.006 : -0.012, -(ph.dist - 8) - ph.y);
       } else {
         m.rotation.set(0, 0, 0);
-        m.position.set(ph.x, 0.3 + ph.y, -ph.dist);
+        m.position.set(ph.x + photoOff, 0.3 + ph.y, -ph.dist);
       }
       App.invalidate();
     }
@@ -420,6 +426,48 @@
     state.set.color = hex;
     if (setObj && setObj.setColor) setObj.setColor(hex);
     App.invalidate(); App.save();
+  };
+
+  /* ---------- moving backgrounds ---------- */
+  var MOTION_V0 = 1.2;          // world units per second for the nearest layer at speed 1
+  var motionT = 0, motionSaveT = 0, moving = false;
+  var RM = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : null;
+  App.reducedMotion = function () { return !!(RM && RM.matches); };
+  App.backdrop = function () { return setObj; };
+  App.motionOn = function () { return !!(state && state.motion.mode !== 'off'); };
+  App.applyMotion = function () {
+    if (!state) return;
+    var m = state.motion;
+    moving = m.mode !== 'off' && m.playing;
+    if (setObj && setObj.setMotion) setObj.setMotion(m.mode, m.pos, m.dir);
+    // a photo backdrop only takes part in the matte pan
+    var off = 0;
+    if (state.set.id === 'photo' && m.mode === 'pan') off = m.dir * 3 * Math.sin(m.pos * 0.6 / 3);
+    if (off !== photoOff) { photoOff = off; if (photoObj) { photoObj.mesh.position.x = state.photo.x + off; } }
+    App.invalidate();
+  };
+  /* A fixed moment for skit rendering: the motion phase in seconds from the start, at the current speed. No clock involved. */
+  App.setBackgroundTime = function (seconds) {
+    if (!state) return 0;
+    state.motion.pos = (+seconds || 0) * MOTION_V0 * state.motion.speed;
+    App.applyMotion();
+    return state.motion.pos;
+  };
+  App.getBackgroundTime = function () { return state ? state.motion.pos / (MOTION_V0 * state.motion.speed) : 0; };
+  App.setMotion = function (o) {
+    var m = state.motion;
+    if (o.mode !== undefined) {
+      var was = m.mode;
+      m.mode = (o.mode === 'pan' || o.mode === 'loop') ? o.mode : 'off';
+      if (m.mode !== 'off' && was === 'off') { m.playing = !App.reducedMotion(); m.pos = 0; }
+      if (m.mode === 'off') m.pos = 0;
+    }
+    if (o.speed !== undefined) m.speed = num(o.speed, 0.5, 0.05, 3);
+    if (o.dir !== undefined) m.dir = o.dir > 0 ? 1 : -1;
+    if (o.playing !== undefined) m.playing = !!o.playing;
+    moving = m.mode !== 'off' && m.playing;
+    App.applyMotion(); App.save();
+    if (App.ui && App.ui.motionChanged) App.ui.motionChanged();
   };
 
   /* ---------- items ---------- */
@@ -734,7 +782,7 @@
     rig.apply();
     App.updateSpot();
     var w = renderer.domElement.width, h = renderer.domElement.height;
-    var taps = interactive ? (COARSE ? 14 : 22) : (COARSE ? 36 : 56);
+    var taps = (interactive || moving) ? (COARSE ? 14 : 22) : (COARSE ? 36 : 56);
     var p = lensParams(w, h, taps, 4);
     p.toScreen = true; p.seed = 0;
     post.render(scene, camera, p);
@@ -745,10 +793,23 @@
 
   function loop(t) {
     requestAnimationFrame(loop);
+    if (document.hidden) return;
     var dt = Math.min(0.1, (t - lastT) / 1000 || 0.016); lastT = t;
     if (rig && rig.mode === 'fly') {
       if (rig.update(dt)) { App.bump(); if (App.ui) App.ui.cameraMoved(); }
     }
+    var mo = state && state.motion;
+    if (mo && mo.mode !== 'off' && mo.playing && setObj && !document.hidden && !App._freeze) {
+      var fstep = COARSE ? 33 : 16;
+      if (!motionT) motionT = t;
+      if (t - motionT >= fstep - 1) {
+        var mdt = Math.min(0.1, (t - motionT) / 1000); motionT = t;
+        mo.pos += mdt * MOTION_V0 * mo.speed;
+        if (Math.abs(mo.pos) > 100000) mo.pos = 0;
+        App.applyMotion();
+        if (t - motionSaveT > 3000) { motionSaveT = t; App.save(); }
+      }
+    } else motionT = 0;
     if (dirty) { dirty = false; renderPreview(); }
   }
 
@@ -794,14 +855,16 @@
 
   App.takePhoto = function () {
     var btn = $('shutter'); btn.disabled = true;
+    App._freeze = true; App.applyMotion();     // the photo is exactly the frame that is showing
     var fl = $('flash');
     if (!(window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches)) { fl.classList.add('go'); setTimeout(function () { fl.classList.remove('go'); }, 110); }
     App.msg('Taking photo...', 6000);
     setTimeout(function () {
       var sz = App.exportSize(), cv;
       try { cv = App.renderToCanvas(sz.w, sz.h, { taps: 88 }); }
-      catch (e) { btn.disabled = false; App.msg('The photo could not be made at this size. Try the 1x size.', 6000); return; }
+      catch (e) { App._freeze = false; btn.disabled = false; App.msg('The photo could not be made at this size. Try the 1x size.', 6000); return; }
       cv.toBlob(function (blob) {
+        App._freeze = false;
         btn.disabled = false;
         $('msg').classList.remove('on');
         if (!blob) { App.msg('The photo could not be saved.'); return; }
@@ -820,7 +883,7 @@
 
   /* ---------- scene save and load ---------- */
   App.serialize = function () {
-    var s = JSON.parse(JSON.stringify({ v: 1, name: state.name, set: state.set, items: state.items, uploads: state.uploads, lens: state.lens, light: state.light, look: state.look, stickers: state.stickers, frame: state.frame, photo: state.photo }));
+    var s = JSON.parse(JSON.stringify({ v: 1, name: state.name, set: state.set, items: state.items, uploads: state.uploads, lens: state.lens, light: state.light, look: state.look, motion: state.motion, stickers: state.stickers, frame: state.frame, photo: state.photo }));
     s.cam = rig.get();
     return s;
   };
@@ -835,6 +898,8 @@
 
   App.loadState = function (raw) {
     var s = App.clean(raw);
+    DP.craft.on = s.look.craft !== false;
+    if (App.reducedMotion()) s.motion.playing = false;   // people who ask for less motion start paused
     // clear
     Object.keys(App.objs).forEach(function (id) { scene.remove(App.objs[id].root); App.objs[id].dispose(); });
     App.objs = {}; App.sel = null;
@@ -847,7 +912,17 @@
     var jobs = [App.setBackdrop(s.set.id, s.set.color)];
     s.items.forEach(function (it) { jobs.push(App.addItemObj(it)); });
     if (App.ui) App.ui.stateLoaded();
-    return Promise.all(jobs).then(function () { App.updateRing(); App.invalidate(); if (App.ui) { App.ui.itemsChanged(); App.ui.stateLoaded(); } });
+    return Promise.all(jobs).then(function () { App.applyMotion(); App.updateRing(); App.invalidate(); if (App.ui) { App.ui.itemsChanged(); App.ui.stateLoaded(); } });
+  };
+
+  /* Crafty or Clean: everything handmade (cardboard edges, rough cut edges, curl, brads, tape, glue tabs, torn tops) is built or left out */
+  App.setCraft = function (on) {
+    on = !!on;
+    if (state.look.craft === on && DP.craft.on === on) return Promise.resolve();
+    state.look.craft = on; DP.craft.on = on;
+    var jobs = [App.setBackdrop(state.set.id)];
+    state.items.forEach(function (it) { jobs.push(App.addItemObj(it)); });
+    return Promise.all(jobs).then(function () { App.applyMotion(); App.updateRing(); App.invalidate(); App.save(); if (App.ui) App.ui.itemsChanged(); });
   };
 
   /* ---------- boot ---------- */
