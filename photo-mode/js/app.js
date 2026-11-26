@@ -234,6 +234,9 @@
     ring = new THREE.Mesh(new THREE.RingGeometry(0.92, 1, 48), new THREE.MeshBasicMaterial({ color: 0x2a2350, side: THREE.DoubleSide, depthWrite: false }));
     ring.rotation.x = -Math.PI / 2; ring.visible = false; ring.renderOrder = 5;
     scene.add(ring);
+    // editor only drawings (the movie maker's path ribbon). Hidden for every picture that is saved, exported or used as a thumbnail.
+    App.editorLayer = new THREE.Group(); App.editorLayer.name = 'editorLayer';
+    scene.add(App.editorLayer);
 
     gl.addEventListener('webglcontextlost', function (e) { e.preventDefault(); App.msg('The graphics were reset by your device. Reload the page to continue.', 30000); });
     return true;
@@ -244,6 +247,7 @@
     var r = stage.getBoundingClientRect(), W = r.width, H = r.height;
     var phone = window.matchMedia('(max-width:820px)').matches;
     var padT = phone ? 26 : 34, padB = phone ? 118 : 138, padS = phone ? 14 : 22;
+    if (App.pad) { padT = App.pad.t; padB = App.pad.b; padS = App.pad.s; }   // movie maker sets its own margins
     var aw = Math.max(60, W - padS * 2), ah = Math.max(60, H - padT - padB);
     var p = App.platform(state.frame.platform);
     var asp = p.w ? p.w / p.h : aw / ah;
@@ -583,7 +587,7 @@
   };
   App.updateRing = function () {
     var it = App.sel && findItem(App.sel), o = it && App.objs[App.sel];
-    if (!o) { ring.visible = false; return; }
+    if (!o || App.ringOff) { ring.visible = false; if (App.ringOff) App.updateHandle(); return; }
     var r = Math.max(0.45, (o.w || 1) * 0.62) * it.scale;
     ring.scale.set(r, r, 1); ring.position.set(it.x, it.y + 0.03, it.z); ring.visible = true;
     ring.userData.r = r;
@@ -660,6 +664,17 @@
       it.y = Math.max(0, Math.min(8, Math.round((it.y + d) * 100) / 100)); App.applyItem(it.id); App.save(); if (App.ui) App.ui.itemMoved();
     });
   }
+  /* where a screen point lands on the floor (the y = 0 plane), or null when it points above the horizon */
+  App.floorPointAt = function (cx, cy) {
+    var r = gl.getBoundingClientRect();
+    var ndc = new THREE.Vector2(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
+    camera.updateMatrixWorld(true);
+    raycaster.setFromCamera(ndc, camera);
+    var pt = new THREE.Vector3();
+    if (!raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), pt)) return null;
+    if (pt.distanceTo(camera.position) > 80) return null;
+    return { x: Math.max(-30, Math.min(30, pt.x)), z: Math.max(-30, Math.min(20, pt.z)) };
+  };
   function pickAt(cx, cy) {
     var r = gl.getBoundingClientRect();
     var ndc = new THREE.Vector2(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
@@ -816,8 +831,8 @@
   /* render at any size into a canvas (capture, thumbnails). withOverlay draws stickers and frame on top. */
   App.renderToCanvas = function (w, h, opts) {
     opts = opts || {};
-    var prevRing = ring.visible, prevAspect = camera.aspect;
-    ring.visible = false;
+    var prevRing = ring.visible, prevAspect = camera.aspect, prevEd = App.editorLayer ? App.editorLayer.visible : false;
+    ring.visible = false; if (App.editorLayer) App.editorLayer.visible = false;
     var samples = w * h > 2700000 ? 0 : 4;
     DP.setA2C(samples > 0);
     camera.aspect = w / h; camera.fov = DP.fovFor(state.lens.mm, w / h); camera.updateProjectionMatrix();
@@ -825,7 +840,7 @@
     var p = lensParams(w, h, opts.taps || 80, samples);
     p.toScreen = false; p.seed = 3;
     var buf = post.render(scene, camera, p);
-    ring.visible = prevRing; DP.setA2C(true);
+    ring.visible = prevRing; if (App.editorLayer) App.editorLayer.visible = prevEd; DP.setA2C(true);
     camera.aspect = prevAspect; applyLens();
     var cv = document.createElement('canvas'); cv.width = w; cv.height = h;
     var ctx = cv.getContext('2d'), img = ctx.createImageData(w, h), row = w * 4, y;
@@ -888,13 +903,14 @@
     return s;
   };
   App.save = function () {
+    if (App.noAutosave) return;   // the movie maker keeps its own saves and must not touch the photo mode autosave
     clearTimeout(saveTimer);
     saveTimer = setTimeout(function () {
       var s = App.serialize();
       DP.Store.put('auto', { id: 'current', time: Date.now(), data: s });
     }, 700);
   };
-  window.addEventListener('pagehide', function () { if (state) DP.Store.put('auto', { id: 'current', time: Date.now(), data: App.serialize() }); });
+  window.addEventListener('pagehide', function () { if (state && !App.noAutosave) DP.Store.put('auto', { id: 'current', time: Date.now(), data: App.serialize() }); });
 
   App.loadState = function (raw) {
     var s = App.clean(raw);
@@ -943,6 +959,29 @@
       changed: function (moving) { if (moving) { App.bump(); App.save(); if (App.ui) App.ui.cameraMoved(); } else { App.invalidate(); App.save(); } },
       height: function () { return frame.h; }
     };
+    // Draw path (movie maker): while App.drawHook is set, one finger or the mouse traces the floor and the camera stays still.
+    // These listeners come first, so nothing else sees the pointer.
+    var drawPtr = null;
+    ov.addEventListener('pointerdown', function (e) {
+      if (!App.drawHook) return;
+      e.stopImmediatePropagation(); e.preventDefault();
+      if (drawPtr !== null || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      drawPtr = e.pointerId;
+      try { ov.setPointerCapture(e.pointerId); } catch (x) {}
+      App.drawHook.start(App.floorPointAt(e.clientX, e.clientY));
+    });
+    ov.addEventListener('pointermove', function (e) {
+      if (!App.drawHook) return;
+      e.stopImmediatePropagation();
+      if (e.pointerId === drawPtr) App.drawHook.move(App.floorPointAt(e.clientX, e.clientY));
+    });
+    function drawUp(e) {
+      if (!App.drawHook) { drawPtr = null; return; }
+      e.stopImmediatePropagation();
+      if (e.pointerId === drawPtr) { drawPtr = null; App.drawHook.end(e.type === 'pointercancel'); }
+    }
+    ov.addEventListener('pointerup', drawUp); ov.addEventListener('pointercancel', drawUp);
+    ov.addEventListener('wheel', function (e) { if (App.drawHook) { e.stopImmediatePropagation(); e.preventDefault(); } }, { passive: false });
     // stickers get the pointer first
     var stickerPtrs = {};
     ov.addEventListener('pointerdown', function (e) {
@@ -979,7 +1018,10 @@
     } else if (phase === 'end') { dragState = null; App.save(); }
   }
 
-  App.boot = function () {
+  /* opts (all optional, used by the movie maker): noAutosave, initial = a function that returns a scene or a promise of one */
+  App.boot = function (opts) {
+    opts = opts || {};
+    if (opts.noAutosave) App.noAutosave = true;
     if (!initGL()) { return; }
     overlay = App.overlay = new DP.Overlay(ov, { stickers: [], frame: {}, uploads: {} }, {
       changed: function () { App.save(); },
@@ -997,8 +1039,8 @@
     requestAnimationFrame(loop);
 
     var fontsP = (document.fonts && document.fonts.load) ? Promise.all([document.fonts.load('700 20px Lexend'), document.fonts.load('400 16px Lexend')]).catch(function () {}) : Promise.resolve();
-    fontsP.then(function () { return DP.Store.get('auto', 'current'); }).then(function (rec) {
-      var raw = rec && rec.data ? rec.data : starterScene();
+    fontsP.then(function () { return opts.initial ? opts.initial() : DP.Store.get('auto', 'current'); }).then(function (rec) {
+      var raw = opts.initial ? (rec || starterScene()) : (rec && rec.data ? rec.data : starterScene());
       return App.loadState(raw);
     }).then(function () {
       if (App.ui) App.ui.ready();
@@ -1014,6 +1056,7 @@
   function typing(e) { var t = e.target; return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable) && t.type !== 'range'; }
   function onKey(e) {
     if (typing(e) || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (App.keysOff) return;    // the movie maker has its own keys
     var k = e.key.toLowerCase();
     if (k === 'escape') { if (App.ui) App.ui.closeModals(); return; }
     if (document.querySelector('.modal:not([hidden])')) return;

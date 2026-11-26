@@ -642,6 +642,17 @@
     return {};
   };
 
+  /* speech bubble art is remembered, so a line that comes back (a movie shot, an undo) does not redraw. The newest 40 stay. */
+  var bubbleCache = {}, bubbleKeys = [];
+  function bubblePrep(shape, text, color, tail) {
+    var key = [shape, text, color, tail].join('\u0001');
+    if (!bubbleCache[key]) {
+      bubbleCache[key] = DP.fontReady().then(function () { return DP.prepArt(DP.bubbleCanvas({ shape: shape, text: text, color: color, tail: tail })); });
+      bubbleKeys.push(key);
+      if (bubbleKeys.length > 40) delete bubbleCache[bubbleKeys.shift()];
+    }
+    return bubbleCache[key];
+  }
   var uploadsRef = {};
   /* art for something held or worn: returns a promise of {prep, aspect} */
   function artFor(rec) {
@@ -653,7 +664,7 @@
       return loadImage(up.data).then(function (im) { return DP.prepArt(im); });
     }
     if (k.indexOf('bubble:') === 0) {
-      return DP.fontReady().then(function () { return DP.prepArt(DP.bubbleCanvas({ shape: k.slice(7), text: rec.text, color: rec.color, tail: rec.tail })); });
+      return bubblePrep(k.slice(7), rec.text, rec.color, rec.tail);
     }
     return Promise.reject(new Error('cannot hold that'));
   }
@@ -733,7 +744,7 @@
     function syncAtts(it) {
       if (!obj.puppet) return;
       var list = it.attach || [];
-      var sig = list.map(function (a) { return [a.id, a.kind, a.slot, a.text || '', a.color || '', a.tail || '', a.s].join('|'); }).join(';');
+      var sig = list.map(function (a) { return [a.id, a.kind, a.slot, a.text || '', a.color || '', a.tail || ''].join('|'); }).join(';');
       if (sig !== atSig) {
         atSig = sig; var seq = ++atSeq;
         Object.keys(atts).forEach(function (id) { var a = atts[id]; if (a.grp) { a.grp.parent && a.grp.parent.remove(a.grp); DP.disposeLayer(a.layer); } });
@@ -753,6 +764,11 @@
       }
       list.forEach(placeAtt);
     }
+    /* true while an emote or a held thing is still being drawn (the movie maker waits for this before it takes a frame) */
+    obj.pending = function () {
+      if (emSig && !emote) return true;
+      return Object.keys(atts).some(function (id) { return !atts[id].grp; });
+    };
     /* world position of a held thing, for Let go */
     obj.attachWorld = function (id) {
       var a = atts[id]; if (!a || !a.grp) return null;
@@ -854,7 +870,7 @@
       return loadImage(up.data).then(function (im) { return DP.prepArt(im); }).then(fromPrep);
     }
     if (info.bubble) {
-      return DP.fontReady().then(function () { return DP.prepArt(DP.bubbleCanvas({ shape: info.bubble, text: item.text, color: item.color, tail: item.tail })); }).then(fromPrep);
+      return bubblePrep(info.bubble, item.text, item.color, item.tail).then(fromPrep);
     }
     return cachedPrep(info.svg).then(fromPrep);
   };
