@@ -1,10 +1,10 @@
-/* DIBS Photo Mode: saving. IndexedDB holds the autosave, named scenes and the photo roll.
+/* DIBS Photo Mode: saving. IndexedDB holds the autosave, named scenes, the photo roll and (movie maker) movies.
    If the browser blocks storage (private window), everything keeps working for the session. */
 (function () {
   'use strict';
   var DP = window.DP = window.DP || {};
-  var DB = 'dibs-photo-mode', VER = 1;
-  var dbp = null, mem = { scenes: {}, roll: {}, auto: {} }, broken = false;
+  var DB = 'dibs-photo-mode', VER = 2;
+  var dbp = null, mem = { scenes: {}, roll: {}, auto: {}, movies: {} }, broken = false;
 
   function open() {
     if (dbp) return dbp;
@@ -17,10 +17,19 @@
           if (!d.objectStoreNames.contains('scenes')) d.createObjectStore('scenes', { keyPath: 'id' });
           if (!d.objectStoreNames.contains('roll')) d.createObjectStore('roll', { keyPath: 'id' });
           if (!d.objectStoreNames.contains('auto')) d.createObjectStore('auto', { keyPath: 'id' });
+          if (!d.objectStoreNames.contains('movies')) d.createObjectStore('movies', { keyPath: 'id' });   // version 2: the movie maker
         };
-        rq.onsuccess = function () { res(rq.result); };
+        var done = false;
+        rq.onsuccess = function () {
+          done = true;
+          var d = rq.result;
+          // let a newer version of this page upgrade the database even while this one is open
+          d.onversionchange = function () { d.close(); dbp = null; };
+          res(d);
+        };
         rq.onerror = function () { broken = true; res(null); };
-        rq.onblocked = function () { broken = true; res(null); };
+        // blocked: another open tab still holds the old version. The upgrade finishes when that tab closes. Do not wait forever.
+        rq.onblocked = function () { setTimeout(function () { if (!done) { broken = true; res(null); } }, 4000); };
       } catch (e) { broken = true; res(null); }
     });
     return dbp;

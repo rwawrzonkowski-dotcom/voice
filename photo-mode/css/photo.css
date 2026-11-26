@@ -50,6 +50,9 @@ button,input,select,textarea{font:inherit;color:inherit}
 #flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
 #flash.go{opacity:1}
 .frameinfo{position:absolute;left:14px;top:10px;margin:0;font-size:14px;font-weight:700;color:#f3ecd9;max-width:70%;z-index:2}
+.movielink{position:absolute;right:12px;top:3px;z-index:3;font:700 12.5px Lexend,sans-serif;color:#f3ecd9;text-decoration:none;border:2px solid #f3ecd9;border-radius:8px;padding:1px 9px;line-height:20px}
+.movielink::before{content:"";position:absolute;inset:-10px -4px}
+.movielink:hover{background:rgba(243,236,217,.15)}
 #msg{position:absolute;left:50%;top:44px;transform:translateX(-50%);background:var(--people);color:var(--ink);border:3px solid var(--ink);box-shadow:var(--shadow);border-radius:12px;padding:6px 12px;font-weight:700;font-size:14px;display:none;z-index:6;max-width:90%;text-align:center}
 #msg.on{display:block}
 

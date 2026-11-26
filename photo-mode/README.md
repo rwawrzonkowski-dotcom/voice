@@ -28,6 +28,18 @@ It works offline. Nothing is loaded from other sites and nothing is uploaded.
 
 Keyboard: Delete removes the selected item, arrow keys nudge it (Shift for bigger steps). With nothing selected, arrow keys turn the camera and + and - move it closer or farther.
 
+## Movie maker
+
+`movie.html` turns photo mode scenes into short keyframed paper-diorama movies and saves a video. It opens with a 20 second showcase made with its own tools. Photo mode has a Movie maker link at the top right, and the movie maker has a Photo mode link.
+
+- **Shots**: each shot is a photo mode scene. Add a blank starter, copy a shot, import a `.dibsscene.json`, or take the scene last saved in photo mode. Reorder by drag or buttons. A movie can be up to 60 sec.
+- **Timeline**: scrub the playhead, tap a diamond key to edit its time, ease or value, drag it to move it. Set key records the picked character (position, turn, height, pose) or the camera at the playhead. Pose chips, emotes, bubbles, costumes, light and filter set their own keys.
+- **Motion**: poses step at 12 frames each second (on twos) and the camera is smooth at 30. Emotes, bubbles and costumes pop in with a short overshoot. Camera moves: Dolly in, Slow orbit, Crane up or down, Rack focus, Hold.
+- **Captions** draw in an L sign bar inside the safe area. **Sound** is your own file, off until you turn it on, and is mixed into the export.
+- **Export**: every frame is drawn one at a time, then played into a recorder at an exact 30 frames each second (.webm, or .mp4 where the browser needs it). Fast, half size is for phones. Save poster makes a PNG.
+- **Saving**: the movie saves itself in the browser (IndexedDB, store `movies`). Named copies, and `.dibsmovie.json` export and import, are in the Movie tab.
+- **Files**: `movie.html`, `css/movie.css`, `js/movie.js` (data, timeline maths, playback, export), `js/movie-ui.js` (screen), `js/movie-showcase.js` (the showcase).
+
 ## How it is built
 
 Plain HTML, CSS and JavaScript with no build step at runtime. three.js (MIT) is bundled in `vendor/`.

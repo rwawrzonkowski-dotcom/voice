@@ -2,6 +2,17 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-26: DIBS Movie Maker
+
+- New `photo-mode/movie.html`: turn photo mode scenes into short paper-diorama movies, fully offline. It loads the same scripts as photo mode, so every character, pose, emote, costume, held prop, set, backdrop, bubble, light and filter is available, and no drawing is changed.
+- A movie is a list of shots (add a blank shot, copy one, import a `.dibsscene.json`, or take photo mode's current scene). Each shot has a timeline with keys for the camera (position, aim, focal length, aperture, focus) and for each character (place, turn, height, pose). The camera moves smoothly; characters move in stop-motion steps at 12 frames a second.
+- Timed speech bubbles, emotes, costumes, light presets, filters and L-sign captions switch on at their key. One-tap camera moves: Dolly in, Slow orbit, Crane up and down, Rack focus and Hold. Undo and redo.
+- Optional sound from your own file, off by default, mixed into the export.
+- Export video (WebM, or MP4 where only that is offered) at the platform size for 9:16, 16:9, 4:5 or 1:1, with a half-size option for phones, plus Save poster. Frames are drawn one at a time first and then recorded at an exact 30 frames a second, so slow devices still get correct timing. Movies are capped at 60 seconds.
+- Movies autosave on the device (new `movies` store; the IndexedDB version is now 2), and can be saved and opened as `.dibsmovie.json`.
+- Opens with a 20-second showcase movie of Dibs and Wacker that shows the editing features.
+- Photo mode gets a small Movie maker link. Small hooks in `app.js` (boot options, no autosave for the movie page) and `puppets.js` (cached bubble art). Offline cache is now `dibs-photo-mode-v3`.
+
 ## 2026-11-25: Photo Mode as a claude.ai artifact
 
 - Photo mode also runs as a private claude.ai artifact (a copy of `photo-mode/` with fonts beside it). Inside an artifact the page cannot start downloads, so `js/ui.js` now saves photos and scene files through the viewer's downloads capability when it is there; everywhere else it downloads as before. The offline cache and home-screen install only work from the published site.

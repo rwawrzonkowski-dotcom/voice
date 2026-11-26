@@ -239,6 +239,7 @@
     var r = stage.getBoundingClientRect(), W = r.width, H = r.height;
     var phone = window.matchMedia('(max-width:820px)').matches;
     var padT = phone ? 26 : 34, padB = phone ? 118 : 138, padS = phone ? 14 : 22;
+    if (App.pad) { padT = App.pad.t; padB = App.pad.b; padS = App.pad.s; }   // movie maker sets its own margins
     var aw = Math.max(60, W - padS * 2), ah = Math.max(60, H - padT - padB);
     var p = App.platform(state.frame.platform);
     var asp = p.w ? p.w / p.h : aw / ah;
@@ -825,13 +826,14 @@
     return s;
   };
   App.save = function () {
+    if (App.noAutosave) return;   // the movie maker keeps its own saves and must not touch the photo mode autosave
     clearTimeout(saveTimer);
     saveTimer = setTimeout(function () {
       var s = App.serialize();
       DP.Store.put('auto', { id: 'current', time: Date.now(), data: s });
     }, 700);
   };
-  window.addEventListener('pagehide', function () { if (state) DP.Store.put('auto', { id: 'current', time: Date.now(), data: App.serialize() }); });
+  window.addEventListener('pagehide', function () { if (state && !App.noAutosave) DP.Store.put('auto', { id: 'current', time: Date.now(), data: App.serialize() }); });
 
   App.loadState = function (raw) {
     var s = App.clean(raw);
@@ -904,7 +906,10 @@
     } else if (phase === 'end') { dragState = null; App.save(); }
   }
 
-  App.boot = function () {
+  /* opts (all optional, used by the movie maker): noAutosave, initial = a function that returns a scene or a promise of one */
+  App.boot = function (opts) {
+    opts = opts || {};
+    if (opts.noAutosave) App.noAutosave = true;
     if (!initGL()) { return; }
     overlay = App.overlay = new DP.Overlay(ov, { stickers: [], frame: {}, uploads: {} }, {
       changed: function () { App.save(); },
@@ -922,8 +927,8 @@
     requestAnimationFrame(loop);
 
     var fontsP = (document.fonts && document.fonts.load) ? Promise.all([document.fonts.load('700 20px Lexend'), document.fonts.load('400 16px Lexend')]).catch(function () {}) : Promise.resolve();
-    fontsP.then(function () { return DP.Store.get('auto', 'current'); }).then(function (rec) {
-      var raw = rec && rec.data ? rec.data : starterScene();
+    fontsP.then(function () { return opts.initial ? opts.initial() : DP.Store.get('auto', 'current'); }).then(function (rec) {
+      var raw = opts.initial ? (rec || starterScene()) : (rec && rec.data ? rec.data : starterScene());
       return App.loadState(raw);
     }).then(function () {
       if (App.ui) App.ui.ready();
@@ -939,6 +944,7 @@
   function typing(e) { var t = e.target; return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable) && t.type !== 'range'; }
   function onKey(e) {
     if (typing(e) || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (App.keysOff) return;    // the movie maker has its own keys
     var k = e.key.toLowerCase();
     if (k === 'escape') { if (App.ui) App.ui.closeModals(); return; }
     if (document.querySelector('.modal:not([hidden])')) return;
