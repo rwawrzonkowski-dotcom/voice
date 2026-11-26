@@ -50,7 +50,7 @@
     }).join('');
     var setHtml = DP.SET_LIST.map(function (id) {
       var d = DP.SET_INFO[id];
-      return '<button type="button" class="setbtn" data-act="set" data-v="' + id + '" aria-pressed="false"><span class="pv" style="background:linear-gradient(to bottom,' + d.sky + ' 0 58%,' + d.floor + ' 58% 100%)"></span><span class="nm">' + d.name + '</span></button>';
+      return '<button type="button" class="setbtn" data-act="set" data-v="' + id + '" aria-pressed="false"><span class="pv" style="background:' + (d.pv || 'linear-gradient(to bottom,' + d.sky + ' 0 58%,' + d.floor + ' 58% 100%)') + '"></span><span class="nm">' + d.name + '</span></button>';
     }).join('');
     var h = {};
     var charList = DP.PUPPET_LIST.concat(['dibsTrain', 'wackerFly']);
@@ -64,12 +64,18 @@
     var bubChips = DP.BUBBLES.map(function (b) { return chip('addbub', b.id, b.name); }).join('');
     h.scene =
       '<div class="group"><h3>Backdrop</h3><div class="fgrid" style="margin-bottom:10px">' + setHtml + '</div>' +
+      '<p class="hint" id="lightHint" hidden>Suggested light: <b id="lightName"></b> <button type="button" class="btn" data-act="suglight" style="min-height:36px;padding:2px 10px;margin-left:6px">Use it</button></p>' +
       '<div id="sweepColors" hidden>' + swatches('bdcolor', PAL, 'Paper color') + '</div>' +
       '<div id="photoBox" hidden><h3>Your photo</h3><div class="row"><button type="button" class="btn" data-act="photocam">Take a picture</button><button type="button" class="btn" data-act="photofile">Choose a picture</button></div>' +
       '<p class="hint" id="photoHint">Take a picture or choose one. It goes behind your characters.</p>' +
       '<div id="photoCtl">' + field('psize', 'Size', 0.3, 3, 0.05) + field('px', 'Left or right', -12, 12, 0.1) + field('py', 'Up or down', -8, 12, 0.1) + field('pdist', 'Distance', 1, 30, 0.5) +
       '<h3>Floor</h3>' + seg('pfloor', [['paper', 'Paper floor'], ['shadow', 'Photo only'], ['hidden', 'Hidden']], 'Floor') +
       '<p class="hint">Photo only keeps the shadows and hides the paper.</p>' + tog('pflat', 'Flat on floor') + '</div></div></div>' +
+      '<div class="group" id="motionSec"><h3>Background motion</h3>' + seg('bgmode', [['off', 'Off'], ['pan', 'Matte pan'], ['loop', 'Paper loop']], 'Background motion') +
+      '<p class="hint" id="motionHint">Matte pan slides the layers sideways, far ones slower. Paper loop scrolls the whole backdrop forever. The characters stay put.</p>' +
+      '<div id="motionCtl" hidden>' + field('bgspeed', 'Speed', 0.05, 3, 0.05) + '<h3>Direction</h3>' + seg('bgdir', [['-1', 'Left'], ['1', 'Right']], 'Direction') +
+      '<div class="row" style="margin-top:8px"><button type="button" class="btn" data-act="bgplay" id="bgPlay" aria-pressed="false">Pause</button></div>' +
+      '<p class="hint" id="motionNote"></p></div></div>' +
       '<div class="group"><h3>Add a character</h3><div class="chips" id="charChips">' + charChips + '</div>' +
       '<h3>Add the L</h3><div class="chips">' + lChips + '</div>' +
       '<h3>Add a speech bubble</h3><div class="chips">' + bubChips + '</div>' +
@@ -138,6 +144,8 @@
       swatches('spotcolor', [['#ffffff', '#ffffff', 'White'], ['#ffb457', '#ffb457', 'Amber'], ['#b3ddf2', '#b3ddf2', 'Chicago blue'], ['#f9cddd', '#f9cddd', 'Pink'], ['#c9edc2', '#c9edc2', 'Green']], 'Spotlight color') + '</div></div>';
 
     h.look =
+      '<div class="group"><h3>Craft detail</h3>' + seg('craft', [['1', 'Crafty'], ['0', 'Clean']], 'Craft detail') +
+      '<p class="hint">Crafty adds cardboard edges with flutes, rough cut edges, a little curl, brass brads at the joints, tape, glue tabs and torn tops. Clean is the flat paper look.</p></div>' +
       '<div class="group"><h3>Filter</h3><div class="chips">' + App.FILTERS.map(function (f) { return '<button type="button" class="chip filt" data-act="filter" data-v="' + f.id + '" aria-pressed="false"><i style="background:' + f.c + '"></i>' + f.name + '</button>'; }).join('') + '</div>' +
       field('strength', 'Filter strength', 0, 1, 0.05) + '</div>' +
       '<div class="group">' + field('bright', 'Brightness', -1, 1, 0.05) + field('contrast', 'Contrast', 0.5, 1.5, 0.05) + field('sat', 'Color', 0, 2, 0.05) + '</div>' +
@@ -257,6 +265,7 @@
     attField('asize', 's', function (v) { return v.toFixed(2) + 'x'; }); attField('arot', 'r', deg); attField('aox', 'ox', function (v) { return Math.round(v); }); attField('aoy', 'oy', function (v) { return Math.round(v); });
     itemField('yaw', 'yaw', deg); itemField('tilt', 'tilt', deg); itemField('scale', 'scale', function (v) { return v.toFixed(2) + 'x'; });
     poseField('head', 'head', deg); poseField('wingA', 'wingA', deg); poseField('wingB', 'wingB', deg); poseField('lean', 'lean', deg); poseField('bend', 'bend', deg); poseField('hop', 'hop', pct);
+    F.bgspeed = { get: function () { return S().motion.speed; }, set: function (v) { App.setMotion({ speed: v }); }, fmt: function (v) { return v.toFixed(2) + 'x'; } };
     F.mm = { get: function () { return Math.log(S().lens.mm / 14) / Math.log(200 / 14) * 1000; }, set: function (v) { S().lens.mm = Math.round(14 * Math.pow(200 / 14, v / 1000)); App.applyLens(); App.positionReticle(); App.invalidate(); markPressed(); }, fmt: function () { return S().lens.mm + ' mm'; } };
     F.fn = { get: function () { return Math.round(Math.log(S().lens.fnum / 1.4) / Math.LN2 * 6); },
       set: function (v) { var raw = 1.4 * Math.pow(2, v / 6), best = STD_F[0]; STD_F.forEach(function (s) { if (Math.abs(Math.log(s / raw)) < Math.abs(Math.log(best / raw))) best = s; }); S().lens.fnum = best; App.invalidate(); markPressed(); },
@@ -330,6 +339,19 @@
     setPressed('spot', null, st.light.spot.on); setPressed('spotat', st.light.spot.at); setPressed('spotcolor', st.light.spot.color);
     $('spotBox').style.opacity = st.light.spot.on ? '1' : '0.5';
     setPressed('filter', st.look.filter); setPressed('vig', st.look.vigStyle);
+    setPressed('craft', st.look.craft ? '1' : '0');
+    var mo = st.motion, sdef = DP.SET_INFO[st.set.id];
+    setPressed('bgmode', mo.mode); setPressed('bgdir', mo.dir);
+    $('motionCtl').hidden = mo.mode === 'off';
+    var pb = $('bgPlay'); pb.textContent = mo.playing ? 'Pause' : 'Play'; pb.setAttribute('aria-pressed', mo.playing ? 'false' : 'true');
+    var note = '';
+    if (App.reducedMotion()) note = 'Your device asks for less motion, so it starts paused. Press Play to run it.';
+    if (st.set.id === 'photo' && mo.mode === 'loop') note = 'Paper loop needs a drawn backdrop. Your photo only slides in Matte pan.';
+    if (st.set.id === 'sweep' && mo.mode !== 'off') note = 'The paper sweep has no layers to move. Pick a drawn backdrop.';
+    $('motionNote').textContent = note; $('motionNote').hidden = !note;
+    var sug = sdef && sdef.light ? App.LIGHTS.filter(function (l) { return l.id === sdef.light; })[0] : null;
+    $('lightHint').hidden = !sug || st.light.preset === sdef.light;
+    if (sug) $('lightName').textContent = sug.name;
     setPressed('plat', st.frame.platform); setPressed('fscale', st.frame.scale); setPressed('fstyle', st.frame.style); setPressed('safe', null, st.frame.safe);
     if (sp) { setPressed('tail', sp.tail); setPressed('bg', sp.bg); setPressed('stkcolor', sp.type === 'label' ? (sp.ink || '#2a2350') : sp.color); }
   }
@@ -593,6 +615,21 @@
       else if (prev === 'wacker' && st.light.preset === 'night') { st.light = App.lightFrom(App.LIGHTS[1]); App.applyLight(); syncAll(); }
       syncSelection();
     },
+    bgmode: function (v) { App.setMotion({ mode: v }); if (v !== 'off' && App.reducedMotion()) App.msg('Motion starts paused because your device asks for less motion.', 5000); },
+    bgdir: function (v) { App.setMotion({ dir: parseInt(v, 10) }); },
+    bgplay: function () { App.setMotion({ playing: !S().motion.playing }); },
+    craft: function (v) {
+      var on = v === '1';
+      if (on === !!S().look.craft) return;
+      App.msg(on ? 'Adding the paper details...' : 'Flattening the paper...', 4000);
+      App.setCraft(on).then(function () { markPressed(); $('msg').classList.remove('on'); });
+      markPressed();
+    },
+    suglight: function () {
+      var sd = DP.SET_INFO[S().set.id], p = sd && App.LIGHTS.filter(function (l) { return l.id === sd.light; })[0];
+      if (!p) return;
+      S().light = App.lightFrom(p); App.applyLight(); syncAll(); App.save();
+    },
     photocam: function () { $('filePhotoCam').click(); },
     photofile: function () { $('filePhoto').click(); },
     pfloor: function (v) { S().photo.floor = v; App.applyPhoto(); markPressed(); App.save(); },
@@ -647,7 +684,7 @@
     spotcolor: function (v) { S().light.spot.color = v; S().light.preset = 'custom'; App.applyLight(); markPressed(); App.save(); },
     filter: function (v) { S().look.filter = parseInt(v, 10); if (S().look.filter && S().look.strength === 0) S().look.strength = 1; App.invalidate(); syncFields(); markPressed(); App.save(); },
     vig: function (v) { S().look.vigStyle = parseInt(v, 10); if (!S().look.vignette) S().look.vignette = 0.5; App.invalidate(); syncFields(); markPressed(); App.save(); },
-    resetlook: function () { S().look = App.defaultLook(); App.invalidate(); syncFields(); markPressed(); App.save(); },
+    resetlook: function () { var cr = S().look.craft; S().look = App.defaultLook(); S().look.craft = cr; App.invalidate(); syncFields(); markPressed(); App.save(); },
     stk: function (v) {
       var st = S(), id = App.nid('s');
       var nth = st.stickers.length % 4, base = { id: id, x: 0.5 + (nth - 1.5) * 0.06, y: 0.3 + nth * 0.07, r: 0 };
@@ -729,6 +766,7 @@
   UI.stickersChanged = function () { syncSticker(); };
   UI.stickerSelected = function () { syncSticker(); if (selSticker() && curTab !== 'stickers' && !isPhone()) { /* keep the tab, the sticker has its own handles */ } };
   UI.photoChanged = function () { syncSelection(); };
+  UI.motionChanged = function () { markPressed(); syncFields(); };
   UI.rollChanged = function () { if (curTab === 'save') refreshRoll(); };
   UI.stateLoaded = function () { syncAll(); $('sceneName').value = S().name === 'Starter scene' ? '' : S().name; };
   UI.ready = function () { syncAll(); };

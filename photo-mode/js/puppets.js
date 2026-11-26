@@ -70,6 +70,7 @@
       s.drawImage(art, 0, 0);
       s.globalCompositeOperation = 'source-in';
       s.fillStyle = '#ffffff'; s.fillRect(0, 0, cw, ch);
+      if (DP.craft && DP.craft.on && !o.noCraft) DP.roughenEdge(sil, 11 + (cw & 31));
       // hit mask, 96 px on the long side
       var mw = cw >= ch ? 96 : Math.round(96 * cw / ch), mh = cw >= ch ? Math.round(96 * ch / cw) : 96;
       var mc = document.createElement('canvas'); mc.width = mw; mc.height = mh;
@@ -115,24 +116,43 @@
   };
   var planeGeo = new THREE.PlaneGeometry(1, 1);
 
-  /* A layer = art plane + white edge plane + cardstock back plane. Sizes are the content box in world units. */
+  /* A layer = art plane + white edge plane + cardstock back plane. Sizes are the content box in world units.
+     In Crafty mode the layer also gets a corrugated cardboard side wall that follows the cut outline, and
+     (o.curl) a slight bend. */
+  var curlSeed = 5;
   DP.makeLayer = function (prep, worldW, worldH, o) {
     o = o || {};
+    var crafty = DP.craft.on;
     var g = new THREE.Group();
     var fw = worldW * prep.cw / (prep.cw - 2 * M), fh = worldH * prep.ch / (prep.ch - 2 * M);
     var tArt = tex(prep.art, true), tSil = tex(prep.sil, false);
-    var art = new THREE.Mesh(planeGeo, paperMat(tArt));
+    var edgeZ = o.edgeZ !== undefined ? o.edgeZ : -0.02;
+    var thick = crafty && !o.noWall;
+    var backZ = o.backZ !== undefined ? o.backZ : (thick ? -0.06 : -0.04);
+    var geo = planeGeo, warp = null, ownGeo = null;
+    if (crafty && o.curl) { warp = DP.warpFn(curlSeed++, o.curl); ownGeo = geo = DP.warpedPlane(6, 6, warp); }
+    var art = new THREE.Mesh(geo, paperMat(tArt));
     art.scale.set(fw, fh, 1); art.position.z = o.z || 0;
     art.receiveShadow = true; art.userData.hit = true;
-    var edge = new THREE.Mesh(planeGeo, paperMat(tSil, 0xfffcf4));
-    edge.scale.set(fw, fh, 1); edge.position.z = (o.edgeZ !== undefined ? o.edgeZ : -0.02);
+    var edge = new THREE.Mesh(geo, paperMat(tSil, 0xfffcf4));
+    edge.scale.set(fw, fh, 1); edge.position.z = edgeZ;
     edge.castShadow = true; edge.receiveShadow = true;
     edge.customDepthMaterial = depthMat(tSil);
-    var back = new THREE.Mesh(planeGeo, paperMat(tSil, CARD_BACK, THREE.DoubleSide));
-    back.scale.set(fw, fh, 1); back.position.z = (o.backZ !== undefined ? o.backZ : -0.04);
+    var back = new THREE.Mesh(geo, paperMat(tSil, CARD_BACK, THREE.DoubleSide));
+    back.scale.set(fw, fh, 1); back.position.z = backZ;
     back.receiveShadow = true;
     g.add(back, edge, art);
-    g.userData = { prep: prep, fw: fw, fh: fh, textures: [tArt, tSil], art: art, edge: edge, back: back };
+    if (thick) {
+      var key = fw.toFixed(3) + 'x' + fh.toFixed(3) + '/' + backZ + '/' + (warp ? 'w' + curlSeed : '');
+      var wg = warp ? null : (prep.walls && prep.walls[key]);
+      if (!wg) {
+        if (!prep.runs) prep.runs = DP.contour(prep.sil, 256);
+        wg = DP.wallGeometry(prep.runs, fw, fh, backZ, edgeZ, warp);
+        if (!warp) { prep.walls = prep.walls || {}; prep.walls[key] = wg; }
+      }
+      if (wg) { var wm = DP.wallMesh(wg); wm.userData.ownGeo = !!warp; g.add(wm); g.userData.wall = wm; }
+    }
+    g.userData = { prep: prep, fw: fw, fh: fh, textures: [tArt, tSil], art: art, edge: edge, back: back, ownGeo: ownGeo, wallOwn: warp && g.userData.wall ? g.userData.wall : null };
     edge.userData.mask = prep.mask; edge.userData.hit = true;
     return g;
   };
@@ -143,16 +163,41 @@
       var i = DP.paperMats.indexOf(m.material); if (i >= 0) DP.paperMats.splice(i, 1);
       m.material.dispose(); if (m.customDepthMaterial) m.customDepthMaterial.dispose();
     });
+    if (u.ownGeo) u.ownGeo.dispose();
+    if (u.wallOwn) u.wallOwn.geometry.dispose();
   };
 
   /* ---------- the folded paper stand ---------- */
-  var standMat = null;
+  var standMat = null, standMatCraft = null, tabGeo = null;
   function makeStand(width, height) {
     if (!standMat) { standMat = new THREE.MeshStandardMaterial({ color: 0xd9cfb6, roughness: 1, side: THREE.DoubleSide }); }
     var sh = new THREE.Shape();
     var w = width * 0.5;
     sh.moveTo(-w, 0); sh.lineTo(w, 0); sh.lineTo(w * 0.62, height); sh.lineTo(-w * 0.62, height); sh.lineTo(-w, 0);
-    var m = new THREE.Mesh(new THREE.ShapeGeometry(sh), standMat);
+    var m;
+    if (DP.craft.on) {
+      // a cardboard flap with real thickness, a glued tab at each top corner and a strip of tape on the fold
+      if (!standMatCraft) standMatCraft = new THREE.MeshStandardMaterial({ color: 0xd2b07f, roughness: 1, side: THREE.DoubleSide });
+      var depth = 0.03, geo = new THREE.ExtrudeGeometry(sh, { depth: depth, bevelEnabled: false });
+      geo.translate(0, 0, -depth / 2);
+      var g1 = geo.groups[1], pos = geo.attributes.position, uv = geo.attributes.uv;
+      if (g1) for (var i = g1.start; i < g1.start + g1.count; i++) uv.setXY(i, (pos.getX(i) + pos.getY(i)) / 0.1, (pos.getZ(i) + depth / 2) / depth);
+      m = new THREE.Mesh(geo, [standMatCraft, DP.cardboardMat()]);
+      if (!tabGeo) {
+        var ts = new THREE.Shape(); ts.moveTo(-0.5, 0); ts.lineTo(0.5, 0); ts.lineTo(0.38, 1); ts.lineTo(-0.38, 1); ts.lineTo(-0.5, 0);
+        tabGeo = new THREE.ShapeGeometry(ts);
+      }
+      [-1, 1].forEach(function (sd) {
+        var tb = new THREE.Mesh(tabGeo, standMatCraft);
+        var tw = Math.min(0.2, w * 0.4);
+        tb.scale.set(tw, 0.1, 1); tb.position.set(sd * w * 0.62 * 0.62, height, depth / 2); tb.rotation.x = 1.15;
+        tb.castShadow = true; tb.raycast = function () {};
+        m.add(tb);
+      });
+      var tp = DP.makeTape(Math.min(0.5, w * 0.8), 0.1, 0); tp.position.set(0, 0.035, depth / 2 + 0.004); m.add(tp);
+    } else {
+      m = new THREE.Mesh(new THREE.ShapeGeometry(sh), standMat);
+    }
     m.rotation.x = -0.95;      // leans back from the card base
     m.position.set(0, 0.012, -0.035);
     m.castShadow = true; m.receiveShadow = true;
@@ -324,28 +369,28 @@
       name: 'Dibs', size: 1.7, base: 97, parts: ['legs', 'body', 'wingA', 'wingB', 'belly', 'head'],
       pivots: { legs: [50, 92], body: [50, 92], wingA: [30, 62], wingB: [70, 62], belly: [50, 92], head: [50, 50] },
       wings: 2, wingSign: { A: -1, B: 1 }, side: false, colors: DP.DIBS_COLORS, make: dibsMaker(DP.DIBS_COLORS, 'flag'),
-      headTop: [50, 8], feetY: 96,
+      headTop: [50, 8], feetY: 96, brads: [[30, 62], [70, 62], [50, 57]],
       anchors: { handL: { part: 'wingA', x: 24, y: 85 }, handR: { part: 'wingB', x: 76, y: 85 }, head: { part: 'head', x: 50, y: 18, w: 40 }, neck: { part: 'body', x: 50, y: 56, w: 46 }, feet: { part: 'legs', x: 50, y: 95 } }
     },
     pigeon: {
       name: 'Pigeon', size: 1.7, base: 97, parts: ['legs', 'body', 'wingA', 'wingB', 'belly', 'head'],
       pivots: { legs: [50, 92], body: [50, 92], wingA: [30, 62], wingB: [70, 62], belly: [50, 92], head: [50, 50] },
       wings: 2, wingSign: { A: -1, B: 1 }, side: false, colors: DP.PIGEON_COLORS, make: dibsMaker(DP.PIGEON_COLORS, 'black'),
-      headTop: [50, 8], feetY: 96,
+      headTop: [50, 8], feetY: 96, brads: [[30, 62], [70, 62], [50, 57]],
       anchors: { handL: { part: 'wingA', x: 24, y: 85 }, handR: { part: 'wingB', x: 76, y: 85 }, head: { part: 'head', x: 50, y: 18, w: 40 }, neck: { part: 'body', x: 50, y: 56, w: 46 }, feet: { part: 'legs', x: 50, y: 95 } }
     },
     wacker: {
       name: 'Wacker', size: 1.7, base: 98, parts: ['tail', 'legs', 'body', 'wingA', 'chest', 'head'],
       pivots: { tail: [64, 78], legs: [50, 90], body: [52, 92], wingA: [60, 50], chest: [52, 92], head: [42, 50] },
       wings: 1, wingSign: { A: 1 }, side: true, colors: null, make: wackerMake,
-      headTop: [40, 8], feetY: 96,
+      headTop: [40, 8], feetY: 96, brads: [[60, 50], [44, 60]],
       anchors: { handL: { part: 'body', x: 30, y: 74 }, handR: { part: 'wingA', x: 70, y: 88 }, head: { part: 'head', x: 40, y: 15, w: 34 }, neck: { part: 'body', x: 40, y: 52, w: 34 }, feet: { part: 'legs', x: 50, y: 96 } }
     },
     chance: {
       name: 'Chance', size: 1.7, base: 97, parts: ['tail', 'legs', 'body', 'wingA', 'wingB', 'head'],
       pivots: { tail: [68, 77], legs: [50, 91], body: [50, 92], wingA: [25, 62], wingB: [75, 62], head: [50, 52] },
       wings: 2, wingSign: { A: -1, B: 1 }, side: false, colors: DP.GENERIC_COLORS, main: '#6fae5a',
-      headTop: [50, 13], feetY: 96,
+      headTop: [50, 13], feetY: 96, brads: [[25, 62], [75, 62], [50, 60]],
       anchors: { handL: { part: 'wingA', x: 21, y: 77 }, handR: { part: 'wingB', x: 79, y: 77 }, head: { part: 'head', x: 50, y: 15, w: 36 }, neck: { part: 'body', x: 50, y: 53, w: 40 }, feet: { part: 'legs', x: 50, y: 96 } },
       split: { tail: [0, 1], legs: [2, 3], body: [4, 7, 8], wingA: [5], wingB: [6], head: range(9, 22) }
     },
@@ -353,7 +398,7 @@
       name: 'Hiram', size: 1.7, base: 98, parts: ['body', 'legs', 'head'],
       pivots: { body: [50, 92], legs: [50, 91], head: [50, 56] },
       wings: 0, wingSign: {}, side: false, colors: DP.GENERIC_COLORS, main: '#d9a46b',
-      headTop: [50, 17], feetY: 97,
+      headTop: [50, 17], feetY: 97, brads: [[50, 62]],
       anchors: { handL: { part: 'body', x: 23, y: 72 }, handR: { part: 'body', x: 77, y: 72 }, head: { part: 'head', x: 50, y: 25, w: 44 }, neck: { part: 'body', x: 50, y: 56, w: 44 }, feet: { part: 'legs', x: 50, y: 96 } },
       split: { body: [0, 1, 2, 3], legs: [4, 5], head: range(6, 21) }
     },
@@ -361,7 +406,7 @@
       name: 'Ivy', size: 1.7, base: 98, parts: ['tail', 'legs', 'body', 'wingA', 'head'],
       pivots: { tail: [74, 63], legs: [51, 90], body: [54, 92], wingA: [56, 62], head: [43, 60] },
       wings: 1, wingSign: { A: 1 }, side: true, colors: DP.GENERIC_COLORS, main: '#9a8670',
-      headTop: [43, 11], feetY: 97,
+      headTop: [43, 11], feetY: 97, brads: [[56, 62], [46, 66]],
       anchors: { handL: { part: 'body', x: 28, y: 76 }, handR: { part: 'wingA', x: 80, y: 71 }, head: { part: 'head', x: 43, y: 13, w: 24 }, neck: { part: 'body', x: 43, y: 56, w: 24 }, feet: { part: 'legs', x: 51, y: 97 } },
       split: { tail: [0], legs: [1, 2], body: [3, 4], wingA: [5, 6], head: range(7, 13) }
     },
@@ -369,7 +414,7 @@
       name: 'Monty', size: 1.7, base: 98, parts: ['legs', 'tail', 'body', 'wingA', 'head'],
       pivots: { legs: [50, 88], tail: [73, 62], body: [51, 90], wingA: [60, 63], head: [47, 52] },
       wings: 1, wingSign: { A: 1 }, side: true, colors: DP.GENERIC_COLORS, main: '#d8c4a0',
-      headTop: [47, 21], feetY: 97,
+      headTop: [47, 21], feetY: 97, brads: [[60, 63], [48, 60]],
       anchors: { handL: { part: 'body', x: 30, y: 72 }, handR: { part: 'wingA', x: 74, y: 70 }, head: { part: 'head', x: 46, y: 28, w: 30 }, neck: { part: 'body', x: 47, y: 54, w: 30 }, feet: { part: 'legs', x: 50, y: 97 } },
       split: { legs: [0, 1, 12], tail: [2], body: [3, 4], wingA: [5], head: [6, 7, 8, 9, 10, 11, 13, 14, 15] }
     },
@@ -377,7 +422,7 @@
       name: 'Sue', size: 1.7, base: 95, parts: ['tail', 'legs', 'body', 'wingA', 'head'],
       pivots: { tail: [64, 62], legs: [50, 90], body: [50, 92], wingA: [40, 58], head: [48, 44] },
       wings: 1, wingSign: { A: -1 }, side: true, colors: null,
-      headTop: [36, 10], feetY: 93,
+      headTop: [36, 10], feetY: 93, brads: [[40, 58], [50, 50]],
       anchors: { handL: { part: 'wingA', x: 29, y: 63 }, handR: { part: 'body', x: 62, y: 62 }, head: { part: 'head', x: 37, y: 16, w: 34 }, neck: { part: 'body', x: 54, y: 47, w: 22 }, feet: { part: 'legs', x: 50, y: 92 } },
       split: { tail: [0, 1, 2], legs: range(3, 8), body: [9, 10, 11, 12], wingA: [13, 14], head: range(15, 23) }
     }
@@ -422,7 +467,7 @@
 
   var rasterCache = {};   // svg -> prep
   function cachedPrep(svg, o) {
-    var key = svg + (o && o.square ? '#sq' : '');
+    var key = svg + (o && o.square ? '#sq' : '') + (o && o.noCraft ? '#nc' : (DP.craft.on ? '#c' : ''));
     if (!rasterCache[key]) rasterCache[key] = DP.prepArt(svg, o);
     return rasterCache[key];
   }
@@ -476,6 +521,13 @@
         self.body.add(grp);
         self.parts[it.id] = { grp: grp, layer: layer, prep: it.prep, home: p.clone() };
       });
+      if (DP.craft.on && def.brads) {
+        def.brads.forEach(function (b) {
+          var br = DP.makeBrad(0.034), p = self.u(b[0], b[1]);
+          br.position.set(p.x, p.y, def.parts.length * 0.006 + 0.002);
+          self.body.add(br);
+        });
+      }
       self.colorIdx = self.pose.color;
       self.applyPose(self.pose, self.move);
       self.width = self.S * 0.62; self.height = self.S * 0.98;
@@ -652,7 +704,7 @@
         var ei = it.emote && DP.emoteInfo(it.emote.id);
         if (ei) cachedPrep(ei.svg, { square: true }).then(function (prep) {
           if (seq !== emSeq) return;
-          var layer = DP.makeLayer(prep, 1, 1, { edgeZ: -0.004, backZ: -0.012 });
+          var layer = DP.makeLayer(prep, 1, 1, { edgeZ: -0.004, backZ: -0.012, noWall: true });
           var g = new THREE.Group(); g.add(layer);
           (obj.puppet ? obj.puppet.body : tilt).add(g);
           emote = { grp: g, layer: layer };
@@ -702,7 +754,7 @@
           artFor(rec).then(function (prep) {
             if (seq !== atSeq) return;
             var sz = attSize(rec, prep);
-            var layer = DP.makeLayer(prep, 1, 1, { edgeZ: -0.004, backZ: -0.012 });
+            var layer = DP.makeLayer(prep, 1, 1, { edgeZ: -0.004, backZ: -0.012, noWall: true });
             var g = new THREE.Group(); g.add(layer);
             atts[rec.id] = { order: idx, grp: g, layer: layer, prep: prep };
             placeAtt(rec); if (DP.onChange) DP.onChange();
@@ -801,8 +853,12 @@
       if (info.upload) { var mx = Math.max(cwd, ch), k = 1.6 / mx; cwd *= k; ch *= k; }
       else if (info.bubble) { cwd = 1.9; ch = cwd / prep.aspect; }
       else if (CARD_SIZES[item.kind]) { var kk = CARD_SIZES[item.kind] / cwd; cwd *= kk; ch *= kk; }
-      var layer = DP.makeLayer(prep, cwd, ch);
+      var layer = DP.makeLayer(prep, cwd, ch, { curl: Math.min(0.035, 0.012 * Math.max(cwd, ch)) });
       layer.position.y = ch / 2 + 0.03 - (info.drop || 0) * ch;
+      if (DP.craft.on && info.upload) {
+        // a picture taped up by its top corners
+        [-1, 1].forEach(function (sd) { var tp = DP.makeTape(0.34, 0.12, sd * 0.75); tp.position.set(sd * (cwd / 2 - 0.04), ch / 2 - 0.04, 0.012); layer.add(tp); });
+      }
       tilt.add(layer);
       obj.layer = layer;
       var th = DP.thumb(prep.art, 96);
@@ -828,7 +884,7 @@
     return mask.a[y * mask.w + x] > 100;
   };
 
-  DP.prepStickerImage = function (svgOrImg) { return cachedPrep(svgOrImg); };
+  DP.prepStickerImage = function (svgOrImg) { return cachedPrep(svgOrImg, { noCraft: true }); };
   DP.rasterForSticker = function (svg, px) {
     var nat = svgSize(svg), a = nat.w / nat.h;
     var w = a >= 1 ? px : Math.round(px * a), h = a >= 1 ? Math.round(px / a) : px;

@@ -2,6 +2,12 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-26: Photo Mode round 3 (Chicago backdrops, moving backgrounds, papercraft detail)
+
+- Seven new cut-paper backdrops: Lakefront at sunset, Michigan Avenue with the Water Tower, Riverwalk with bridges up, Pier with a Ferris wheel, Bungalow alley in snow (with a dibs chair), Ivy brick ballpark wall (generic scoreboard), and a Deep dish pizza parlor. No Bean, no logos, no brand names. Each suggests a light ("suggest light" in the Scene tab). The six older sets now tile seamlessly.
+- Background motion in the Scene tab: Off (default), Matte pan (layers slide at depth-based speeds, like a multiplane matte painting) and Paper loop (a seamless repeating strip, like the spinning paper backgrounds of old cartoons). Speed, direction, Play and Pause. Starts paused with reduced motion, pauses when the tab is hidden, and a photo freezes the frame. `App.setBackgroundTime(seconds)` sets the motion phase for future skit rendering. Saved with the scene.
+- Craft detail in the Look tab: Crafty (default) adds corrugated cardboard edges with flutes, a rough cut edge, slight curl, deckled tops on set layers, brass brads at puppet joints, tape and glue tabs on the stands. Clean keeps the earlier look. Character drawings are unchanged.
+- New file `photo-mode/js/craft.js`. Offline cache is now `dibs-photo-mode-v6` (after merging with Movie Maker). Old saved scenes load as Crafty with motion off. Movie Maker (`movie.html`) now loads `js/craft.js` too, so its cutouts get the same craft detail.
 ## 2026-11-26: Movie Maker tools sheet (VOICE app settings style)
 
 - On phones the stage, timeline and shots now show by default. One Tools button opens a settings sheet styled like the V.O.I.C.E. app's adult settings: dark top bar with an always-visible Done, grouped rows with colored icon tiles, a live value and a chevron, and a "‹ Tools" back link on each page. Tools reopens the last page used.
@@ -28,7 +34,7 @@ Newest first. Add a line here every time the site changes.
 - Export video (WebM, or MP4 where only that is offered) at the platform size for 9:16, 16:9, 4:5 or 1:1, with a half-size option for phones, plus Save poster. Frames are drawn one at a time first and then recorded at an exact 30 frames a second, so slow devices still get correct timing. Movies are capped at 60 seconds.
 - Movies autosave on the device (new `movies` store; the IndexedDB version is now 2), and can be saved and opened as `.dibsmovie.json`.
 - Opens with a 20-second showcase movie of Dibs and Wacker that shows the editing features.
-- Photo mode gets a small Movie maker link. Small hooks in `app.js` (boot options, no autosave for the movie page) and `puppets.js` (cached bubble art). Offline cache is now `dibs-photo-mode-v3`.
+- Photo mode gets a small Movie maker link. Small hooks in `app.js` (boot options, no autosave for the movie page) and `puppets.js` (cached bubble art). Offline cache is now `dibs-photo-mode-v6` (after merging with Movie Maker).
 
 ## 2026-11-25: Photo Mode as a claude.ai artifact
 
