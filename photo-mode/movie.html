@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DIBS Movie Maker</title>
+<meta name="description" content="Turn photo mode scenes into short paper-diorama movies. Keyframe poses, camera and light, add bubbles and captions, and save a video.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#fbf6ea">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'none'; worker-src 'self'; media-src 'self' blob: data:; object-src 'none'; base-uri 'self'; form-action 'none'">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="../img/icons/icon-192.png">
+<link rel="apple-touch-icon" href="../img/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="css/photo.css">
+<link rel="stylesheet" href="css/movie.css">
+</head>
+<body>
+<div id="mm">
+  <header id="mmTop">
+    <a id="mmToPhoto" class="mmlink" href="index.html">Photo mode</a>
+    <input type="text" id="mmTitle" aria-label="Movie title" maxlength="60" autocomplete="off" placeholder="Movie title">
+    <select id="mmPlatform" aria-label="Video size"></select>
+    <button type="button" id="mmExport" class="btn primary">Export video</button>
+  </header>
+
+  <main id="stage" aria-label="Movie preview">
+    <p id="frameInfo" class="frameinfo"></p>
+    <div id="frameBox">
+      <canvas id="gl" aria-label="3D scene"></canvas>
+      <canvas id="ov" tabindex="0" aria-label="Scene view. Drag to move the camera. Tap a character to pick it."></canvas>
+      <canvas id="cap" aria-hidden="true"></canvas>
+      <div id="guides" aria-hidden="true">
+        <div id="gridLines"></div>
+        <div id="safeZones"></div>
+        <div id="circleGuide"></div>
+        <div id="bannerSafe"></div>
+      </div>
+      <div id="reticle" aria-hidden="true"></div>
+      <button type="button" id="hgt" class="hgt" aria-label="Height tab. Drag up or down to lift the selected item" title="Drag up or down to lift" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L6 10h12zM12 21l-6-7h12z"/></svg></button>
+      <button type="button" id="giveBtn" class="givebtn" hidden>Give</button>
+      <div id="flash" aria-hidden="true"></div>
+    </div>
+    <div id="drawBar" role="group" aria-label="Draw a path" hidden>
+      <p id="drawHelp">Draw on the floor with your finger</p>
+      <div class="drawbtns"><button type="button" id="drawDone" class="btn primary">Done</button><button type="button" id="drawCancel" class="btn">Cancel</button></div>
+    </div>
+    <div id="msg" role="status" aria-live="polite"></div>
+    <div id="mmLoading" role="status" aria-live="polite" hidden><span id="mmLoadingText">Getting your shots ready</span></div>
+  </main>
+
+  <div id="mmTransport">
+    <button type="button" id="mmPlay" class="btn" aria-label="Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path id="mmPlayIcon" d="M7 4l13 8-13 8z"/></svg><span id="mmPlayText">Play</span></button>
+    <span id="mmTime" class="mmtime">0:00 of 0:00</span>
+    <span class="mmspacer"></span>
+    <button type="button" id="mmSetKey" class="btn">Set key</button>
+    <button type="button" id="mmUndo" class="btn sq" aria-label="Undo">Undo</button>
+    <button type="button" id="mmRedo" class="btn sq" aria-label="Redo">Redo</button>
+    <button type="button" id="mmTools" class="btn tools" aria-haspopup="dialog" aria-expanded="false" aria-controls="mmPanel">Tools</button>
+  </div>
+
+  <div id="mmScrim" hidden></div>
+
+  <div id="mmSide">
+    <section id="mmShots" aria-label="Shots"></section>
+    <section id="mmTimeline" aria-label="Timeline"></section>
+    <section id="mmKeyBar" aria-label="Selected key" hidden></section>
+    <aside id="mmPanel" data-open="false" data-view="list" aria-label="Tools">
+      <header class="sh-head">
+        <button type="button" id="shBack" class="sh-back" aria-label="Back to Tools">&lsaquo; Tools</button>
+        <h2 id="shTitle" tabindex="-1">Tools</h2>
+        <button type="button" id="shDone" class="sh-done">Done</button>
+      </header>
+      <div class="sh-split">
+        <nav id="shList" class="sh-nav" aria-label="Tools"></nav>
+        <div id="shPage" class="sh-page"><div id="mmContent"></div></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div id="exportModal" class="modal" hidden>
+  <div class="dlg mmdlg" role="dialog" aria-modal="true" aria-labelledby="exTitle">
+    <header class="sh-head"><h2 id="exTitle">Export video</h2><button type="button" id="exTop" class="sh-done">Close</button></header>
+    <div class="dlgbody">
+    <div id="exSetup">
+      <p id="exSummary" class="sizeline"></p>
+      <button type="button" class="tog" id="exFast" aria-pressed="false"><span>Fast, half size</span><span class="track" aria-hidden="true"></span></button>
+      <p class="hint">Fast makes a smaller file and finishes sooner. Good for a phone.</p>
+      <button type="button" class="tog" id="exSound" aria-pressed="false" hidden><span>Include sound</span><span class="track" aria-hidden="true"></span></button>
+      <p id="exNote" class="hint"></p>
+      <div class="dlgbtns">
+        <button type="button" id="exStart" class="btn primary">Make the video</button>
+        <button type="button" id="exClose" class="btn">Not now</button>
+      </div>
+    </div>
+    <div id="exBusy" hidden>
+      <p id="exPhase" class="sizeline">Frame 0 of 0</p>
+      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="exBar"><i id="exBarFill"></i></div>
+      <p id="exHelp" class="hint">Keep this page open. Each frame is drawn one at a time.</p>
+      <div class="dlgbtns"><button type="button" id="exCancel" class="btn">Cancel</button></div>
+    </div>
+    <div id="exDone" hidden>
+      <div class="resimg"><video id="exVideo" controls playsinline muted></video></div>
+      <p id="exInfo" class="small"></p>
+      <div class="dlgbtns">
+        <button type="button" id="exSave" class="btn primary">Save video</button>
+        <button type="button" id="exBack" class="btn">Back to the movie</button>
+      </div>
+    </div>
+    </div>
+  </div>
+</div>
+
+<div id="confirmModal" class="modal" hidden>
+  <div class="dlg small mmdlg" role="dialog" aria-modal="true" aria-labelledby="cfTitle">
+    <header class="sh-head"><h2 id="cfTitle">Start a new movie?</h2><button type="button" id="cfTop" class="sh-done">Close</button></header>
+    <div class="dlgbody">
+    <p id="cfText">Your current movie is saved automatically, but it will be replaced.</p>
+    <div class="dlgbtns">
+      <button type="button" id="cfYes" class="btn primary">Start new movie</button>
+      <button type="button" id="cfNo" class="btn">Keep this one</button>
+    </div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fileScene" accept=".json,application/json" hidden>
+<input type="file" id="fileMovie" accept=".json,application/json" hidden>
+<input type="file" id="fileAudio" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav,audio/ogg,.mp3,.m4a,.wav,.ogg" hidden>
+
+<noscript><p style="padding:24px">The movie maker needs JavaScript.</p></noscript>
+<script src="vendor/three.min.js"></script>
+<script src="js/assets.js"></script>
+<script src="js/store.js"></script>
+<script src="js/extras.js"></script>
+<script src="js/puppets.js"></script>
+<script src="js/sets.js"></script>
+<script src="js/dof.js"></script>
+<script src="js/controls.js"></script>
+<script src="js/stickers.js"></script>
+<script src="js/app.js"></script>
+<script src="js/movie-showcase.js"></script>
+<script src="js/movie.js"></script>
+<script src="js/movie-actions.js"></script>
+<script src="js/movie-ui.js"></script>
+<script src="js/movie-quick.js"></script>
+</body>
+</html>
