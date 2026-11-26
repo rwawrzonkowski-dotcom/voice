@@ -539,7 +539,7 @@
   };
   App.updateRing = function () {
     var it = App.sel && findItem(App.sel), o = it && App.objs[App.sel];
-    if (!o) { ring.visible = false; return; }
+    if (!o || App.ringOff) { ring.visible = false; if (App.ringOff) App.updateHandle(); return; }
     var r = Math.max(0.45, (o.w || 1) * 0.62) * it.scale;
     ring.scale.set(r, r, 1); ring.position.set(it.x, it.y + 0.03, it.z); ring.visible = true;
     ring.userData.r = r;

@@ -18,7 +18,7 @@
   function secs(t) { return fmt(t, 2) + ' sec'; }
 
   var tab = 'item', selKey = null, dirty = {}, lastUndoAt = 0, activeField = null;
-  var content = $('mmContent'), tabsEl = $('mmTabs'), panel = $('mmPanel');
+  var content = $('mmContent'), panel = $('mmPanel');
   var reduced = window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches;
 
   function selItem() { return App.sel ? App.findItem(App.sel) : null; }
@@ -70,7 +70,7 @@
     $('mmRedo').addEventListener('click', function () { MM.redo(); });
     $('mmSetKey').addEventListener('click', function () { setKeyHere(); });
     $('mmExport').addEventListener('click', openExport);
-    $('mmSheetToggle').addEventListener('click', function () { setOpen(false); });
+    $('mmTools').addEventListener('click', function () { if (isOpen()) closeSheet(); else openSheet(); });
   }
   var lastTimeText = '';
   function updateTime() {
@@ -101,7 +101,7 @@
     var el = $('mmShots'), drag = null;
     el.addEventListener('click', function (e) {
       var b = e.target.closest('button.shot'); if (!b || drag && drag.moved) return;
-      if (b.getAttribute('data-add')) { setTab('shot'); setOpen(true); return; }
+      if (b.getAttribute('data-add')) { openSheet('shot'); return; }
       MM.pause();
       MM.selectShot(parseInt(b.getAttribute('data-i'), 10));
     });
@@ -347,42 +347,127 @@
   }
 
   /* ---------- tool tabs ---------- */
-  var TABS = [['quick', 'Quick'], ['shot', 'Shot'], ['item', 'Item'], ['camera', 'Camera'], ['look', 'Look'], ['text', 'Text'], ['sound', 'Sound'], ['movie', 'Movie']];
+  /* The pages of the Tools sheet, grouped like the settings in the VOICE app. icon is a plain glyph on a colored tile. */
+  var PAGES = [
+    { id: 'quick', title: 'Quick', sub: 'Commands, script, draw path', icon: '\u00bb', color: '#4f46e5', group: 'Make it fast' },
+    { id: 'shot', title: 'Shot', sub: 'Name, length, add a shot', icon: '\u25ad', color: '#2563eb', group: 'This shot' },
+    { id: 'item', title: 'Characters', sub: 'Pose, bubble, costume', icon: '\u263a', color: '#ea580c', group: 'This shot' },
+    { id: 'camera', title: 'Camera', sub: 'Moves, lens, focus', icon: '\u25c9', color: '#0f766e', group: 'This shot' },
+    { id: 'look', title: 'Look', sub: 'Light and filter', icon: '\u25d0', color: '#ca8a04', group: 'This shot' },
+    { id: 'text', title: 'Text', sub: 'Captions', icon: 'Aa', color: '#db2777', group: 'This shot' },
+    { id: 'sound', title: 'Sound', sub: 'Your own music or voice', icon: '\u266a', color: '#16a34a', group: 'Movie' },
+    { id: 'movie', title: 'Movie', sub: 'Save, open, showcase', icon: '\u25a6', color: '#475569', group: 'Movie' }
+  ];
+  function pageInfo(id) { return PAGES.filter(function (p) { return p.id === id; })[0] || PAGES[0]; }
   function chip(act, v, label, extra) { return '<button type="button" class="chip" data-act="' + act + '" data-v="' + esc(v) + '" aria-pressed="false"' + (extra || '') + '>' + label + '</button>'; }
   function seg(act, list, label) { return '<div class="seg" role="group" aria-label="' + label + '">' + list.map(function (o) { return '<button type="button" data-act="' + act + '" data-v="' + o[0] + '" aria-pressed="false">' + o[1] + '</button>'; }).join('') + '</div>'; }
   function field(id, label, min, max, step) { return '<div class="field"><label for="f-' + id + '">' + label + '</label><output id="o-' + id + '" for="f-' + id + '"></output><input type="range" id="f-' + id + '" data-f="' + id + '" min="' + min + '" max="' + max + '" step="' + step + '"></div>'; }
   function tog(act, label) { return '<button type="button" class="tog" data-act="' + act + '" aria-pressed="false"><span>' + label + '</span><span class="track" aria-hidden="true"></span></button>'; }
 
-  function buildTabs() {
-    tabsEl.innerHTML = TABS.map(function (t) { return '<button type="button" class="tab" role="tab" id="tab-' + t[0] + '" data-tab="' + t[0] + '" aria-selected="false">' + t[1] + '</button>'; }).join('');
-    tabsEl.addEventListener('click', function (e) {
-      var b = e.target.closest('.tab'); if (!b) return;
-      var t = b.getAttribute('data-tab');
-      if (t === tab && isPhone() && panel.getAttribute('data-open') === 'true') { setOpen(false); return; }
-      setTab(t); setOpen(true);
-    });
+  /* ---------- back button and Escape: one history entry while any layer (sheet, draw mode, dialog) is open ---------- */
+  var layers = [], marker = false, ignorePop = 0;
+  function pushLayer(close) {
+    var l = { close: close };
+    layers.push(l);
+    if (!marker) { try { history.pushState({ dibsMM: 1 }, ''); marker = true; } catch (e) {} }
+    return l;
   }
-  function setOpen(o) {
-    panel.setAttribute('data-open', o ? 'true' : 'false');
-    $('mmSheetToggle').setAttribute('aria-expanded', o ? 'true' : 'false');
-    syncCompact();
-    setTimeout(function () { App.layout(); MM.paintCaption(); }, 30);
+  function dropLayer(l) {
+    var i = layers.indexOf(l); if (i < 0) return;
+    layers.splice(i, 1);
+    if (!layers.length) setTimeout(function () { if (!layers.length && marker) { marker = false; ignorePop++; try { history.back(); } catch (e) { ignorePop--; } } }, 0);
   }
-  /* on a phone the Quick list shares the screen with the picture, so the timeline lanes step aside while it is open */
-  function syncCompact() {
-    var side = $('mmSide'), on = isPhone() && tab === 'quick' && panel.getAttribute('data-open') === 'true' ? '1' : '0';
-    if (side.getAttribute('data-compact') !== on) { side.setAttribute('data-compact', on); setTimeout(function () { App.layout(); MM.paintCaption(); }, 30); }
-  }
-  window.addEventListener('resize', syncCompact);
-  function setTab(t) {
-    tab = t;
-    Array.prototype.forEach.call(tabsEl.children, function (b) { b.setAttribute('aria-selected', b.getAttribute('data-tab') === t ? 'true' : 'false'); });
-    var sb = tabsEl.querySelector('[aria-selected=true]');
-    if (sb && (sb.offsetLeft < tabsEl.scrollLeft || sb.offsetLeft + sb.offsetWidth > tabsEl.scrollLeft + tabsEl.clientWidth)) tabsEl.scrollLeft = Math.max(0, sb.offsetLeft - 24);
-    syncCompact();
-    renderPanel();
-  }
+  window.addEventListener('popstate', function () {
+    if (ignorePop) { ignorePop--; return; }
+    marker = false;
+    var top = layers.pop();
+    if (top) top.close();
+    if (layers.length && !marker) { try { history.pushState({ dibsMM: 1 }, ''); marker = true; } catch (e) {} }
+  });
 
+  /* ---------- the Tools sheet ---------- */
+  var WIDE = window.matchMedia('(min-width:1100px)');
+  var view = 'list', used = false, sheetLayer = null, wasPhone = isPhone();
+  function isWide() { return WIDE.matches; }
+  function isOpen() { return panel.getAttribute('data-open') === 'true'; }
+  function pageValue(id) {
+    var shot = MM.cur(), st = S(); if (!shot) return '';
+    if (id === 'quick') { var n = 0; puppets().forEach(function (p) { n += (MM.getList(shot, p.id) || []).length; }); return n ? n + (n === 1 ? ' command' : ' commands') : 'None yet'; }
+    if (id === 'shot') return shot.name || 'Shot ' + (MM.shotIdx + 1);
+    if (id === 'item') { var it = selItem(); return it ? itemName(it) : 'None picked'; }
+    if (id === 'camera') return Math.round(st.lens.mm) + ' mm f/' + st.lens.fnum;
+    if (id === 'look') { var L = App.LIGHTS.filter(function (l) { return l.id === st.light.preset; })[0]; return L ? L.name : 'Custom light'; }
+    if (id === 'text') return capText.length > 22 ? capText.slice(0, 21) + '...' : capText;
+    if (id === 'sound') { var a = MM.movie.audio; return a && a.dataUrl ? (MM.muted ? 'Muted' : 'On') : 'None'; }
+    if (id === 'movie') { var c = MM.movie.shots.length; return c + (c === 1 ? ' shot' : ' shots'); }
+    return '';
+  }
+  function renderList() {
+    var h = '', group = '';
+    PAGES.forEach(function (p) {
+      if (p.group !== group) { if (group) h += '</div>'; group = p.group; h += '<h3 class="set-group-title">' + esc(group) + '</h3><div class="set-group">'; }
+      var on = isWide() && p.id === tab;
+      h += '<button type="button" class="set-row' + (on ? ' on' : '') + '" data-page="' + p.id + '"' + (on ? ' aria-current="page"' : '') + '><span class="set-icon" style="background:' + p.color + '" aria-hidden="true">' + p.icon + '</span>' +
+        '<span class="set-row-text"><span class="set-row-title">' + esc(p.title) + '</span><span class="set-row-sub">' + esc(p.sub) + '</span></span>' +
+        '<span class="set-row-value">' + esc(pageValue(p.id)) + '</span><span class="set-chev" aria-hidden="true">&rsaquo;</span></button>';
+    });
+    $('shList').innerHTML = h + '</div>';
+  }
+  function applyView() {
+    var wide = isWide();
+    panel.setAttribute('data-view', wide ? 'page' : view);
+    $('shTitle').textContent = !wide && view === 'page' ? pageInfo(tab).title : 'Tools';
+    $('mmTools').setAttribute('aria-expanded', isOpen() ? 'true' : 'false');
+    renderList();
+  }
+  /* a fixed layer over the picture can leave the canvas showing a stale frame, so draw it again */
+  function redraw() { setTimeout(function () { App.invalidate(); }, 40); }
+  function relayout() { setTimeout(function () { App.layout(); MM.paintCaption(); }, 30); }
+  function openSheet(page) {
+    if (page) { tab = page; used = true; }
+    view = (isWide() || page || used) ? 'page' : 'list';
+    var was = isOpen();
+    panel.setAttribute('data-open', 'true'); $('mm').setAttribute('data-tools', '1');
+    $('mmScrim').hidden = !isPhone();
+    if (isPhone() && !sheetLayer) sheetLayer = pushLayer(function () { sheetLayer = null; hideSheet(); });
+    applyView(); renderPanel();
+    $('shPage').scrollTop = 0;
+    if (!was) { try { $('shTitle').focus({ preventScroll: true }); } catch (e) {} }
+    redraw();
+    if (UI.ext.sheetChanged) UI.ext.sheetChanged();
+  }
+  function hideSheet() {
+    panel.setAttribute('data-open', 'false'); $('mm').setAttribute('data-tools', '0');
+    $('mmScrim').hidden = true;
+    $('mmTools').setAttribute('aria-expanded', 'false');
+    redraw();
+    if (UI.ext.sheetChanged) UI.ext.sheetChanged();
+  }
+  function closeSheet() {
+    if (!isOpen()) return;
+    if (sheetLayer) { var l = sheetLayer; sheetLayer = null; dropLayer(l); }
+    hideSheet();
+  }
+  function showPage(id) {
+    tab = id; used = true; view = 'page';
+    applyView(); renderPanel();
+    $('shPage').scrollTop = 0;
+    try { $('shTitle').focus({ preventScroll: true }); } catch (e) {}
+    if (UI.ext.sheetChanged) UI.ext.sheetChanged();
+  }
+  function showList() { view = 'list'; applyView(); try { $('shTitle').focus({ preventScroll: true }); } catch (e) {} }
+  function buildSheet() {
+    $('shList').addEventListener('click', function (e) { var b = e.target.closest('[data-page]'); if (b) showPage(b.getAttribute('data-page')); });
+    $('shBack').addEventListener('click', showList);
+    $('shDone').addEventListener('click', closeSheet);
+    $('mmScrim').addEventListener('click', closeSheet);
+    var onMode = function () {
+      var phone = isPhone();
+      if (phone !== wasPhone) { wasPhone = phone; if (phone) closeSheet(); else openSheet(); relayout(); return; }
+      if (isOpen()) { if (isWide()) view = 'page'; applyView(); }
+    };
+    window.addEventListener('resize', onMode);
+  }
   var FSTOPS = [1.4, 2, 2.8, 4, 5.6, 8, 11, 16, 22];
   var bubState = { text: 'Hello from Chicago!', style: 'speech', tail: 'down' };
   var capText = 'Made with DIBS Movie Maker';
@@ -401,9 +486,11 @@
   function defField(id, get, set, text) { fieldDefs[id] = { get: get, set: set, text: text || function (v) { return fmt(v, 2); } }; }
 
   function renderPanel() {
+    if (!isOpen()) return;
     fieldDefs = {};
     var h = '', it = selItem(), shot = MM.cur();
     if (!shot) { content.innerHTML = ''; return; }
+    applyView();
     if (tab === 'quick') h = UI.ext.quickPanel ? UI.ext.quickPanel() : '';
     else if (tab === 'shot') h = panelShot(shot);
     else if (tab === 'item') h = panelItem(it);
@@ -809,6 +896,7 @@
       MM.saveCurrent().then(function () { return MM.setMovie(MM.newMovie('My movie')); }).then(afterMovieLoaded);
     });
     $('cfNo').addEventListener('click', function () { $('confirmModal').hidden = true; });
+    $('cfTop').addEventListener('click', function () { $('confirmModal').hidden = true; });
   }
 
   /* ---------- export ---------- */
@@ -836,6 +924,7 @@
     $('exFast').addEventListener('click', function () { this.setAttribute('aria-pressed', this.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); updateExSummary(); });
     $('exSound').addEventListener('click', function () { this.setAttribute('aria-pressed', this.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); });
     $('exClose').addEventListener('click', closeExport);
+    $('exTop').addEventListener('click', function () { if (MM.exporting) { MM.cancelExport(); $('exHelp').textContent = 'Stopping'; } else closeExport(); });
     $('exBack').addEventListener('click', closeExport);
     $('exCancel').addEventListener('click', function () { MM.cancelExport(); $('exHelp').textContent = 'Stopping'; });
     $('exStart').addEventListener('click', function () {
@@ -953,6 +1042,7 @@
     App.keysOff = true;
     window.addEventListener('keydown', function (e) {
       var tg = e.target;
+      if (e.key === 'Escape' && !document.querySelector('.modal:not([hidden])') && isOpen() && !(UI.isDrawing && UI.isDrawing())) { e.preventDefault(); closeSheet(); return; }
       if (tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.tagName === 'SELECT') && tg.type !== 'range' && tg.type !== 'button') return;
       if (e.ctrlKey || e.metaKey || e.altKey) { if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) MM.redo(); else MM.undo(); } return; }
       if (document.querySelector('.modal:not([hidden])')) { if (e.key === 'Escape') UI.closeModals(); return; }
@@ -965,12 +1055,12 @@
   }
 
   /* ---------- start ---------- */
-  buildTop(); buildTabs(); wireShots(); wireTimeline(); wireKeyBar(); wireContent(); wireFiles(); wireExport(); wireKeys();
+  buildTop(); buildSheet(); wireShots(); wireTimeline(); wireKeyBar(); wireContent(); wireFiles(); wireExport(); wireKeys();
   App.pad = { t: isPhone() ? 8 : 14, b: isPhone() ? 10 : 14, s: isPhone() ? 10 : 16 };
   window.addEventListener('resize', function () { App.pad = { t: isPhone() ? 8 : 14, b: isPhone() ? 10 : 14, s: isPhone() ? 10 : 16 }; });
-  UI.h = { esc: esc, svgData: svgData, isPhone: isPhone, secs: secs, itemName: itemName, puppets: puppets, selItem: selItem, setTab: setTab, setOpen: setOpen, renderPanel: renderPanel, renderTimeline: renderTimeline, renderShots: renderShots, renderKeyBar: renderKeyBar, updateTime: updateTime, afterMovieLoaded: function () { afterMovieLoaded(); }, getTab: function () { return tab; }, undoBurst: undoBurst };
-  setTab(isPhone() ? 'quick' : 'item');
-  setOpen(true);
+  UI.h = { esc: esc, svgData: svgData, isPhone: isPhone, secs: secs, itemName: itemName, puppets: puppets, selItem: selItem, openSheet: openSheet, closeSheet: closeSheet, isOpen: isOpen, showPage: showPage, pushLayer: pushLayer, dropLayer: dropLayer, renderPanel: renderPanel, renderTimeline: renderTimeline, renderShots: renderShots, renderKeyBar: renderKeyBar, updateTime: updateTime, afterMovieLoaded: function () { afterMovieLoaded(); }, getTab: function () { return tab; }, undoBurst: undoBurst };
+  tab = isPhone() ? 'quick' : 'item';
+  if (!isPhone()) openSheet(); else applyView();
   MM.start().then(function () {
     if ('serviceWorker' in navigator && (location.protocol === 'http:' || location.protocol === 'https:')) window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
   });

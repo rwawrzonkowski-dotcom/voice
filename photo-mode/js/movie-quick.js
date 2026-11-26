@@ -8,7 +8,7 @@
   var H = UI.h, $ = function (id) { return document.getElementById(id); };
   var esc = H.esc, svgData = H.svgData;
 
-  var editing = -1, drawing = null, scriptText = '', scriptConfirm = false, undoAt = 0;
+  var editing = -1, drawing = null, drawLayer = null, scriptText = '', scriptConfirm = false, undoAt = 0;
   var lastHint = '';
 
   /* ---------- small helpers ---------- */
@@ -205,7 +205,12 @@
     var it = sel(); if (!it) { App.msg('Pick a character first.'); return; }
     MM.pause(); closeModal();
     if (App.drawHook) stopDraw(true);
+    if (H.isPhone()) H.closeSheet();
     drawing = { id: it.id, raw: [], redraw: typeof redrawIdx === 'number' ? redrawIdx : -1 };
+    drawLayer = H.pushLayer(function () { drawLayer = null; stopDraw(false, true); App.msg('Drawing stopped.', 1800); });
+    App.ringOff = true; App.updateRing();
+    $('drawHelp').textContent = 'Draw on the floor with your ' + (window.matchMedia('(pointer:coarse)').matches ? 'finger' : 'mouse');
+    $('drawBar').hidden = false;
     App.drawHook = {
       start: function (p) { drawing.raw = p ? [[p.x, p.z]] : []; vizLive(); },
       move: function (p) {
@@ -216,15 +221,21 @@
       end: function (cancel) { finishDraw(!!cancel); }
     };
     $('stage').classList.add('drawing');
-    App.msg('Drag on the floor to draw the path. Lift your finger when you are done.', 6000);
     syncDrawButton();
   }
-  function stopDraw(silent) {
+  /* leave draw mode. reopen: go back to the Quick page (Cancel, Escape, back). */
+  function stopDraw(silent, reopen) {
+    var was = !!drawing;
     App.drawHook = null; drawing = null;
+    if (drawLayer) { var l = drawLayer; drawLayer = null; H.dropLayer(l); }
     $('stage').classList.remove('drawing');
+    $('drawBar').hidden = true;
+    App.ringOff = false; App.updateRing();
     if (!silent) syncDrawButton();
     refreshViz();
+    if (was && reopen) H.openSheet('quick');
   }
+  UI.isDrawing = function () { return !!drawing; };
   function syncDrawButton() {
     var b = document.querySelector('[data-act="qk-draw"]');
     if (b) { b.textContent = drawing ? 'Cancel drawing' : 'Draw path'; b.setAttribute('aria-pressed', drawing ? 'true' : 'false'); }
@@ -234,7 +245,7 @@
     var it = App.findItem(d.id);
     var pts = d.raw.length ? MM.simplifyPath(d.raw, 0.1) : [];
     var len = 0; for (var i = 1; i < pts.length; i++) len += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
-    if (cancel || !it) { stopDraw(); return; }
+    if (cancel || !it) { stopDraw(false, true); return; }
     if (pts.length < 2 || len < 0.35) { d.raw = []; vizLive(); App.msg('That path is too short. Drag farther along the floor.', 3000); return; }
     if (pts.length > 40) pts = pts.filter(function (p, k) { return k % Math.ceil(pts.length / 40) === 0 || k === pts.length - 1; });
     var redraw = d.redraw, before = listOf(it), info = MM.actionPlan(MM.cur()), from;
@@ -252,7 +263,8 @@
       else { list.push(MM.cleanAction(act)); idx = list.length - 1; }
       return list;
     });
-    editing = idx; H.renderPanel();
+    editing = idx; H.openSheet('quick');
+    var rowEl = document.querySelector('#qkList .qk-row.open'); if (rowEl && rowEl.scrollIntoView) rowEl.scrollIntoView({ block: 'nearest' });
     MM.seek(seekToAction(idx));
     App.msg('The path is in the list. Tap Play to watch ' + H.itemName(it) + ' walk it.', 3600);
   }
@@ -317,11 +329,11 @@
   }
 
   /* ---------- the sheet (Add, Say, Script, recipe name) ---------- */
-  var modal = null;
+  var modal = null, modalLayer = null;
   function buildModal() {
     modal = document.createElement('div');
     modal.id = 'qkModal'; modal.className = 'modal'; modal.hidden = true;
-    modal.innerHTML = '<div class="dlg qk-dlg" role="dialog" aria-modal="true" aria-labelledby="qkTitle"><h2 id="qkTitle"></h2><div id="qkBody"></div><div class="dlgbtns qk-foot"><button type="button" class="btn" id="qkClose">Close</button></div></div>';
+    modal.innerHTML = '<div class="dlg mmdlg qk-dlg" role="dialog" aria-modal="true" aria-labelledby="qkTitle"><header class="sh-head"><h2 id="qkTitle"></h2><button type="button" class="sh-done" id="qkClose">Close</button></header><div class="dlgbody" id="qkBody"></div></div>';
     document.body.appendChild(modal);
     $('qkClose').addEventListener('click', closeModal);
     modal.addEventListener('click', function (e) {
@@ -337,9 +349,14 @@
   function openModal(title, html) {
     if (!modal) buildModal();
     $('qkTitle').textContent = title; $('qkBody').innerHTML = html; modal.hidden = false;
+    if (!modalLayer) modalLayer = H.pushLayer(function () { modalLayer = null; closeModal(true); });
+    $('qkBody').scrollTop = 0; modal.querySelector('.dlg').scrollTop = 0;
     var f = modal.querySelector('textarea,input'); if (f) setTimeout(function () { try { f.focus(); } catch (e) {} }, 30);
   }
-  function closeModal() { if (modal) modal.hidden = true; }
+  function closeModal(fromBack) {
+    if (modalLayer && fromBack !== true) { var l = modalLayer; modalLayer = null; H.dropLayer(l); }
+    if (modal) modal.hidden = true;
+  }
 
   function tile(act, v, name, img, extra) {
     return '<button type="button" class="qk-tile" data-act="' + act + '" data-v="' + esc(v) + '"' + (extra || '') + '>' + (img ? '<img alt="" src="' + img + '">' : '<span class="qk-noimg"></span>') + '<span>' + esc(name) + '</span></button>';
@@ -420,7 +437,7 @@
   };
 
   /* ---------- the list: edit, move, delete ---------- */
-  UI.ext.act['qk-draw'] = function () { if (drawing) stopDraw(); else startDraw(); };
+  UI.ext.act['qk-draw'] = function () { if (drawing) stopDraw(false, true); else startDraw(); };
   UI.ext.act['qk-add'] = openAdd;
   UI.ext.act['qk-redraw'] = function (v) { startDraw(parseInt(v, 10)); };
   UI.ext.act['qk-edit'] = function (v) {
@@ -568,7 +585,13 @@
   };
 
   /* ---------- keeping the screen in step ---------- */
-  window.addEventListener('keydown', function (e) { if (e.key === 'Escape' && drawing) { stopDraw(); App.msg('Drawing stopped.', 1800); } });
+  window.addEventListener('keydown', function (e) { if (e.key === 'Escape' && drawing) { stopDraw(false, true); App.msg('Drawing stopped.', 1800); } });
+  $('drawCancel').addEventListener('click', function () { stopDraw(false, true); App.msg('Drawing stopped.', 1800); });
+  $('drawDone').addEventListener('click', function () {
+    var d = drawing; if (!d) return;
+    if (!d.raw.length) { stopDraw(false, true); App.msg('No path drawn.', 1800); return; }
+    finishDraw(false);
+  });
   MM.on('play', function (on) { if (on) { if (drawing) stopDraw(); } refreshViz(); });
   MM.on('loaded', function () { if (drawing) stopDraw(); editing = -1; refreshViz(); });
   MM.on('tracks', function () { if (H.getTab() === 'quick' && !MM.playing) refreshViz(); });
@@ -576,9 +599,8 @@
   UI.selectionChanged = function () { editing = -1; if (drawing && drawing.id !== App.sel) stopDraw(); oldSel(); refreshViz(); };
   var oldClose = UI.closeModals;
   UI.closeModals = function () { oldClose(); closeModal(); if (drawing) stopDraw(); };
-  var tabsEl = document.getElementById('mmTabs');
-  tabsEl.addEventListener('click', function () { setTimeout(refreshViz, 0); });
+  UI.ext.sheetChanged = function () { setTimeout(refreshViz, 0); };
 
-  // the Quick tab is the first one, so it is already showing on a phone. Draw it now that its code is here.
-  if (H.getTab() === 'quick') H.renderPanel();
+  // on a wide screen the Tools panel is docked and open at the start. Draw it now that this code is here.
+  if (H.isOpen()) H.renderPanel();
 })();

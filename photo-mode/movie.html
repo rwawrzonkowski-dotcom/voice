@@ -40,6 +40,10 @@
       <button type="button" id="giveBtn" class="givebtn" hidden>Give</button>
       <div id="flash" aria-hidden="true"></div>
     </div>
+    <div id="drawBar" role="group" aria-label="Draw a path" hidden>
+      <p id="drawHelp">Draw on the floor with your finger</p>
+      <div class="drawbtns"><button type="button" id="drawDone" class="btn primary">Done</button><button type="button" id="drawCancel" class="btn">Cancel</button></div>
+    </div>
     <div id="msg" role="status" aria-live="polite"></div>
     <div id="mmLoading" role="status" aria-live="polite" hidden><span id="mmLoadingText">Getting your shots ready</span></div>
   </main>
@@ -51,25 +55,33 @@
     <button type="button" id="mmSetKey" class="btn">Set key</button>
     <button type="button" id="mmUndo" class="btn sq" aria-label="Undo">Undo</button>
     <button type="button" id="mmRedo" class="btn sq" aria-label="Redo">Redo</button>
+    <button type="button" id="mmTools" class="btn tools" aria-haspopup="dialog" aria-expanded="false" aria-controls="mmPanel">Tools</button>
   </div>
+
+  <div id="mmScrim" hidden></div>
 
   <div id="mmSide">
     <section id="mmShots" aria-label="Shots"></section>
     <section id="mmTimeline" aria-label="Timeline"></section>
     <section id="mmKeyBar" aria-label="Selected key" hidden></section>
-    <aside id="mmPanel" data-open="true" aria-label="Tools">
-      <div id="mmTabs" role="tablist" aria-label="Tool tabs"></div>
-      <div id="mmSheet">
-        <button type="button" id="mmSheetToggle" class="sheettoggle" aria-expanded="true" aria-controls="mmContent">Hide tools</button>
-        <div id="mmContent"></div>
+    <aside id="mmPanel" data-open="false" data-view="list" aria-label="Tools">
+      <header class="sh-head">
+        <button type="button" id="shBack" class="sh-back" aria-label="Back to Tools">&lsaquo; Tools</button>
+        <h2 id="shTitle" tabindex="-1">Tools</h2>
+        <button type="button" id="shDone" class="sh-done">Done</button>
+      </header>
+      <div class="sh-split">
+        <nav id="shList" class="sh-nav" aria-label="Tools"></nav>
+        <div id="shPage" class="sh-page"><div id="mmContent"></div></div>
       </div>
     </aside>
   </div>
 </div>
 
 <div id="exportModal" class="modal" hidden>
-  <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="exTitle">
-    <h2 id="exTitle">Export video</h2>
+  <div class="dlg mmdlg" role="dialog" aria-modal="true" aria-labelledby="exTitle">
+    <header class="sh-head"><h2 id="exTitle">Export video</h2><button type="button" id="exTop" class="sh-done">Close</button></header>
+    <div class="dlgbody">
     <div id="exSetup">
       <p id="exSummary" class="sizeline"></p>
       <button type="button" class="tog" id="exFast" aria-pressed="false"><span>Fast, half size</span><span class="track" aria-hidden="true"></span></button>
@@ -95,16 +107,19 @@
         <button type="button" id="exBack" class="btn">Back to the movie</button>
       </div>
     </div>
+    </div>
   </div>
 </div>
 
 <div id="confirmModal" class="modal" hidden>
-  <div class="dlg small" role="dialog" aria-modal="true" aria-labelledby="cfTitle">
-    <h2 id="cfTitle">Start a new movie?</h2>
+  <div class="dlg small mmdlg" role="dialog" aria-modal="true" aria-labelledby="cfTitle">
+    <header class="sh-head"><h2 id="cfTitle">Start a new movie?</h2><button type="button" id="cfTop" class="sh-done">Close</button></header>
+    <div class="dlgbody">
     <p id="cfText">Your current movie is saved automatically, but it will be replaced.</p>
     <div class="dlgbtns">
       <button type="button" id="cfYes" class="btn primary">Start new movie</button>
       <button type="button" id="cfNo" class="btn">Keep this one</button>
+    </div>
     </div>
   </div>
 </div>

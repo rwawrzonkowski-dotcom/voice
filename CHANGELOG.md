@@ -2,6 +2,13 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-26: Movie Maker tools sheet (VOICE app settings style)
+
+- On phones the stage, timeline and shots now show by default. One Tools button opens a settings sheet styled like the V.O.I.C.E. app's adult settings: dark top bar with an always-visible Done, grouped rows with colored icon tiles, a live value and a chevron, and a "‹ Tools" back link on each page. Tools reopens the last page used.
+- The sheet closes with Done, Escape, the phone's back gesture, or a tap on the dimmed stage. On wide screens it docks beside the timeline, and Done collapses it.
+- Draw path hides the sheet and shows a bar over the stage with Done and Cancel. The height handle and selection ring hide while drawing. One stroke finishes and returns to the commands with the new Walk opened.
+- Add a command, Script, Export and confirm dialogs have Close in their top bar. Offline cache is now `dibs-photo-mode-v5`.
+
 ## 2026-11-26: Movie Maker quick scene tools
 
 - New Quick tab (first on phones) so a scene takes a few taps:
