@@ -215,6 +215,7 @@
     camera = new THREE.PerspectiveCamera(40, 1, 0.1, 120);
     post = new DP.Post(renderer);
     rig = App.rig = new DP.Rig(camera);
+    App.camera = camera; App.frame = frame; App.glEl = gl; App.raycaster = raycaster;
 
     sun = new THREE.DirectionalLight(0xffffff, 1);
     sun.castShadow = true;
@@ -234,6 +235,7 @@
     ring = new THREE.Mesh(new THREE.RingGeometry(0.92, 1, 48), new THREE.MeshBasicMaterial({ color: 0x2a2350, side: THREE.DoubleSide, depthWrite: false }));
     ring.rotation.x = -Math.PI / 2; ring.visible = false; ring.renderOrder = 5;
     scene.add(ring);
+    App.ringMesh = ring;
     // editor only drawings (the movie maker's path ribbon). Hidden for every picture that is saved, exported or used as a thumbnail.
     App.editorLayer = new THREE.Group(); App.editorLayer.name = 'editorLayer';
     scene.add(App.editorLayer);
@@ -246,7 +248,8 @@
   App.layout = function () {
     var r = stage.getBoundingClientRect(), W = r.width, H = r.height;
     var phone = window.matchMedia('(max-width:820px)').matches;
-    var padT = phone ? 26 : 34, padB = phone ? 118 : 138, padS = phone ? 14 : 22;
+    var padT = phone ? 26 : 34, padB = phone ? 118 : 138, padS = phone ? 10 : 22;
+    if (phone && typeof App.dock === 'number') padB = App.dock;   // photo mode: room for the shutter row, or for the sheet that is open
     if (App.pad) { padT = App.pad.t; padB = App.pad.b; padS = App.pad.s; }   // movie maker sets its own margins
     var aw = Math.max(60, W - padS * 2), ah = Math.max(60, H - padT - padB);
     var p = App.platform(state.frame.platform);
@@ -419,7 +422,7 @@
           state.photo.name = (file.name || 'Photo').replace(/\.[^.]+$/, '').slice(0, 40) || 'Photo';
           if (state.photo.floor === 'paper') state.photo.floor = 'shadow';
           var go = state.set.id === 'photo' ? Promise.resolve() : App.setBackdrop('photo');
-          go.then(function () { return App.applyPhoto(); }).then(function () { App.save(); resolve(true); if (App.ui) App.ui.photoChanged(); });
+          go.then(function () { return App.applyPhoto(); }).then(function () { App.save(); App.commit(); resolve(true); if (App.ui) App.ui.photoChanged(); });
         }, function () { App.msg('That picture could not be read.'); resolve(false); });
       };
       fr.onerror = function () { App.msg('That picture could not be read.'); resolve(false); };
@@ -489,11 +492,12 @@
   };
   App.removeItem = function (id) {
     var i, o = App.objs[id];
+    App.begin();
     for (i = 0; i < state.items.length; i++) if (state.items[i].id === id) { state.items.splice(i, 1); break; }
     if (o) { scene.remove(o.root); o.dispose(); delete App.objs[id]; }
     if (App.sel === id) App.sel = null;
     if (state.lens.focus.mode === 'item' && state.lens.focus.id === id) { state.lens.focus = { mode: 'dist', id: '', dist: App.focusDistance(), point: [0, 1, 0] }; }
-    App.updateRing(); App.invalidate(); App.save();
+    App.updateRing(); App.invalidate(); App.save(); App.commit();
     if (App.ui) App.ui.itemsChanged();
   };
   /* a spot on the floor in front of the middle of the view, a little toward the camera */
@@ -505,6 +509,7 @@
     return new THREE.Vector3(x, 0, z);
   };
   App.addItem = function (kind, extra) {
+    App.begin();
     var p = App.floorSpot();
     var it = newItem(kind, { x: Math.round(p.x * 20) / 20, z: Math.round(p.z * 20) / 20 });
     // do not stack exactly on another item
@@ -514,13 +519,15 @@
     if (extra) for (var k in extra) it[k] = extra[k];
     state.items.push(it);
     App.sel = it.id;
-    return App.addItemObj(it).then(function () { App.save(); if (App.ui) { App.ui.itemsChanged(); App.ui.selectionChanged(); } return it; });
+    return App.addItemObj(it).then(function () { App.save(); App.commit(); if (App.ui) { App.ui.itemsChanged(); App.ui.selectionChanged(); } return it; });
   };
   App.duplicateItem = function (id) {
     var src = findItem(id); if (!src) return;
+    App.begin();
     var it = JSON.parse(JSON.stringify(src)); it.id = nid('i'); it.x += 0.5; it.z += 0.15;
+    if (it.attach) it.attach = it.attach.filter(function (a) { return String(a.id).indexOf('mm-') !== 0; });   // the Movie Maker's own passing bubbles and costumes do not copy
     state.items.push(it); App.sel = it.id;
-    App.addItemObj(it).then(function () { App.save(); if (App.ui) { App.ui.itemsChanged(); App.ui.selectionChanged(); } });
+    return App.addItemObj(it).then(function () { App.save(); App.commit(); if (App.ui) { App.ui.itemsChanged(); App.ui.selectionChanged(); } return it; });
   };
   /* rebuild one item after its picture changed (speech bubble words, for example) */
   App.rebuildItem = function (id) { var it = findItem(id); if (it) return App.addItemObj(it); };
@@ -573,7 +580,7 @@
     if (a.kind.indexOf('bubble:') === 0) { extra.text = a.text; extra.color = a.color; extra.tail = a.tail; extra.y = Math.max(0.6, extra.y); }
     var it = newItem(a.kind, extra);
     state.items.push(it); App.sel = it.id;
-    return App.addItemObj(it).then(function () { App.save(); if (App.ui) { App.ui.itemsChanged(); App.ui.selectionChanged(); } });
+    return App.addItemObj(it).then(function () { App.save(); App.commit(); if (App.ui) { App.ui.itemsChanged(); App.ui.selectionChanged(); } });
   };
   App.applyItem = function (id) {
     var it = findItem(id), o = App.objs[id];
@@ -587,7 +594,7 @@
   };
   App.updateRing = function () {
     var it = App.sel && findItem(App.sel), o = it && App.objs[App.sel];
-    if (!o || App.ringOff) { ring.visible = false; if (App.ringOff) App.updateHandle(); return; }
+    if (!o || App.ringOff) { ring.visible = false; App.updateHandle(); return; }
     var r = Math.max(0.45, (o.w || 1) * 0.62) * it.scale;
     ring.scale.set(r, r, 1); ring.position.set(it.x, it.y + 0.03, it.z); ring.visible = true;
     ring.userData.r = r;
@@ -595,21 +602,25 @@
   };
   /* the height tab: a small paper tab on the selection ring. Drag it up or down to lift the item. */
   App.updateHandle = function () {
-    var hg = $('hgt'); if (!hg) return;
+    var hg = $('hgt');
     var it = App.sel && findItem(App.sel);
-    if (!it || !ring.visible || !camera) { hg.hidden = true; return; }
-    var v = new THREE.Vector3(it.x + ring.userData.r, it.y + 0.03, it.z);
+    if (!hg || !it || !ring.visible || !camera) { if (hg) hg.hidden = true; if (App.onHandles) App.onHandles(null); return; }
+    // the tab sits on the right of the ring as the camera sees it
+    var cy = rig.s.yaw, rr = ring.userData.r;
+    var v = new THREE.Vector3(it.x + Math.cos(cy) * rr, it.y + 0.03, it.z - Math.sin(cy) * rr);
     camera.updateMatrixWorld(true);
     v.project(camera);
     var x = (v.x + 1) / 2 * frame.w, y = (1 - v.y) / 2 * frame.h;
     if (v.z > 1 || x < 14 || y < 14 || x > frame.w - 14 || y > frame.h - 14) { x = Math.max(22, Math.min(frame.w - 22, x)); y = Math.max(22, Math.min(frame.h - 22, y)); }
     hg.hidden = false; hg.style.left = x + 'px'; hg.style.top = y + 'px';
+    App.hgtPos = { x: x, y: y };
     updateGive(it);
+    if (App.onHandles) App.onHandles(it);
   };
   /* a prop standing near a character gets a small "Give to" button on the picture */
   var giveTarget = null;
   function updateGive(it) {
-    var gb = $('giveBtn'); if (!gb) return;
+    var gb = $('giveBtn');
     giveTarget = null;
     if (/^(symbol|upload|costume|bubble):/.test(it.kind)) {
       var best = null, bd = 2.2;
@@ -619,21 +630,27 @@
       });
       giveTarget = best;
     }
+    App.giveTarget = giveTarget;
+    if (!gb) return;                     // the photo mode page shows Give in the contextual bar instead
     if (!giveTarget) { gb.hidden = true; return; }
     var o = App.objs[it.id], v = new THREE.Vector3(it.x, it.y + (o ? o.h * it.scale : 1) + 0.15, it.z).project(camera);
     var x = Math.max(60, Math.min(frame.w - 60, (v.x + 1) / 2 * frame.w)), y = Math.max(22, Math.min(frame.h - 22, (1 - v.y) / 2 * frame.h));
     gb.textContent = 'Give to ' + DP.kindInfo(giveTarget.kind).name;
     gb.hidden = false; gb.style.left = x + 'px'; gb.style.top = y + 'px';
   }
+  App.giveHeld = function () {
+    var it = App.sel && findItem(App.sel); if (!it || !giveTarget) return false;
+    var occ = (giveTarget.attach || []).some(function (a) { return a.slot === 'handR'; });
+    var name = DP.kindInfo(giveTarget.kind).name;
+    if (App.giveItem(it.id, giveTarget.id, occ ? 'handL' : 'handR')) { App.msg('Given to ' + name + '. Find it under Hold.'); return true; }
+    return false;
+  };
   function wireGive() {
-    var gb = $('giveBtn');
+    var gb = $('giveBtn'); if (!gb) return;
     gb.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
     gb.addEventListener('click', function (e) {
       e.stopPropagation();
-      var it = App.sel && findItem(App.sel); if (!it || !giveTarget) return;
-      var occ = (giveTarget.attach || []).some(function (a) { return a.slot === 'handR'; });
-      var name = DP.kindInfo(giveTarget.kind).name;
-      if (App.giveItem(it.id, giveTarget.id, occ ? 'handL' : 'handR')) App.msg('Given to ' + name + '. Find it in the Pose tab under Holding.');
+      App.giveHeld();
     });
   }
   function wireHandle() {
@@ -650,18 +667,20 @@
     hg.addEventListener('pointermove', function (e) {
       if (!st || e.pointerId !== st.pid) return;
       var it = findItem(st.id); if (!it) return;
+      if (!st.began) { st.began = true; App.begin(); }
       it.y = Math.max(0, Math.min(8, Math.round((st.h + (st.y - e.clientY) / st.ppu) * 100) / 100));
+      App.touch('height', it.id);
       App.applyItem(it.id); App.bump();
       if (App.ui) App.ui.itemMoved();
     });
-    function end(e) { if (!st || e.pointerId !== st.pid) return; st = null; hg.classList.remove('drag'); App.save(); }
+    function end(e) { if (!st || e.pointerId !== st.pid) return; st = null; hg.classList.remove('drag'); App.save(); App.commit(); }
     hg.addEventListener('pointerup', end); hg.addEventListener('pointercancel', end);
     hg.addEventListener('keydown', function (e) {
       var it = App.sel && findItem(App.sel); if (!it) return;
       var d = e.key === 'ArrowUp' ? 0.1 : (e.key === 'ArrowDown' ? -0.1 : 0);
       if (!d) return;
       e.preventDefault(); e.stopPropagation();
-      it.y = Math.max(0, Math.min(8, Math.round((it.y + d) * 100) / 100)); App.applyItem(it.id); App.save(); if (App.ui) App.ui.itemMoved();
+      App.begin(); it.y = Math.max(0, Math.min(8, Math.round((it.y + d) * 100) / 100)); App.touch('height', it.id); App.applyItem(it.id); App.save(); App.commit(); if (App.ui) App.ui.itemMoved();
     });
   }
   /* where a screen point lands on the floor (the y = 0 plane), or null when it points above the horizon */
@@ -688,8 +707,11 @@
         if (DP.maskHit(hits[i])) { if (hits[i].distance < bd) { bd = hits[i].distance; best = id; } break; }
       }
     });
+    // photo mode: a near miss still counts (the cutout's box plus a little slop, and the ring of the picked item)
+    if (!best && App.pickExtra) best = App.pickExtra(cx, cy);
     return best;
   }
+  App.pickAt = pickAt;
   /* what is under the pointer, for tap to focus: a world point */
   function worldPointAt(cx, cy) {
     var r = gl.getBoundingClientRect();
@@ -775,6 +797,13 @@
 
   /* ---------- drawing ---------- */
   App.invalidate = function () { dirty = true; };
+  /* An edit is: App.begin() before the first change, App.touch(what, id) for each thing that changed, App.commit() when it is done.
+     Photo mode's edit.js turns commit into an undo step. The Movie Maker turns begin into its undo step and commit into keys at the playhead. */
+  App.begin = function () {};
+  App.touch = function (what, id) { var t = App.touched, k = id || App.sel; if (!k) return; (t[k] = t[k] || {})[what] = true; };
+  App.touched = {};
+  App.commit = function () {};          // edit.js replaces this with the undo history push
+  App.commitSoon = function () { clearTimeout(App._ct); App._ct = setTimeout(function () { App.commit(); }, 500); };
   App.bump = function () {
     interactive = true; dirty = true;
     clearTimeout(interTimer);
@@ -928,7 +957,7 @@
     var jobs = [App.setBackdrop(s.set.id, s.set.color)];
     s.items.forEach(function (it) { jobs.push(App.addItemObj(it)); });
     if (App.ui) App.ui.stateLoaded();
-    return Promise.all(jobs).then(function () { App.applyMotion(); App.updateRing(); App.invalidate(); if (App.ui) { App.ui.itemsChanged(); App.ui.stateLoaded(); } });
+    return Promise.all(jobs).then(function () { App.applyMotion(); App.updateRing(); App.invalidate(); if (App.ui) { App.ui.itemsChanged(); App.ui.stateLoaded(); } if (App.onLoaded) App.onLoaded(); });
   };
 
   /* Crafty or Clean: everything handmade (cardboard edges, rough cut edges, curl, brads, tape, glue tabs, torn tops) is built or left out */
@@ -943,9 +972,15 @@
 
   /* ---------- boot ---------- */
   function wirePointer() {
+    var E = function () { return App.edit && App.edit.on ? App.edit : null; };
     var hooks = {
-      pick: function (cx, cy) { return pickAt(cx, cy); },
+      pick: function (cx, cy) { var id = pickAt(cx, cy); if (id && App.edit) { App.wasQuiet = !!App.edit.quiet; App.edit.quiet = false; } return id; },
       drag: dragHandler,
+      press: function (e) { var ed = E(); return ed ? ed.press(e) : null; },
+      longpress: function (id) { var ed = E(); if (ed) ed.longPress(id); },
+      gesture: function (phase, a, b) { var ed = E(); return ed ? ed.gesture(phase, a, b) : false; },
+      altTurn: function (phase, dx) { var ed = E(); return ed ? ed.altTurn(phase, dx) : false; },
+      wheelItem: function (e) { var ed = E(); return ed ? ed.wheelItem(e) : false; },
       tap: function (cx, cy, picked) {
         if (App.tapFocus) {
           var p = worldPointAt(cx, cy);
@@ -954,7 +989,9 @@
           return;
         }
         if (overlay.selected) overlay.select(null);
+        var was = App.wasSelected; App.wasSelected = false;
         if (!picked) App.select(null);
+        if (App.ui && App.ui.pictureTapped) App.ui.pictureTapped(picked, was);
       },
       changed: function (moving) { if (moving) { App.bump(); App.save(); if (App.ui) App.ui.cameraMoved(); } else { App.invalidate(); App.save(); } },
       height: function () { return frame.h; }
@@ -1007,15 +1044,28 @@
       return raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -it.y), pt) ? pt : null;
     }
     if (phase === 'start') {
+      App.wasSelected = App.sel === id;
       if (App.sel !== id) App.select(id);
       var p = planePoint();
-      dragState = p ? { ox: it.x - p.x, oz: it.z - p.z } : null;
+      dragState = p ? { ox: it.x - p.x, oz: it.z - p.z, x0: it.x, z0: it.z, moved: false } : null;
+      if (App.edit && App.snap) App.edit.grid(it);
     } else if (phase === 'move' && dragState) {
       var q = planePoint(); if (!q) return;
-      it.x = Math.max(-30, Math.min(30, q.x + dragState.ox)); it.z = Math.max(-30, Math.min(20, q.z + dragState.oz));
+      var nx = Math.max(-30, Math.min(30, q.x + dragState.ox)), nz = Math.max(-30, Math.min(20, q.z + dragState.oz));
+      if (App.snap) { nx = Math.round(nx * 4) / 4; nz = Math.round(nz * 4) / 4; }   // snapping to a 0.25 grid
+      if (!dragState.moved) App.begin();
+      App.touch('pos', id);
+      it.x = nx; it.z = nz;
+      dragState.moved = true;
       App.applyItem(id); App.bump();
+      if (App.edit && App.snap) App.edit.grid(it);
       if (App.ui) App.ui.itemMoved();
-    } else if (phase === 'end') { dragState = null; App.save(); }
+    } else if (phase === 'end') {
+      var mv = dragState && dragState.moved;
+      dragState = null; App.save();
+      if (App.edit) App.edit.grid(null);
+      if (mv) App.commit();
+    }
   }
 
   /* opts (all optional, used by the movie maker): noAutosave, initial = a function that returns a scene or a promise of one */
@@ -1025,7 +1075,7 @@
     if (!initGL()) { return; }
     overlay = App.overlay = new DP.Overlay(ov, { stickers: [], frame: {}, uploads: {} }, {
       changed: function () { App.save(); },
-      committed: function () { App.save(); if (App.ui) App.ui.stickersChanged(); },
+      committed: function () { App.save(); App.commit(); if (App.ui) App.ui.stickersChanged(); },
       selected: function (id) { if (App.ui) App.ui.stickerSelected(id); }
     });
     DP.onOverlayAssets = function () { overlay.render(); };
@@ -1055,14 +1105,22 @@
   /* ---------- keyboard ---------- */
   function typing(e) { var t = e.target; return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable) && t.type !== 'range'; }
   function onKey(e) {
-    if (typing(e) || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (typing(e)) return;
     if (App.keysOff) return;    // the movie maker has its own keys
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && App.edit && App.edit.on && !document.querySelector('.modal:not([hidden])')) {
+      var ck = e.key.toLowerCase();
+      if (ck === 'z') { if (e.shiftKey) App.edit.redo(); else App.edit.undo(); e.preventDefault(); return; }
+      if (ck === 'y') { App.edit.redo(); e.preventDefault(); return; }
+      if (ck === 'd') { if (App.sel) App.duplicateItem(App.sel); e.preventDefault(); return; }
+    }
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     var k = e.key.toLowerCase();
     if (k === 'escape') { if (App.ui) App.ui.closeModals(); return; }
     if (document.querySelector('.modal:not([hidden])')) return;
     if (rig.mode === 'fly' && 'wasdqe'.indexOf(k) >= 0 && k.length === 1) { rig.keys[k] = true; rig.keys.shift = e.shiftKey; e.preventDefault(); return; }
     if (k === 'delete' || k === 'backspace') {
       if (overlay.selected) { overlay.remove(overlay.selected); e.preventDefault(); return; }
+      if (e.target && e.target.type === 'range') return;
       if (App.sel) { App.removeItem(App.sel); e.preventDefault(); }
       return;
     }
@@ -1076,7 +1134,7 @@
         if (k === 'arrowleft') { dx -= right[0]; dz -= right[1]; } if (k === 'arrowright') { dx += right[0]; dz += right[1]; }
         if (k === 'arrowup') { dx += fwd[0]; dz += fwd[1]; } if (k === 'arrowdown') { dx -= fwd[0]; dz -= fwd[1]; }
         it.x = Math.round((it.x + dx * step) * 100) / 100; it.z = Math.round((it.z + dz * step) * 100) / 100;
-        App.applyItem(it.id); App.save(); if (App.ui) App.ui.itemMoved();
+        App.begin(); App.touch('pos', it.id); App.applyItem(it.id); App.save(); App.commitSoon(); if (App.ui) App.ui.itemMoved();
       } else {
         if (k === 'arrowleft') rig.rotate(-14, 0); if (k === 'arrowright') rig.rotate(14, 0);
         if (k === 'arrowup') rig.rotate(0, -14); if (k === 'arrowdown') rig.rotate(0, 14);

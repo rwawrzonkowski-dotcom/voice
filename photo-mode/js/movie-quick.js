@@ -95,7 +95,7 @@
       H.puppets().forEach(function (o) { if (it && o.id !== it.id) opts.push({ v: o.id, n: H.itemName(o) }); });
       h += chipRow('qk-setlook', opts, a.target);
     } else if (a.type === 'wait') {
-      h += '<div class="row"><button type="button" class="btn sq" data-act="qk-wait" data-v="-0.5" aria-label="Half a second shorter">-</button><span class="kb-val" id="qkWait">' + r1(a.sec) + ' sec</span><button type="button" class="btn sq" data-act="qk-wait" data-v="0.5" aria-label="Half a second longer">+</button></div>';
+      h += '<div class="row"><button type="button" class="btn sq" data-act="qk-wait" data-v="-0.5" aria-label="Half a second shorter">' + H.svgi('minus') + '</button><span class="kb-val" id="qkWait">' + r1(a.sec) + ' sec</span><button type="button" class="btn sq" data-act="qk-wait" data-v="0.5" aria-label="Half a second longer">' + H.svgi('plus') + '</button></div>';
     } else if (a.type === 'wear') {
       h += chipRow('qk-setwear', [{ v: 'none', n: 'Nothing' }].concat(DP.COSTUMES.map(function (c) { return { v: c.id, n: c.name, img: svgData(A.costumes[c.id]) }; })), a.costume);
     } else {

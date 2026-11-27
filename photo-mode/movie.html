@@ -38,8 +38,12 @@
       <div id="reticle" aria-hidden="true"></div>
       <button type="button" id="hgt" class="hgt" aria-label="Height tab. Drag up or down to lift the selected item" title="Drag up or down to lift" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L6 10h12zM12 21l-6-7h12z"/></svg></button>
       <button type="button" id="giveBtn" class="givebtn" hidden>Give</button>
+      <button type="button" id="trn" class="hgt hdl hturn" aria-label="Turn tab. Drag around the ring to turn the selected item. Arrow keys turn it in steps" title="Drag around the ring to turn" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 3.5v4.5h-4.5"/></svg></button>
+      <button type="button" id="siz" class="hgt hdl hsize" aria-label="Size tab. Drag away from the item to make it bigger, toward it to make it smaller" title="Drag to resize" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V11h9v9z"/><path d="M10 14L20 4M14.5 4H20v5.5"/></svg></button>
+      <div id="poseDots" aria-label="Pose handles. Drag a dot to move that part" hidden></div>
       <div id="flash" aria-hidden="true"></div>
     </div>
+    <div id="ctxBar" class="ctxbar" role="toolbar" aria-label="Edit the picked item" hidden></div>
     <div id="drawBar" role="group" aria-label="Draw a path" hidden>
       <p id="drawHelp">Draw on the floor with your finger</p>
       <div class="drawbtns"><button type="button" id="drawDone" class="btn primary">Done</button><button type="button" id="drawCancel" class="btn">Cancel</button></div>
@@ -53,8 +57,9 @@
     <span id="mmTime" class="mmtime">0:00 of 0:00</span>
     <span class="mmspacer"></span>
     <button type="button" id="mmSetKey" class="btn">Set key</button>
-    <button type="button" id="mmUndo" class="btn sq" aria-label="Undo">Undo</button>
-    <button type="button" id="mmRedo" class="btn sq" aria-label="Redo">Redo</button>
+    <button type="button" id="mmUndo" class="btn" aria-label="Undo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4L4 9l5 5"/><path d="M4 9h10a6 6 0 0 1 0 12h-4"/></svg><span class="tlabel">Undo</span></button>
+    <button type="button" id="mmRedo" class="btn" aria-label="Redo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4l5 5-5 5"/><path d="M20 9H10a6 6 0 0 0 0 12h4"/></svg><span class="tlabel">Redo</span></button>
+    <button type="button" id="mmSnap" class="btn" data-snap aria-pressed="false" aria-label="Snap to the floor grid"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM4 12h16M12 4v16"/></svg><span class="tlabel">Snap</span></button>
     <button type="button" id="mmTools" class="btn tools" aria-haspopup="dialog" aria-expanded="false" aria-controls="mmPanel">Tools</button>
   </div>
 
@@ -64,9 +69,17 @@
     <section id="mmShots" aria-label="Shots"></section>
     <section id="mmTimeline" aria-label="Timeline"></section>
     <section id="mmKeyBar" aria-label="Selected key" hidden></section>
+    <div id="ctxSheet" class="ctxsheet" role="region" aria-labelledby="ctxTitle" hidden>
+      <div class="sheethead" id="ctxHead">
+        <h2 id="ctxTitle">Edit</h2>
+        <span class="sheetundo"><button type="button" id="ctxUndo" class="ubtn" aria-label="Undo" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4L4 9l5 5"/><path d="M4 9h10a6 6 0 0 1 0 12h-4"/></svg><span>Undo</span></button><button type="button" id="ctxRedo" class="ubtn" aria-label="Redo" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4l5 5-5 5"/><path d="M20 9H10a6 6 0 0 0 0 12h4"/></svg><span>Redo</span></button></span>
+        <button type="button" id="ctxDone" class="btn primary small">Done</button>
+      </div>
+      <div id="ctxBody"></div>
+    </div>
     <aside id="mmPanel" data-open="false" data-view="list" aria-label="Tools">
       <header class="sh-head">
-        <button type="button" id="shBack" class="sh-back" aria-label="Back to Tools">&lsaquo; Tools</button>
+        <button type="button" id="shBack" class="sh-back" aria-label="Back to Tools"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Tools</span></button>
         <h2 id="shTitle" tabindex="-1">Tools</h2>
         <button type="button" id="shDone" class="sh-done">Done</button>
       </header>
@@ -140,9 +153,11 @@
 <script src="js/controls.js"></script>
 <script src="js/stickers.js"></script>
 <script src="js/app.js"></script>
+<script src="js/edit.js"></script>
 <script src="js/movie-showcase.js"></script>
 <script src="js/movie.js"></script>
 <script src="js/movie-actions.js"></script>
+<script src="js/movie-edit.js"></script>
 <script src="js/movie-ui.js"></script>
 <script src="js/movie-quick.js"></script>
 </body>

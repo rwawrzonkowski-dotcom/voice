@@ -29,9 +29,12 @@
       </div>
       <div id="reticle" aria-hidden="true"></div>
       <button type="button" id="hgt" class="hgt" aria-label="Height tab. Drag up or down to lift the selected item" title="Drag up or down to lift" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L6 10h12zM12 21l-6-7h12z"/></svg></button>
-      <button type="button" id="giveBtn" class="givebtn" hidden>Give</button>
+      <button type="button" id="trn" class="hgt hdl hturn" aria-label="Turn tab. Drag around the ring to turn the selected item. Arrow keys turn it in steps" title="Drag around the ring to turn" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 3.5v4.5h-4.5"/></svg></button>
+      <button type="button" id="siz" class="hgt hdl hsize" aria-label="Size tab. Drag away from the item to make it bigger, toward it to make it smaller" title="Drag to resize" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V11h9v9z"/><path d="M10 14L20 4M14.5 4H20v5.5"/></svg></button>
+      <div id="poseDots" aria-label="Pose handles. Drag a dot to move that part" hidden></div>
       <div id="flash" aria-hidden="true"></div>
     </div>
+    <div id="ctxBar" class="ctxbar" role="toolbar" aria-label="Edit the picked item" hidden></div>
     <div id="fly" hidden>
       <div id="joy" aria-label="Move joystick"><div id="joyKnob"></div></div>
       <div class="flybtns">
@@ -40,13 +43,31 @@
       </div>
     </div>
     <div id="msg" role="status" aria-live="polite"></div>
+    <div id="undoDock" class="undodock" role="group" aria-label="Undo, redo and snapping">
+      <button type="button" class="ubtn" data-undo aria-label="Undo" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4L4 9l5 5"/><path d="M4 9h10a6 6 0 0 1 0 12h-4"/></svg><span>Undo</span></button>
+      <button type="button" class="ubtn" data-redo aria-label="Redo" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4l5 5-5 5"/><path d="M20 9H10a6 6 0 0 0 0 12h4"/></svg><span>Redo</span></button>
+      <button type="button" class="ubtn" data-snap aria-pressed="false" aria-label="Snap to the floor grid"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM4 12h16M12 4v16"/></svg><span>Snap</span></button>
+    </div>
     <button type="button" id="shutter" class="shutter" aria-label="Take photo">
       <span class="disc"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13.5" r="3.6"/><path d="M8 7l1.5-3h5L16 7"/></svg></span>
       <span class="shutlabel">Take photo</span>
     </button>
   </main>
   <aside id="panel" data-open="true" aria-label="Tools">
+    <div id="panelTop" class="paneltop" role="group" aria-label="Undo, redo and snapping">
+      <button type="button" class="ubtn" data-undo aria-label="Undo" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4L4 9l5 5"/><path d="M4 9h10a6 6 0 0 1 0 12h-4"/></svg><span>Undo</span></button>
+      <button type="button" class="ubtn" data-redo aria-label="Redo" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4l5 5-5 5"/><path d="M20 9H10a6 6 0 0 0 0 12h4"/></svg><span>Redo</span></button>
+      <button type="button" class="ubtn" data-snap aria-pressed="false" aria-label="Snap to the floor grid"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM4 12h16M12 4v16"/></svg><span>Snap</span></button>
+    </div>
     <div id="tabs" role="tablist" aria-label="Tool tabs"></div>
+    <div id="ctxSheet" class="ctxsheet" role="region" aria-labelledby="ctxTitle" hidden>
+      <div class="sheethead" id="ctxHead">
+        <h2 id="ctxTitle">Edit</h2>
+        <span class="sheetundo"><button type="button" class="ubtn" data-undo aria-label="Undo" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4L4 9l5 5"/><path d="M4 9h10a6 6 0 0 1 0 12h-4"/></svg><span>Undo</span></button><button type="button" class="ubtn" data-redo aria-label="Redo" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4l5 5-5 5"/><path d="M20 9H10a6 6 0 0 0 0 12h4"/></svg><span>Redo</span></button></span>
+        <button type="button" id="ctxDone" class="btn primary small">Done</button>
+      </div>
+      <div id="ctxBody"></div>
+    </div>
     <div id="sheet">
       <button type="button" id="sheetToggle" class="sheettoggle" aria-expanded="true" aria-controls="content">Hide tools</button>
       <div id="content"></div>
@@ -109,6 +130,7 @@
 <script src="js/controls.js"></script>
 <script src="js/stickers.js"></script>
 <script src="js/app.js"></script>
+<script src="js/edit.js"></script>
 <script src="js/ui.js"></script>
 </body>
 </html>

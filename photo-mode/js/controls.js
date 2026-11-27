@@ -93,19 +93,23 @@
   };
 
   /* ---------- pointer gestures ---------- */
-  /* hooks: pick(cx,cy) -> id|null; drag(phase, id, cx, cy); tap(cx,cy, pickedId); changed(); height() */
+  /* hooks: pick(cx,cy) -> id|null; drag(phase, id, cx, cy); tap(cx,cy, pickedId); changed(); height()
+     Optional (photo mode): press(e) -> {move(x,y), end()}|null grabs a part of the picked item;
+     longpress(id); gesture('start'|'move'|'end', a, b) -> true when two fingers belong to the picked item (pinch and twist);
+     altTurn(phase, dx); wheelItem(e) -> true when the wheel scaled the picked item. */
   function Gestures(el, rig, hooks) {
     var self = this;
     this.el = el; this.rig = rig; this.h = hooks;
     this.ptrs = {}; this.n = 0;
     this.mode = null; this.dragId = null; this.moved = 0; this.t0 = 0; this.start = null;
-    this.pinchD = 0; this.pinchC = null;
+    this.pinchD = 0; this.pinchC = null; this.ctl = null; this.lpT = 0;
     el.addEventListener('pointerdown', function (e) { self.down(e); });
     el.addEventListener('pointermove', function (e) { self.move(e); });
     el.addEventListener('pointerup', function (e) { self.up(e); });
     el.addEventListener('pointercancel', function (e) { self.up(e, true); });
     el.addEventListener('wheel', function (e) {
       e.preventDefault();
+      if (e.shiftKey && hooks.wheelItem && hooks.wheelItem(e)) return;
       var amt = -e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.0016);
       if (e.ctrlKey) amt *= 2.2;
       rig.dolly(amt); hooks.changed(true);
@@ -129,14 +133,29 @@
     this.n = Object.keys(this.ptrs).length;
     if (this.n === 1) {
       this.start = { x: e.clientX, y: e.clientY }; this.moved = 0; this.t0 = Date.now();
-      this.picked = null;
-      if (e.button === 0) this.picked = this.h.pick(e.clientX, e.clientY);
-      if (e.button === 0 && this.picked) { this.mode = 'item'; this.dragId = this.picked; this.h.drag('start', this.picked, e.clientX, e.clientY); }
-      else if (e.button === 2 || e.button === 1) this.mode = 'pan';
-      else this.mode = 'look';
+      this.picked = null; this.ctl = null; clearTimeout(this.lpT);
+      var self = this;
+      if (e.button === 0 && this.h.press && (this.ctl = this.h.press(e))) { this.mode = 'ctl'; }
+      else if (e.button === 0 && e.altKey && this.h.altTurn && this.h.altTurn('start', 0)) { this.mode = 'alt'; }
+      else {
+        if (e.button === 0) this.picked = this.h.pick(e.clientX, e.clientY);
+        if (e.button === 0 && this.picked) {
+          this.mode = 'item'; this.dragId = this.picked; this.h.drag('start', this.picked, e.clientX, e.clientY);
+          if (this.h.longpress) this.lpT = setTimeout(function () {
+            if (self.mode === 'item' && self.n === 1 && self.moved < 6) { self.moved = 999; self.h.longpress(self.picked); }
+          }, 520);
+        }
+        else if (e.button === 2 || e.button === 1) this.mode = 'pan';
+        else this.mode = 'look';
+      }
     } else if (this.n === 2) {
+      clearTimeout(this.lpT);
+      if (this.mode === 'ctl' && this.ctl) { this.ctl.end(); this.ctl = null; }
+      if (this.mode === 'alt') this.h.altTurn('end', 0);
       if (this.mode === 'item') this.h.drag('end', this.dragId, 0, 0);
-      this.mode = 'pinch'; this.pinchD = this.spread(); this.pinchC = this.centroid(); this.moved = 999;
+      var ids = Object.keys(this.ptrs), a = this.ptrs[ids[0]], b = this.ptrs[ids[1]];
+      if (this.h.gesture && this.h.gesture('start', a, b)) { this.mode = 'pinchitem'; this.pinchD = this.spread(); this.moved = 999; }
+      else { this.mode = 'pinch'; this.pinchD = this.spread(); this.pinchC = this.centroid(); this.moved = 999; }
     }
   };
   Gestures.prototype.move = function (e) {
@@ -144,7 +163,13 @@
     var dx = e.clientX - p.x, dy = e.clientY - p.y;
     p.x = e.clientX; p.y = e.clientY;
     this.moved += Math.abs(dx) + Math.abs(dy);
-    if (this.mode === 'item') { if (this.moved > 4) this.h.drag('move', this.dragId, e.clientX, e.clientY); }
+    if (this.mode === 'ctl') { if (this.ctl) this.ctl.move(e.clientX, e.clientY); }
+    else if (this.mode === 'alt') { this.h.altTurn('move', dx); }
+    else if (this.mode === 'pinchitem') {
+      var ids2 = Object.keys(this.ptrs);
+      if (ids2.length >= 2) this.h.gesture('move', this.ptrs[ids2[0]], this.ptrs[ids2[1]]);
+    }
+    else if (this.mode === 'item') { if (this.moved > 4) this.h.drag('move', this.dragId, e.clientX, e.clientY); }
     else if (this.mode === 'look') { if (this.moved > 3) { this.rig.rotate(dx, dy); this.h.changed(true); } }
     else if (this.mode === 'pan') { this.rig.pan(dx, dy, this.h.height()); this.h.changed(true); }
     else if (this.mode === 'pinch' && this.n >= 2) {
@@ -159,14 +184,20 @@
     delete this.ptrs[e.pointerId];
     this.n = Object.keys(this.ptrs).length;
     if (this.n === 0) {
+      clearTimeout(this.lpT);
       if (this.mode === 'item') this.h.drag('end', this.dragId, e.clientX, e.clientY);
-      var tap = !cancel && this.moved < 6 && Date.now() - this.t0 < 600 && this.mode !== 'pinch' && this.mode !== 'pan';
+      if (this.mode === 'ctl' && this.ctl) { this.ctl.end(); this.ctl = null; }
+      if (this.mode === 'alt') this.h.altTurn('end', 0);
+      if (this.mode === 'pinchitem') this.h.gesture('end');
+      var tap = !cancel && this.moved < 6 && Date.now() - this.t0 < 600 && this.mode !== 'pinch' && this.mode !== 'pan' && this.mode !== 'ctl' && this.mode !== 'alt' && this.mode !== 'pinchitem';
       if (tap) this.h.tap(e.clientX, e.clientY, this.picked);
       this.mode = null; this.dragId = null;
       this.h.changed(false);
     } else if (this.n === 1) {
       // one finger left after a pinch: keep orbiting from here, no tap
-      this.mode = 'look'; this.moved = 999;
+      var wasItem = this.mode === 'pinchitem';
+      if (wasItem) this.h.gesture('end');
+      this.mode = wasItem ? 'idle' : 'look'; this.moved = 999;   // after an item pinch the last finger does nothing, so the camera does not jump
     }
   };
 
