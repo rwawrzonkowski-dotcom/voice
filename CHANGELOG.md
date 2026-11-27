@@ -2,6 +2,11 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-27: Home Screen icon fixed
+
+- The three icon pictures (`img/icons/apple-touch-icon.png`, `icon-192.png`, `icon-512.png`) were blank: they had been made from a picture that failed to load. Replaced with the full circle-of-six logo on cream (the same files as the app logo pack's full set). Saving the site to a Home Screen now shows the logo.
+- Icon links on every page now carry `?v=20261127c` so phones fetch the new pictures.
+
 ## 2026-11-27: Open to search engines
 
 - The nine main pages now say `index, follow` (was `noindex, nofollow`). The 404 page stays `noindex`. `photo-mode/` is unchanged (another session owns it).
