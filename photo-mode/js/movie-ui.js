@@ -16,6 +16,21 @@
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
   function fmt(v, d) { return (Math.round(v * Math.pow(10, d)) / Math.pow(10, d)).toFixed(d); }
   function secs(t) { return fmt(t, 2) + ' sec'; }
+  /* drawn icons, in the same ink stroke as the photo mode tabs */
+  var ICON = {
+    plus: '<path d="M12 5v14M5 12h14"/>', minus: '<path d="M5 12h14"/>',
+    back: '<path d="M15 5l-7 7 7 7"/>',
+    undo: '<path d="M9 4L4 9l5 5"/><path d="M4 9h10a6 6 0 0 1 0 12h-4"/>', redo: '<path d="M15 4l5 5-5 5"/><path d="M20 9H10a6 6 0 0 0 0 12h4"/>',
+    quick: '<path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"/>',
+    shot: '<rect x="3" y="9" width="18" height="11" rx="1.5"/><path d="M3 9l2.5-5 4 1.2L7 9M10 5.2l4 1.2L11.5 9M14.5 6.4L18.5 7.6 16 9"/>',
+    item: '<circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-4.2 3-6.5 7-6.5s7 2.3 7 6.5z"/>',
+    camera: '<rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13.5" r="3.6"/><path d="M8 7l1.5-3h5L16 7"/>',
+    look: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/>',
+    text: '<path d="M5 7V4.5h14V7M12 4.5V20M9 20h6"/>',
+    sound: '<path d="M9 18V6l10-2v12"/><circle cx="7" cy="18" r="2.5"/><circle cx="17" cy="16" r="2.5"/>',
+    movie: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 4v16M16 4v16M3 9h5M3 15h5M16 9h5M16 15h5"/>'
+  };
+  function svgi(id) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + ICON[id] + '</svg>'; }
 
   var tab = 'item', selKey = null, dirty = {}, lastUndoAt = 0, activeField = null;
   var content = $('mmContent'), panel = $('mmPanel');
@@ -66,8 +81,8 @@
     $('mmPlatform').addEventListener('change', function () { MM.setPlatform(this.value).then(refreshAll); });
     $('mmTitle').addEventListener('input', function () { MM.setTitle(this.value); });
     $('mmPlay').addEventListener('click', function () { MM.togglePlay(); });
-    $('mmUndo').addEventListener('click', function () { MM.undo(); });
-    $('mmRedo').addEventListener('click', function () { MM.redo(); });
+    $('mmUndo').addEventListener('click', function () { UI.undo(); });
+    $('mmRedo').addEventListener('click', function () { UI.redo(); });
     $('mmSetKey').addEventListener('click', function () { setKeyHere(); });
     $('mmExport').addEventListener('click', openExport);
     $('mmTools').addEventListener('click', function () { if (isOpen()) closeSheet(); else openSheet(); });
@@ -75,7 +90,7 @@
   var lastTimeText = '';
   function updateTime() {
     var tot = MM.total(), cur = MM.absTime(), txt = MM.fmtTime(cur) + ' of ' + MM.fmtTime(tot);
-    if (txt !== lastTimeText) { lastTimeText = txt; $('mmTime').textContent = txt; }
+    if (txt !== lastTimeText) { lastTimeText = txt; $('mmTime').innerHTML = MM.fmtTime(cur) + ' <span class="tot">of ' + MM.fmtTime(tot) + '</span>'; }
   }
   function updatePlay(playing) {
     var b = $('mmPlay');
@@ -85,6 +100,9 @@
     b.setAttribute('aria-pressed', playing ? 'true' : 'false');
   }
   function updateHistory() { $('mmUndo').disabled = !MM.canUndo(); $('mmRedo').disabled = !MM.canRedo(); }
+  /* undo and redo bring the shot back with nothing picked, so remember what was picked (and which sheet was open) and give it back */
+  UI.undo = function () { if (MM.canUndo()) { UI.wantSel = App.sel; UI.wantCtx = UI.ctxNow ? UI.ctxNow() : null; } return MM.undo(); };
+  UI.redo = function () { if (MM.canRedo()) { UI.wantSel = App.sel; UI.wantCtx = UI.ctxNow ? UI.ctxNow() : null; } return MM.redo(); };
 
   /* ---------- shot strip ---------- */
   function renderShots() {
@@ -94,7 +112,7 @@
       h += '<button type="button" class="shot" data-i="' + i + '" aria-pressed="' + (i === MM.shotIdx) + '" aria-label="Shot ' + (i + 1) + ', ' + esc(sh.name) + ', ' + Math.round(sh.duration * 10) / 10 + ' seconds">' +
         (sh.thumb ? '<img alt="" draggable="false" src="' + sh.thumb + '">' : '<span class="noimg"></span>') + '<span class="num">' + (i + 1) + '</span><span class="dur">' + Math.round(sh.duration * 10) / 10 + ' sec</span></button>';
     });
-    h += '<button type="button" class="shot add" data-add="1" aria-label="Add a shot"><span class="plus" aria-hidden="true">+</span><span class="dur">Add shot</span></button></div>';
+    h += '<button type="button" class="shot add" data-add="1" aria-label="Add a shot"><span class="plus" aria-hidden="true">' + svgi('plus') + '</span><span class="dur">Add shot</span></button></div>';
     el.innerHTML = h;
   }
   function wireShots() {
@@ -272,7 +290,7 @@
     if (!c) { el.hidden = true; el.innerHTML = ''; selKey = null; return; }
     var d = c.d, k = c.k, h = '<div class="kb-top"><strong>' + esc(trackTitle(selKey.target)) + '</strong>';
     h += '<button type="button" class="btn small" data-kb="close" aria-label="Close key editor">Close</button></div>';
-    h += '<div class="kb-row"><span class="kb-lab">Time</span><button type="button" class="btn sq small" data-kb="back" aria-label="One frame earlier">-</button><span class="kb-val" id="kbTime">' + secs(k.t) + '</span><button type="button" class="btn sq small" data-kb="fwd" aria-label="One frame later">+</button>';
+    h += '<div class="kb-row"><span class="kb-lab">Time</span><button type="button" class="btn sq small" data-kb="back" aria-label="One frame earlier">' + svgi('minus') + '</button><span class="kb-val" id="kbTime">' + secs(k.t) + '</span><button type="button" class="btn sq small" data-kb="fwd" aria-label="One frame later">' + svgi('plus') + '</button>';
     if (d.mode !== 'discrete') {
       h += '<span class="kb-lab sp">Ease</span><div class="seg" role="group" aria-label="Easing">' + [['linear', 'Linear'], ['easeInOut', 'Smooth'], ['back', 'Pop']].map(function (e) { return '<button type="button" data-kb="ease" data-v="' + e[0] + '" aria-pressed="' + (k.ease === e[0]) + '">' + e[1] + '</button>'; }).join('') + '</div>';
     }
@@ -347,16 +365,16 @@
   }
 
   /* ---------- tool tabs ---------- */
-  /* The pages of the Tools sheet, grouped like the settings in the VOICE app. icon is a plain glyph on a colored tile. */
+  /* The pages of the Tools sheet, grouped like the settings in the VOICE app. icon names a drawn icon (ICON above) on a colored tile. */
   var PAGES = [
-    { id: 'quick', title: 'Quick', sub: 'Commands, script, draw path', icon: '\u00bb', color: '#4f46e5', group: 'Make it fast' },
-    { id: 'shot', title: 'Shot', sub: 'Name, length, add a shot', icon: '\u25ad', color: '#2563eb', group: 'This shot' },
-    { id: 'item', title: 'Characters', sub: 'Pose, bubble, costume', icon: '\u263a', color: '#ea580c', group: 'This shot' },
-    { id: 'camera', title: 'Camera', sub: 'Moves, lens, focus', icon: '\u25c9', color: '#0f766e', group: 'This shot' },
-    { id: 'look', title: 'Look', sub: 'Light and filter', icon: '\u25d0', color: '#ca8a04', group: 'This shot' },
-    { id: 'text', title: 'Text', sub: 'Captions', icon: 'Aa', color: '#db2777', group: 'This shot' },
-    { id: 'sound', title: 'Sound', sub: 'Your own music or voice', icon: '\u266a', color: '#16a34a', group: 'Movie' },
-    { id: 'movie', title: 'Movie', sub: 'Save, open, showcase', icon: '\u25a6', color: '#475569', group: 'Movie' }
+    { id: 'quick', title: 'Quick', sub: 'Commands, script, draw path', icon: 'quick', color: '#4f46e5', group: 'Make it fast' },
+    { id: 'shot', title: 'Shot', sub: 'Name, length, add a shot', icon: 'shot', color: '#2563eb', group: 'This shot' },
+    { id: 'item', title: 'Characters', sub: 'Pose, bubble, costume', icon: 'item', color: '#ea580c', group: 'This shot' },
+    { id: 'camera', title: 'Camera', sub: 'Moves, lens, focus', icon: 'camera', color: '#0f766e', group: 'This shot' },
+    { id: 'look', title: 'Look', sub: 'Light and filter', icon: 'look', color: '#ca8a04', group: 'This shot' },
+    { id: 'text', title: 'Text', sub: 'Captions', icon: 'text', color: '#db2777', group: 'This shot' },
+    { id: 'sound', title: 'Sound', sub: 'Your own music or voice', icon: 'sound', color: '#16a34a', group: 'Movie' },
+    { id: 'movie', title: 'Movie', sub: 'Save, open, showcase', icon: 'movie', color: '#475569', group: 'Movie' }
   ];
   function pageInfo(id) { return PAGES.filter(function (p) { return p.id === id; })[0] || PAGES[0]; }
   function chip(act, v, label, extra) { return '<button type="button" class="chip" data-act="' + act + '" data-v="' + esc(v) + '" aria-pressed="false"' + (extra || '') + '>' + label + '</button>'; }
@@ -407,9 +425,9 @@
     PAGES.forEach(function (p) {
       if (p.group !== group) { if (group) h += '</div>'; group = p.group; h += '<h3 class="set-group-title">' + esc(group) + '</h3><div class="set-group">'; }
       var on = isWide() && p.id === tab;
-      h += '<button type="button" class="set-row' + (on ? ' on' : '') + '" data-page="' + p.id + '"' + (on ? ' aria-current="page"' : '') + '><span class="set-icon" style="background:' + p.color + '" aria-hidden="true">' + p.icon + '</span>' +
+      h += '<button type="button" class="set-row' + (on ? ' on' : '') + '" data-page="' + p.id + '"' + (on ? ' aria-current="page"' : '') + '><span class="set-icon" style="background:' + p.color + '" aria-hidden="true">' + svgi(p.icon) + '</span>' +
         '<span class="set-row-text"><span class="set-row-title">' + esc(p.title) + '</span><span class="set-row-sub">' + esc(p.sub) + '</span></span>' +
-        '<span class="set-row-value">' + esc(pageValue(p.id)) + '</span><span class="set-chev" aria-hidden="true">&rsaquo;</span></button>';
+        '<span class="set-row-value">' + esc(pageValue(p.id)) + '</span></button>';
     });
     $('shList').innerHTML = h + '</div>';
   }
@@ -427,6 +445,7 @@
     if (page) { tab = page; used = true; }
     view = (isWide() || page || used) ? 'page' : 'list';
     var was = isOpen();
+    if (UI.toolsOpened) UI.toolsOpened();
     panel.setAttribute('data-open', 'true'); $('mm').setAttribute('data-tools', '1');
     $('mmScrim').hidden = !isPhone();
     if (isPhone() && !sheetLayer) sheetLayer = pushLayer(function () { sheetLayer = null; hideSheet(); });
@@ -510,7 +529,7 @@
   function panelShot(shot) {
     return '<div class="group"><h3>This shot</h3>' +
       '<div class="field"><label for="shName">Name</label></div><input type="text" id="shName" maxlength="40" value="' + esc(shot.name) + '" aria-label="Shot name">' +
-      '<h3 class="gap">Length</h3><div class="row"><button type="button" class="btn sq" data-act="dur" data-v="-0.5" aria-label="Half a second shorter">-</button><span class="kb-val" id="durText">' + shot.duration + ' sec</span><button type="button" class="btn sq" data-act="dur" data-v="0.5" aria-label="Half a second longer">+</button></div>' +
+      '<h3 class="gap">Length</h3><div class="row"><button type="button" class="btn sq" data-act="dur" data-v="-0.5" aria-label="Half a second shorter">' + svgi('minus') + '</button><span class="kb-val" id="durText">' + shot.duration + ' sec</span><button type="button" class="btn sq" data-act="dur" data-v="0.5" aria-label="Half a second longer">' + svgi('plus') + '</button></div>' +
       '<p class="hint" id="durHint">The whole movie can be 60 sec. Now it is ' + MM.fmtTime(MM.total()) + '.</p>' +
       '<div class="row"><button type="button" class="btn" data-act="shotleft">Move earlier</button><button type="button" class="btn" data-act="shotright">Move later</button><button type="button" class="btn danger" data-act="shotdel">Delete shot</button></div></div>' +
       '<div class="group"><h3>Add a shot after this one</h3>' +
@@ -626,6 +645,8 @@
       '<div class="group"><h3>Saved movies</h3><div class="row"><input type="text" id="mvName" maxlength="60" aria-label="Name for the saved movie" placeholder="Name"><button type="button" class="btn" data-act="savemovie">Save a copy</button></div><ul class="scenes" id="mvList"></ul>' +
       '<p class="hint">The movie also saves itself on this device.</p></div>' +
       '<div class="group"><h3>Files</h3><div class="row"><button type="button" class="btn" data-act="expfile">Export movie file</button><button type="button" class="btn" data-act="impfile">Import movie file</button></div></div>' +
+      '<div class="group"><h3>Which hand</h3>' + seg('hand', [['right', 'Right-handed'], ['left', 'Left-handed']], 'Which hand holds the phone') +
+      '<p class="hint">Left-handed moves Play, Set key, Undo, Redo and Tools to the left. It is the same setting as in photo mode.</p></div>' +
       '<div class="group"><h3>Start over</h3><div class="row"><button type="button" class="btn" data-act="newmovie">New movie</button><button type="button" class="btn" data-act="showcase">Open the showcase</button></div>' +
       '<p class="hint">Your current movie is saved first. <a class="inlink" href="index.html">Go to photo mode</a> to stage new scenes.</p></div>';
   }
@@ -672,7 +693,7 @@
       q('[data-act="filter"]', function (b) { press(b, String(st.look.filter) === b.getAttribute('data-v')); });
     }
     if (tab === 'sound') q('[data-act="mute"]', function (b) { press(b, !MM.muted); });
-    if (tab === 'movie') q('[data-act="safe"]', function (b) { press(b, !!MM.safeGuides); });
+    if (tab === 'movie') { q('[data-act="safe"]', function (b) { press(b, !!MM.safeGuides); }); q('[data-act="hand"]', function (b) { press(b, b.getAttribute('data-v') === (App.hand || 'right')); }); }
     var dt = $('durText'); if (dt) dt.textContent = shot.duration + ' sec';
   }
   function lastKeyIdx(tr, t) { var r = -1; for (var i = 0; i < tr.keys.length; i++) { if (tr.keys[i].t <= t + 1e-6) r = i; } return r; }
@@ -687,7 +708,8 @@
     return [t0, t1];
   }
   var act = {
-    pick: function (v) { App.select(v); },
+    hand: function (v) { if (UI.setHand) UI.setHand(v); syncFields(); },
+    pick: function (v) { if (App.edit) App.edit.quiet = false; App.select(v); },
     setkey: function () { setKeyHere(); },
     camkey: function () { tab = 'camera'; setKeyHere(); },
     warmkey: function () { tab = 'look'; setKeyHere(); },
@@ -1000,7 +1022,19 @@
       document.body.setAttribute('data-mm-ready', '1');
     });
   };
-  function pickFirst() { if (!App.sel || !App.findItem(App.sel)) { var p = puppets()[0]; if (p) App.select(p.id); } }
+  function pickFirst() {
+    if (UI.wantSel && App.findItem(UI.wantSel)) {            // after Undo or Redo: the same character is picked again, with its bar
+      var w = UI.wantSel, c = UI.wantCtx; UI.wantSel = null; UI.wantCtx = null;
+      if (App.edit) App.edit.quiet = false;
+      App.select(w); if (c && UI.openCtx) UI.openCtx(c);
+      return;
+    }
+    UI.wantSel = null;
+    if (!App.sel || !App.findItem(App.sel)) {
+      var p = puppets()[0];
+      if (p) { if (App.edit) App.edit.quiet = true; App.select(p.id); }   // picked for you: its ring shows, its bar waits until you touch the picture
+    }
+  }
 
   /* ---------- loading note ---------- */
   var loadTimer = 0, warming = false;
@@ -1042,9 +1076,18 @@
     App.keysOff = true;
     window.addEventListener('keydown', function (e) {
       var tg = e.target;
+      if (e.key === 'Escape' && !document.querySelector('.modal:not([hidden])') && UI.ctxNow && UI.ctxNow() && !(UI.isDrawing && UI.isDrawing())) { e.preventDefault(); UI.closeCtx(); return; }
       if (e.key === 'Escape' && !document.querySelector('.modal:not([hidden])') && isOpen() && !(UI.isDrawing && UI.isDrawing())) { e.preventDefault(); closeSheet(); return; }
       if (tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.tagName === 'SELECT') && tg.type !== 'range' && tg.type !== 'button') return;
-      if (e.ctrlKey || e.metaKey || e.altKey) { if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) MM.redo(); else MM.undo(); } return; }
+      if (e.ctrlKey || e.metaKey || e.altKey) {
+        if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+          var ck = e.key.toLowerCase();
+          if (ck === 'z') { e.preventDefault(); if (e.shiftKey) UI.redo(); else UI.undo(); }
+          else if (ck === 'y') { e.preventDefault(); UI.redo(); }
+          else if (ck === 'd' && App.sel && !MM.loading && !MM.playing) { e.preventDefault(); App.duplicateItem(App.sel); }
+        }
+        return;
+      }
       if (document.querySelector('.modal:not([hidden])')) { if (e.key === 'Escape') UI.closeModals(); return; }
       if (tg && tg.tagName === 'BUTTON' && (e.key === ' ' || e.key === 'Enter')) return;
       if (e.key === ' ') { e.preventDefault(); MM.togglePlay(); }
@@ -1058,7 +1101,8 @@
   buildTop(); buildSheet(); wireShots(); wireTimeline(); wireKeyBar(); wireContent(); wireFiles(); wireExport(); wireKeys();
   App.pad = { t: isPhone() ? 8 : 14, b: isPhone() ? 10 : 14, s: isPhone() ? 10 : 16 };
   window.addEventListener('resize', function () { App.pad = { t: isPhone() ? 8 : 14, b: isPhone() ? 10 : 14, s: isPhone() ? 10 : 16 }; });
-  UI.h = { esc: esc, svgData: svgData, isPhone: isPhone, secs: secs, itemName: itemName, puppets: puppets, selItem: selItem, openSheet: openSheet, closeSheet: closeSheet, isOpen: isOpen, showPage: showPage, pushLayer: pushLayer, dropLayer: dropLayer, renderPanel: renderPanel, renderTimeline: renderTimeline, renderShots: renderShots, renderKeyBar: renderKeyBar, updateTime: updateTime, afterMovieLoaded: function () { afterMovieLoaded(); }, getTab: function () { return tab; }, undoBurst: undoBurst };
+  UI.h = { esc: esc, svgData: svgData, isPhone: isPhone, secs: secs, itemName: itemName, puppets: puppets, selItem: selItem, openSheet: openSheet, closeSheet: closeSheet, isOpen: isOpen, showPage: showPage, pushLayer: pushLayer, dropLayer: dropLayer, renderPanel: renderPanel, renderTimeline: renderTimeline, renderShots: renderShots, renderKeyBar: renderKeyBar, updateTime: updateTime, afterMovieLoaded: function () { afterMovieLoaded(); }, getTab: function () { return tab; }, undoBurst: undoBurst, act: act, clearDirty: function (target) { delete dirty[target]; }, svgi: svgi, syncFields: syncFields };
+  if (DP.movieEdit) DP.movieEdit.setup(UI);
   tab = isPhone() ? 'quick' : 'item';
   if (!isPhone()) openSheet(); else applyView();
   MM.start().then(function () {

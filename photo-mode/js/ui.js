@@ -15,17 +15,15 @@
 
   /* ---------- tabs ---------- */
   var ICON = {
-    scene: '<path d="M2 20L9 8l5 8 3-4 5 8z"/><circle cx="17" cy="6" r="2.5"/>',
-    pose: '<circle cx="12" cy="5" r="2.5"/><path d="M12 8v7M5 11l7-1.5L19 11M12 15l-4 6M12 15l4 6"/>',
+    add: '<circle cx="12" cy="12" r="9"/><path d="M12 7v10M7 12h10"/>',
+    set: '<path d="M2 20L9 8l5 8 3-4 5 8z"/><circle cx="17" cy="6" r="2.5"/>',
     camera: '<rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8 7l1.5-3h5L16 7"/>',
-    light: '<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
-    look: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="#2a2350"/>',
-    stickers: '<path d="M4 4h12l4 4v12H4z"/><path d="M16 4v4h4"/>',
-    frame: '<rect x="3" y="3" width="18" height="18"/><rect x="7" y="7" width="10" height="10"/>',
+    look: '<circle cx="12" cy="12" r="4"/><path d="M12 8a4 4 0 0 1 0 8z" fill="#2a2350"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
+    decorate: '<path d="M4 4h12l4 4v12H4z"/><path d="M16 4v4h4"/>',
     save: '<path d="M4 4h13l3 3v13H4z"/><rect x="8" y="4" width="7" height="5"/><rect x="7" y="13" width="10" height="7"/>'
   };
-  var TABS = [['scene', 'Scene'], ['pose', 'Pose'], ['camera', 'Camera'], ['light', 'Light'], ['look', 'Look'], ['stickers', 'Stickers'], ['frame', 'Frame'], ['save', 'Save']];
-  var curTab = 'scene';
+  var TABS = [['add', 'Add'], ['set', 'Set'], ['camera', 'Camera'], ['look', 'Light & look'], ['decorate', 'Decorate'], ['save', 'Save']];
+  var curTab = 'add', subLook = 'light', subDec = 'stickers';
 
   /* ---------- html helpers ---------- */
   function field(id, label, min, max, step) {
@@ -62,20 +60,21 @@
       return '<button type="button" class="chip lchip" data-act="addl" data-v="' + c + '" aria-label="Add the L, ' + DP.L_NAMES[c] + '"><i style="background:' + DP.L_COLORS[c] + '"></i>' + cap(c) + '</button>';
     }).join('');
     var bubChips = DP.BUBBLES.map(function (b) { return chip('addbub', b.id, b.name); }).join('');
-    h.scene =
-      '<div class="group"><h3>Backdrop</h3><div class="fgrid" style="margin-bottom:10px">' + setHtml + '</div>' +
-      '<p class="hint" id="lightHint" hidden>Suggested light: <b id="lightName"></b> <button type="button" class="btn" data-act="suglight" style="min-height:36px;padding:2px 10px;margin-left:6px">Use it</button></p>' +
-      '<div id="sweepColors" hidden>' + swatches('bdcolor', PAL, 'Paper color') + '</div>' +
-      '<div id="photoBox" hidden><h3>Your photo</h3><div class="row"><button type="button" class="btn" data-act="photocam">Take a picture</button><button type="button" class="btn" data-act="photofile">Choose a picture</button></div>' +
+    var photoHtml = '<div id="photoBox" hidden><h3>Your photo</h3><div class="row"><button type="button" class="btn" data-act="photocam">Take a picture</button><button type="button" class="btn" data-act="photofile">Choose a picture</button></div>' +
       '<p class="hint" id="photoHint">Take a picture or choose one. It goes behind your characters.</p>' +
       '<div id="photoCtl">' + field('psize', 'Size', 0.3, 3, 0.05) + field('px', 'Left or right', -12, 12, 0.1) + field('py', 'Up or down', -8, 12, 0.1) + field('pdist', 'Distance', 1, 30, 0.5) +
       '<h3>Floor</h3>' + seg('pfloor', [['paper', 'Paper floor'], ['shadow', 'Photo only'], ['hidden', 'Hidden']], 'Floor') +
-      '<p class="hint">Photo only keeps the shadows and hides the paper.</p>' + tog('pflat', 'Flat on floor') + '</div></div></div>' +
+      '<p class="hint">Photo only keeps the shadows and hides the paper.</p>' + tog('pflat', 'Flat on floor') + '</div></div>';
+    h.set =
+      '<div class="group"><h3>Backdrop</h3><div class="fgrid" style="margin-bottom:10px">' + setHtml + '</div>' +
+      '<p class="hint" id="lightHint" hidden>Suggested light: <b id="lightName"></b> <button type="button" class="btn" data-act="suglight" style="min-height:36px;padding:2px 10px;margin-left:6px">Use it</button></p>' +
+      '<div id="sweepColors" hidden>' + swatches('bdcolor', PAL, 'Paper color') + '</div>' + photoHtml + '</div>' +
       '<div class="group" id="motionSec"><h3>Background motion</h3>' + seg('bgmode', [['off', 'Off'], ['pan', 'Matte pan'], ['loop', 'Paper loop']], 'Background motion') +
       '<p class="hint" id="motionHint">Matte pan slides the layers sideways, far ones slower. Paper loop scrolls the whole backdrop forever. The characters stay put.</p>' +
       '<div id="motionCtl" hidden>' + field('bgspeed', 'Speed', 0.05, 3, 0.05) + '<h3>Direction</h3>' + seg('bgdir', [['-1', 'Left'], ['1', 'Right']], 'Direction') +
       '<div class="row" style="margin-top:8px"><button type="button" class="btn" data-act="bgplay" id="bgPlay" aria-pressed="false">Pause</button></div>' +
-      '<p class="hint" id="motionNote"></p></div></div>' +
+      '<p class="hint" id="motionNote"></p></div></div>';
+    h.add =
       '<div class="group"><h3>Add a character</h3><div class="chips" id="charChips">' + charChips + '</div>' +
       '<h3>Add the L</h3><div class="chips">' + lChips + '</div>' +
       '<h3>Add a speech bubble</h3><div class="chips">' + bubChips + '</div>' +
@@ -83,45 +82,53 @@
       '<div class="propgrid" id="propGrid">' + propHtml + '</div>' +
       '<button type="button" class="btn" data-act="uploadprop">Add your image</button></div>' +
       '<div class="group"><h3>In the scene</h3><ul class="items" id="itemList"></ul>' +
-      '<div id="itemCtl" hidden>' +
-      '<h3 id="selName">Selected</h3>' +
-      field('y', 'Height off the ground', 0, 8, 0.05) +
-      '<div id="mountBox"><h3>Mount</h3>' + seg('mount', [['none', 'None'], ['stick', 'Stick'], ['string', 'String']], 'Mount') + '</div>' +
-      field('x', 'Left or right', -12, 12, 0.05) + field('z', 'Closer or farther', -14, 10, 0.05) +
-      field('yaw', 'Turn', -180, 180, 1) + field('tilt', 'Tilt', -40, 40, 1) + field('scale', 'Size', 0.2, 4, 0.05) +
-      '<div class="row">' + tog('flip', 'Flip left and right').replace('class="tog"', 'class="tog" style="margin:0"') + '</div>' +
-      '<div id="bubbleBox" hidden><h3>Bubble words</h3><label for="bubText" class="small">Words</label><textarea id="bubText" maxlength="160" aria-label="Bubble words"></textarea>' +
-      '<h3>Bubble color</h3>' + swatches('bubcolor', PAL, 'Bubble color') + '<div id="bubTail"><h3>Tail</h3>' + seg('bubtail', [['left', 'Left'], ['right', 'Right'], ['down', 'Down'], ['none', 'None']], 'Tail') + '</div></div>' +
-      '<div id="giveBox" hidden><h3>Give to</h3><select id="giveTarget" aria-label="Give to which character"></select><div class="chips" style="margin-top:8px">' + chip('give', 'handL', 'Left hand') + chip('give', 'handR', 'Right hand') + chip('give', 'head', 'Head') + '</div></div>' +
-      '<div class="row"><button type="button" class="btn" data-act="dup">Duplicate</button><button type="button" class="btn danger" data-act="del">Delete</button></div>' +
-      '</div><p class="hint" id="itemHint">Tap an item in the picture to pick it, then drag it along the floor. Drag the small tab on its ring to lift it.</p></div>';
+      '<p class="hint" id="itemHint">Tap an item in the picture to pick it. A small bar pops up with its tools. Drag the tabs on its ring to turn, size or lift it.</p></div>';
 
+    /* what each bar button opens: one short sheet with only that control */
     var emoteChips = chip('emote', 'none', 'None') + DP.EMOTES.map(function (e) {
       return '<button type="button" class="chip thumb" data-act="emote" data-v="' + e.id + '" aria-pressed="false"><img alt="" src="' + svgData(e.svg) + '">' + e.name + '</button>';
     }).join('');
     var wearChips = DP.COSTUMES.map(function (c) {
       return '<button type="button" class="chip thumb" data-act="wear" data-v="' + c.id + '" aria-pressed="false"><img alt="" src="' + svgData(A.costumes[c.id]) + '">' + c.name + '</button>';
     }).join('');
-    h.pose =
-      '<div id="poseNone"><p class="hint">Pick a character in the picture or here. Poses and costumes work on the critters, emotes work on anything.</p><div class="chips" id="poseChooser"></div></div>' +
-      '<div id="poseBox" hidden><h3 id="poseName" style="margin:0 0 8px">Pose</h3>' +
-      '<div id="poseSec"><div class="group"><h3>Pose</h3><div class="chips">' +
-      DP.POSES.map(function (p) { return chip('pose', p.id, p.name); }).join('') + '</div></div>' +
-      '<div class="group">' + field('head', 'Head tilt', -40, 40, 1) + field('wingA', 'Left wing', 0, 160, 1) + field('wingB', 'Right wing', 0, 160, 1) +
-      field('lean', 'Lean left or right', -25, 25, 1) + field('bend', 'Lean back or forward', -25, 25, 1) + field('hop', 'Hop', 0, 1, 0.05) + '</div>' +
-      '<div class="group"><h3>Looking</h3>' + seg('look', [['-1', 'Left'], ['0', 'Front'], ['1', 'Right']], 'Looking') +
-      '<div id="bodyColors"><h3>Body color</h3><div id="bodySw"></div></div></div></div>' +
-      '<div class="group" id="emoteSec"><h3>Emote</h3><div class="chips">' + emoteChips + '</div>' +
-      '<div id="emoteCtl">' + field('emx', 'Left or right of head', -1.5, 1.5, 0.05) + field('ems', 'Emote size', 0.4, 2.5, 0.05) + '</div>' +
-      '<h3>Move</h3><div class="chips">' + DP.MOVES.map(function (m) { return chip('move', m.id, m.name); }).join('') + '</div>' +
-      '<p class="hint">Choosing an emote also picks a move. Change the move on its own if you like.</p></div>' +
-      '<div class="group" id="holdSec"><h3>Holding</h3><div class="chips">' +
-      chip('holdin', 'handL', 'Hold in left hand') + chip('holdin', 'handR', 'Hold in right hand') + chip('holdin', 'head', 'On head') + chip('holdin', 'neck', 'Around neck') + chip('holdin', 'feet', 'At feet') + '</div>' +
-      '<div class="chips" id="attList" style="margin-top:8px"></div>' +
-      '<div id="attCtl" hidden>' + field('asize', 'Held size', 0.2, 3, 0.05) + field('arot', 'Held turn', -180, 180, 1) + field('aox', 'Held left or right', -40, 40, 1) + field('aoy', 'Held up or down', -40, 40, 1) +
-      '<div id="attBub" hidden><label for="attText" class="small">Bubble words</label><textarea id="attText" maxlength="160" aria-label="Held bubble words"></textarea></div>' +
-      '<div class="row"><button type="button" class="btn" data-act="letgo">Let go</button><button type="button" class="btn danger" data-act="takeoff">Take off</button></div></div></div>' +
-      '<div class="group" id="wearSec"><h3>Wear</h3><div class="chips">' + wearChips + '</div><p class="hint">Hats and horns sit on the head, the scarf goes around the neck, the stick and football go in a hand.</p></div></div>';
+    var fineBtn = function (v) { return '<button type="button" class="btn small finebtn" data-act="fine" data-v="' + v + '" aria-pressed="false">Fine tune</button>'; };
+    var ctx = {};
+    ctx.pose =
+      '<div class="strip" id="poseStrip" role="group" aria-label="Poses">' + DP.POSES.map(function (p) { return chip('pose', p.id, p.name); }).join('') + '</div>' +
+      '<div class="row">' + fineBtn('pose') + '<span class="small">Or drag the dots on the picture.</span></div>' +
+      '<div class="fine" id="fine-pose" hidden>' +
+      field('head', 'Head tilt', -40, 40, 1) + field('wingA', 'Left wing', 0, 160, 1) + field('wingB', 'Right wing', 0, 160, 1) +
+      field('lean', 'Lean left or right', -25, 25, 1) + field('bend', 'Lean back or forward', -25, 25, 1) + field('hop', 'Hop', 0, 1, 0.05) +
+      '<h3>Looking</h3>' + seg('look', [['-1', 'Left'], ['0', 'Front'], ['1', 'Right']], 'Looking') +
+      '<div id="bodyColors"><h3>Body color</h3><div id="bodySw"></div></div></div>';
+    ctx.turn =
+      field('yaw', 'Turn', -180, 180, 1) +
+      '<div class="strip" id="faceStrip" role="group" aria-label="Face"></div>' +
+      '<div class="strip">' + '<button type="button" class="chip" data-act="snap" aria-pressed="false">Snap</button>' +
+      '<button type="button" class="chip" data-act="lineup">Line up</button><button type="button" class="chip" data-act="faceeach">Face each other</button></div>';
+    ctx.size =
+      field('scale', 'Size', 0.2, 4, 0.05) + field('y', 'Height off the ground', 0, 8, 0.05) +
+      '<div id="mountBox"><h3>Mount</h3>' + seg('mount', [['none', 'None'], ['stick', 'Stick'], ['string', 'String']], 'Mount') + '</div>' +
+      '<div class="row">' + fineBtn('size').replace('Fine tune', 'Place and tilt') + '</div>' +
+      '<div class="fine" id="fine-size" hidden>' + field('x', 'Left or right', -12, 12, 0.05) + field('z', 'Closer or farther', -14, 10, 0.05) + field('tilt', 'Tilt', -40, 40, 1) +
+      tog('flip', 'Flip left and right') + '</div>';
+    ctx.wear = '<div class="strip" role="group" aria-label="Wear">' + wearChips + '</div>';
+    ctx.emote =
+      '<div class="strip" id="emoteStrip" role="group" aria-label="Emote">' + emoteChips + '</div>' +
+      '<div class="strip" id="moveStrip" role="group" aria-label="Body move"><span class="striplabel">Move</span>' + DP.MOVES.map(function (m) { return chip('move', m.id, m.name); }).join('') + '</div>' +
+      '<div class="row" id="emoteRow">' + fineBtn('emote') + '</div>' +
+      '<div class="fine" id="fine-emote" hidden><div id="emoteCtl">' + field('emx', 'Left or right of head', -1.5, 1.5, 0.05) + field('ems', 'Emote size', 0.4, 2.5, 0.05) + '</div></div>';
+    ctx.hold =
+      '<div class="strip" role="group" aria-label="Hold in">' +
+      chip('holdin', 'handL', 'Left hand') + chip('holdin', 'handR', 'Right hand') + chip('holdin', 'head', 'On head') + chip('holdin', 'neck', 'Around neck') + chip('holdin', 'feet', 'At feet') + '</div>' +
+      '<div class="strip" id="attList" role="group" aria-label="What is held"></div>' +
+      '<div class="row" id="attRow" hidden>' + fineBtn('hold') + '<button type="button" class="btn small" data-act="letgo">Let go</button><button type="button" class="btn small danger" data-act="takeoff">Take off</button></div>' +
+      '<div class="fine" id="fine-hold" hidden><div id="attCtl">' + field('asize', 'Held size', 0.2, 3, 0.05) + field('arot', 'Held turn', -180, 180, 1) + field('aox', 'Held left or right', -40, 40, 1) + field('aoy', 'Held up or down', -40, 40, 1) +
+      '<div id="attBub" hidden><label for="attText" class="small">Bubble words</label><textarea id="attText" maxlength="160" aria-label="Held bubble words"></textarea></div></div></div>';
+    ctx.words = '<label for="bubText" class="small">Words</label><textarea id="bubText" maxlength="160" aria-label="Bubble words"></textarea>';
+    ctx.color = '<div class="strip swstrip">' + swatches('bubcolor', PAL, 'Bubble color').replace(/^<div class="swatches"/, '<div class="swatches nowrap"') + '</div>';
+    ctx.tail = '<div id="bubTail">' + seg('bubtail', [['left', 'Left'], ['right', 'Right'], ['down', 'Down'], ['none', 'None']], 'Tail') + '</div>';
+    UI.ctxHtml = ctx;
 
     h.camera =
       '<div class="group"><h3>Moving the camera</h3>' + seg('mode', [['orbit', 'Orbit'], ['fly', 'Fly']], 'Camera mode') +
@@ -187,7 +194,13 @@
       '<ul class="scenes" id="sceneList"></ul>' +
       '<div class="row"><button type="button" class="btn" data-act="export">Export file</button><button type="button" class="btn" data-act="import">Import file</button></div>' +
       '<p class="hint" id="storeHint"></p></div>' +
-      '<div class="group"><h3>Photo roll</h3><div class="roll" id="rollGrid"></div><p class="hint" id="rollHint">Your last 12 photos stay here on this device.</p></div>';
+      '<div class="group"><h3>Photo roll</h3><div class="roll" id="rollGrid"></div><p class="hint" id="rollHint">Your last 12 photos stay here on this device.</p></div>' +
+      '<div class="group"><h3>Which hand</h3>' + seg('hand', [['right', 'Right-handed'], ['left', 'Left-handed']], 'Which hand holds the phone') +
+      '<p class="hint">Left-handed moves the shutter, undo and redo, and the Done button to the left.</p></div>';
+
+    // Light & look and Decorate each hold two parts behind a small switch
+    h.look = '<div class="subbar">' + seg('sublook', [['light', 'Light'], ['look', 'Look']], 'Light or look') + '</div><div id="lk-light">' + h.light + '</div><div id="lk-look" hidden>' + h.look + '</div>';
+    h.decorate = '<div class="subbar">' + seg('subdec', [['stickers', 'Stickers'], ['frame', 'Frame']], 'Stickers or frame') + '</div><div id="dc-stickers">' + h.stickers + '</div><div id="dc-frame" hidden>' + h.frame + '</div>';
 
     TABS.forEach(function (t) {
       var b = document.createElement('button');
@@ -205,6 +218,12 @@
       sec.innerHTML = h[t[0]];
       content.appendChild(sec);
     });
+    // the short sheets that the bar buttons open
+    var body = $('ctxBody');
+    Object.keys(ctx).forEach(function (id) {
+      var d = document.createElement('div'); d.className = 'cpane'; d.id = 'cp-' + id; d.hidden = true; d.innerHTML = ctx[id];
+      body.appendChild(d);
+    });
   }
 
   function setTab(id, fromClick) {
@@ -219,13 +238,49 @@
     content.scrollTop = 0;
     if (id === 'save') { refreshScenes(); refreshRoll(); }
     if (id === 'camera') syncCamera();
-    if (id === 'stickers') syncSticker();
+    if (id === 'decorate') syncSticker();
     App.tabNow = id;
+    syncDock();
   }
   function setOpen(o) {
+    if (o && isPhone() && ctxOpen) closeCtx();      // one sheet at a time on a phone
     panel.dataset.open = o ? 'true' : 'false';
     $('sheetToggle').setAttribute('aria-expanded', o ? 'true' : 'false');
+    syncDock();
   }
+
+  /* ---------- the short sheets (bar buttons) and the room they take on a phone ---------- */
+  var ctxOpen = null;
+  var PANES = ['pose', 'turn', 'size', 'wear', 'emote', 'hold', 'words', 'color', 'tail'];
+  function closeCtx() {
+    if (!ctxOpen && $('ctxSheet').hidden) return;
+    ctxOpen = null; $('ctxSheet').hidden = true;
+    if (App.edit) { App.edit.setActive(null); App.edit.setPose(false); }
+    syncDock();
+  }
+  function openCtx(id) {
+    var it = selItem(); if (!it || PANES.indexOf(id) < 0) return;
+    if (ctxOpen === id) { closeCtx(); return; }
+    if (isPhone() && panel.dataset.open === 'true') { panel.dataset.open = 'false'; $('sheetToggle').setAttribute('aria-expanded', 'false'); }
+    ctxOpen = id;
+    PANES.forEach(function (p) { $('cp-' + p).hidden = p !== id; });
+    $('ctxSheet').hidden = false;
+    $('ctxBody').scrollTop = 0; $('ctxSheet').scrollTop = 0;
+    syncSelection();
+    if (App.edit) { App.edit.setActive(id); App.edit.setPose(id === 'pose' && DP.isPuppet(it.kind)); }
+    syncDock();
+  }
+  UI.openCtx = openCtx; UI.closeCtx = closeCtx;
+  function syncDock() {
+    var phone = isPhone(), ctxOn = !$('ctxSheet').hidden, tabOn = phone && panel.dataset.open === 'true';
+    var open = phone && (ctxOn || tabOn), prev = App.dock;
+    document.body.classList.toggle('sheet-open', open);
+    if (!phone) App.dock = undefined;
+    else App.dock = open ? Math.round(($(ctxOn ? 'ctxSheet' : 'sheet')).offsetHeight + 10) : 112;
+    if (App.dock !== prev && App.state) App.layout();
+  }
+  if (window.ResizeObserver) { var dro = new ResizeObserver(function () { syncDock(); }); dro.observe($('ctxSheet')); dro.observe($('sheet')); }
+  if (window.matchMedia) { var pm = matchMedia('(max-width:820px)'); (pm.addEventListener ? pm.addEventListener('change', function () { syncDock(); }) : pm.addListener(function () { syncDock(); })); }
 
   /* ---------- fields ---------- */
   var F = {};
@@ -283,7 +338,9 @@
     Object.keys(F).forEach(function (id) {
       var el = $('f-' + id); if (!el) return;
       el.addEventListener('input', function () {
-        var v = parseFloat(el.value); F[id].set(v);
+        var v = parseFloat(el.value);
+        if (id === 'yaw' && App.snap) { v = Math.round(v / 15) * 15; el.value = v; }      // snapping turns in 15 degree steps
+        F[id].set(v);
         $('o-' + id).textContent = F[id].fmt ? F[id].fmt(F[id].get() === undefined ? v : v) : v;
         App.bump(); App.save();
         if (id === 'x' || id === 'z' || id === 'y' || id === 'scale') App.updateRing();
@@ -304,7 +361,7 @@
 
   /* ---------- pressed states ---------- */
   function setPressed(act, v, on) {
-    var els = content.querySelectorAll('[data-act="' + act + '"]');
+    var els = panel.querySelectorAll('[data-act="' + act + '"]');
     for (var i = 0; i < els.length; i++) {
       var e = els[i], dv = e.getAttribute('data-v');
       if (v === null) e.setAttribute('aria-pressed', on ? 'true' : 'false');
@@ -326,7 +383,7 @@
     setPressed('mount', it ? (it.mount || 'none') : '');
     setPressed('pfloor', st.photo.floor); setPressed('pflat', null, st.photo.flat);
     var worn = it && it.attach ? it.attach.map(function (a) { return a.kind; }) : [];
-    var wl = content.querySelectorAll('[data-act="wear"]');
+    var wl = panel.querySelectorAll('[data-act="wear"]');
     for (var wi = 0; wi < wl.length; wi++) wl[wi].setAttribute('aria-pressed', worn.indexOf('costume:' + wl[wi].getAttribute('data-v')) >= 0 ? 'true' : 'false');
     setPressed('att', attSel);
     var bub = it && it.kind.indexOf('bubble:') === 0;
@@ -352,6 +409,8 @@
     var sug = sdef && sdef.light ? App.LIGHTS.filter(function (l) { return l.id === sdef.light; })[0] : null;
     $('lightHint').hidden = !sug || st.light.preset === sdef.light;
     if (sug) $('lightName').textContent = sug.name;
+    setPressed('sublook', subLook); setPressed('subdec', subDec); setPressed('hand', App.hand || 'right'); setPressed('snap', null, !!App.snap);
+    var sb = document.querySelectorAll('[data-snap]'); for (var si = 0; si < sb.length; si++) sb[si].setAttribute('aria-pressed', App.snap ? 'true' : 'false');
     setPressed('plat', st.frame.platform); setPressed('fscale', st.frame.scale); setPressed('fstyle', st.frame.style); setPressed('safe', null, st.frame.safe);
     if (sp) { setPressed('tail', sp.tail); setPressed('bg', sp.bg); setPressed('stkcolor', sp.type === 'label' ? (sp.ink || '#2a2350') : sp.color); }
   }
@@ -385,7 +444,8 @@
       var info = DP.kindInfo(a.kind), nm = info ? (info.upload ? 'Picture' : info.name) : a.kind;
       box.insertAdjacentHTML('beforeend', '<button type="button" class="chip" data-act="att" data-v="' + esc(a.id) + '" aria-pressed="' + (a.id === attSel) + '">' + esc(cap(nm)) + ', ' + names[a.slot] + '</button>');
     });
-    $('attCtl').hidden = !list.length;
+    $('attRow').hidden = !list.length;
+    if (!list.length) $('fine-hold').hidden = true;
     var a = selAtt();
     $('attBub').hidden = !(a && a.kind.indexOf('bubble:') === 0);
     if (a && a.kind.indexOf('bubble:') === 0 && document.activeElement !== $('attText')) $('attText').value = a.text || '';
@@ -397,49 +457,42 @@
     $('bodyColors').hidden = !def.colors;
     $('bodySw').innerHTML = def.colors ? swatches('body', def.colors.map(function (c, i) { return [String(i), c.sw || def.main || '#cccccc', c.name]; }), 'Body color') : '';
   }
+  function itemName(it) {
+    var info = DP.kindInfo(it.kind);
+    return info.upload ? 'Picture' : info.name;
+  }
+  /* "Face camera" and one "Face ..." chip for each other character */
+  function renderFace(it) {
+    var box = $('faceStrip'), list = App.edit ? App.edit.others() : [];
+    var html = chip('facecam', 'cam', 'Face camera');
+    list.forEach(function (o) {
+      var same = S().items.filter(function (z) { return z.kind === o.kind; });
+      html += chip('faceitem', o.id, 'Face ' + itemName(o) + (same.length > 1 ? ' ' + (same.indexOf(o) + 1) : ''));
+    });
+    if (box.getAttribute('data-sig') !== html) { box.innerHTML = html; box.setAttribute('data-sig', html); }
+  }
   function syncSelection() {
     var it = selItem(), puppet = !!(it && DP.isPuppet(it.kind)), bub = !!(it && it.kind.indexOf('bubble:') === 0);
-    $('itemCtl').hidden = !it; $('itemHint').hidden = !!it;
-    var canEmote = !!(it && !bub);
-    $('poseNone').hidden = canEmote; $('poseBox').hidden = !canEmote;
+    $('itemHint').hidden = !!it;
     if (it) {
-      var info = DP.kindInfo(it.kind);
-      $('selName').textContent = info.upload ? 'Selected: Picture' : 'Selected: ' + info.name;
       syncMount();
-      $('bubbleBox').hidden = !bub;
       if (bub) { $('bubTail').hidden = it.kind === 'bubble:sign' || it.kind === 'bubble:shout'; if (document.activeElement !== $('bubText')) $('bubText').value = it.text || ''; }
-      // give a prop to a character
-      var holdable = /^(symbol|upload|costume|bubble):/.test(it.kind);
-      var targets = S().items.filter(function (i) { return DP.isPuppet(i.kind); });
-      $('giveBox').hidden = !(holdable && targets.length);
-      if (holdable && targets.length) {
-        var sel = $('giveTarget'), prev = sel.value; sel.innerHTML = '';
-        targets.forEach(function (t, n) { var o = document.createElement('option'); o.value = t.id; o.textContent = DP.kindInfo(t.kind).name + (targets.filter(function (z) { return z.kind === t.kind; }).length > 1 ? ' ' + (targets.filter(function (z) { return z.kind === t.kind; }).indexOf(t) + 1) : ''); sel.appendChild(o); });
-        if (prev && targets.some(function (t) { return t.id === prev; })) sel.value = prev;
-      }
-    }
-    if (canEmote) {
-      var def = puppet ? DP.PUPPETS[it.kind] : null;
-      $('poseName').textContent = (it.kind.indexOf('upload:') === 0 ? 'Picture' : DP.kindInfo(it.kind).name) + (puppet ? ', pose and costumes' : ', emote');
-      $('poseSec').hidden = !puppet; $('holdSec').hidden = !puppet; $('wearSec').hidden = !puppet;
-      $('emoteCtl').hidden = !it.emote;
+      renderFace(it);
+      $('emoteCtl').hidden = !it.emote; $('emoteRow').hidden = !it.emote;
+      if (!it.emote) $('fine-emote').hidden = true;
       if (puppet) {
-        var n = NOUN[it.kind] || 'wing', w = def.wings;
+        var def = DP.PUPPETS[it.kind], n = NOUN[it.kind] || 'wing', w = def.wings;
         $('f-wingA').parentNode.hidden = w === 0; $('f-wingB').parentNode.hidden = w < 2;
-        content.querySelector('label[for="f-wingA"]').textContent = w === 2 ? 'Left ' + n : cap(n);
-        content.querySelector('label[for="f-wingB"]').textContent = 'Right ' + n;
+        $('ctxBody').querySelector('label[for="f-wingA"]').textContent = w === 2 ? 'Left ' + n : cap(n);
+        $('ctxBody').querySelector('label[for="f-wingB"]').textContent = 'Right ' + n;
         renderBodyColors(def, it.kind);
         renderAtt();
       }
-    }
-    var ch = $('poseChooser'); ch.innerHTML = '';
-    var cand = S().items.filter(function (i) { return i.kind.indexOf('bubble:') !== 0 && !/^(symbol|costume):/.test(i.kind); });
-    cand.forEach(function (i) {
-      var same = S().items.filter(function (z) { return z.kind === i.kind; });
-      var nm = i.kind.indexOf('upload:') === 0 ? 'Picture' : DP.kindInfo(i.kind).name;
-      ch.insertAdjacentHTML('beforeend', chip('pick', i.id, nm + (same.length > 1 ? ' ' + (same.indexOf(i) + 1) : '')));
-    });
-    if (!ch.children.length) ch.innerHTML = '<p class="hint">There is no character in the scene. Add one in the Scene tab.</p>';
+      if (ctxOpen) {
+        if (App.edit && App.edit.actionsFor(it).indexOf(ctxOpen) < 0) closeCtx();
+        else $('ctxTitle').textContent = itemName(it) + ', ' + App.edit.label(ctxOpen);
+      }
+    } else if (ctxOpen) closeCtx();
     syncFields(); markPressed(); renderItemList();
     var ph = S().photo, on = S().set.id === 'photo';
     $('photoBox').hidden = !on;
@@ -520,7 +573,11 @@
     $('cfTitle').textContent = title; $('cfText').textContent = text; $('cfYes').textContent = yes; $('cfNo').textContent = no; confirmCb = cb;
     lastFocus = document.activeElement; $('confirmModal').hidden = false; $('cfNo').focus();
   }
-  UI.closeModals = function () { $('resultModal').hidden = true; $('confirmModal').hidden = true; $('pickModal').hidden = true; confirmCb = null; };
+  UI.closeModals = function () {
+    var any = !$('resultModal').hidden || !$('confirmModal').hidden || !$('pickModal').hidden;
+    $('resultModal').hidden = true; $('confirmModal').hidden = true; $('pickModal').hidden = true; confirmCb = null;
+    if (!any) closeCtx();      // Escape puts the short sheet away when no dialog was open
+  };
   $('resBack').addEventListener('click', closeResult);
   $('resDownload').addEventListener('click', function (e) { if (dlApi && resRec) { e.preventDefault(); download(resRec.blob, resRec.name); } });
   $('resShare').addEventListener('click', function () {
@@ -607,11 +664,13 @@
   function closePicker() { $('pickModal').hidden = true; if (lastFocus && lastFocus.focus) lastFocus.focus(); }
 
   /* ---------- actions ---------- */
+  /* adding something picks it and shows its bar. On a phone the Add sheet steps away so the picture is clear. */
+  function added(p) { if (isPhone()) setOpen(false); return p; }
   var act = {
     set: function (v) {
       var st = S(), prev = st.set.id;
       App.setBackdrop(v).then(function () { App.save(); });
-      if (v === 'wacker' && st.light.preset !== 'night') { st.light = App.lightFrom(App.LIGHTS[4]); App.applyLight(); App.msg('Light changed to Lower Wacker night. Change it in Light.'); syncAll(); }
+      if (v === 'wacker' && st.light.preset !== 'night') { st.light = App.lightFrom(App.LIGHTS[4]); App.applyLight(); App.msg('Light changed to Lower Wacker night. Change it in Light & look.'); syncAll(); }
       else if (prev === 'wacker' && st.light.preset === 'night') { st.light = App.lightFrom(App.LIGHTS[1]); App.applyLight(); syncAll(); }
       syncSelection();
     },
@@ -634,8 +693,8 @@
     photofile: function () { $('filePhoto').click(); },
     pfloor: function (v) { S().photo.floor = v; App.applyPhoto(); markPressed(); App.save(); },
     pflat: function () { S().photo.flat = !S().photo.flat; App.applyPhoto(); markPressed(); App.save(); },
-    addl: function (v) { App.addItem('the-l:' + v); },
-    addbub: function (v) { App.addItem('bubble:' + v).then(function () { App.msg('Added. Change its words in the Scene tab.'); }); },
+    addl: function (v) { added(App.addItem('the-l:' + v)); },
+    addbub: function (v) { added(App.addItem('bubble:' + v)).then(function () { App.msg('Added. Tap Words in the bar to type.'); }); },
     mount: function (v) { var it = selItem(); if (it) { it.mount = v; App.applyItem(it.id); App.save(); markPressed(); } },
     emote: function (v) {
       var it = selItem(); if (!it) return;
@@ -651,12 +710,24 @@
     takeoff: function () { var a = selAtt(); if (a && App.sel) { App.detach(App.sel, a.id); attSel = null; syncSelection(); } },
     bubcolor: function (v) { var it = selItem(); if (it) { it.color = v; markPressed(); rebuildSoon(it.id); } },
     bubtail: function (v) { var it = selItem(); if (it) { it.tail = v; markPressed(); rebuildSoon(it.id); } },
-    give: function (v) { var it = selItem(); if (!it) return; var t = $('giveTarget').value; if (t && App.giveItem(it.id, t, v)) { App.msg('Given. Find it in the Pose tab under Holding.'); } },
     bdcolor: function (v) { App.setBackdropColor(v); markPressed(); },
-    add: function (v) { App.addItem(v).then(function () { if (DP.isPuppet(v)) App.msg('Added. Try the Pose tab.'); }); },
-    prop: function (v) { App.addItem('symbol:' + v); },
+    add: function (v) { added(App.addItem(v)); },
+    prop: function (v) { added(App.addItem('symbol:' + v)); },
     uploadprop: function () { $('fileProp').click(); },
-    pick: function (v) { App.select(v); },
+    pick: function (v) { App.select(v); if (isPhone()) setOpen(false); },
+    fine: function (v, el) {
+      var box = $('fine-' + v); if (!box) return;
+      box.hidden = !box.hidden; el.setAttribute('aria-pressed', box.hidden ? 'false' : 'true');
+      if (!box.hidden) { var sh = $('ctxSheet'); setTimeout(function () { sh.scrollTop += el.getBoundingClientRect().top - sh.getBoundingClientRect().top - 64; }, 0); }
+    },
+    sublook: function (v) { subLook = v; $('lk-light').hidden = v !== 'light'; $('lk-look').hidden = v !== 'look'; content.scrollTop = 0; markPressed(); },
+    subdec: function (v) { subDec = v; $('dc-stickers').hidden = v !== 'stickers'; $('dc-frame').hidden = v !== 'frame'; content.scrollTop = 0; markPressed(); if (v === 'frame') syncFrame(); },
+    hand: function (v) { setHand(v); },
+    snap: function () { if (App.edit) App.edit.setSnap(!App.snap); markPressed(); },
+    lineup: function () { if (App.edit) App.edit.lineUp(); },
+    faceeach: function () { if (App.edit) App.edit.faceEachOther(); },
+    facecam: function () { if (App.edit) App.edit.faceCamera(); },
+    faceitem: function (v) { if (App.edit) App.edit.faceItem(v); },
     flip: function () { var it = selItem(); if (it) { it.flip = !it.flip; App.applyItem(it.id); App.save(); markPressed(); } },
     dup: function () { if (App.sel) App.duplicateItem(App.sel); },
     del: function () { if (App.sel) App.removeItem(App.sel); },
@@ -748,17 +819,30 @@
   };
   App.layoutAspect = function () { return App.state ? (document.getElementById('frameBox').clientWidth / Math.max(1, document.getElementById('frameBox').clientHeight)) : 1; };
 
-  content.addEventListener('click', function (e) {
-    var el = e.target.closest('[data-act]'); if (!el || !content.contains(el)) return;
+  panel.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-act]'); if (!el || !panel.contains(el)) return;
     var a = el.getAttribute('data-act');
-    if (act[a]) act[a](el.getAttribute('data-v'), el);
+    if (act[a]) { act[a](el.getAttribute('data-v'), el); App.commit(); }
   });
+  // sliders and text boxes: one undo step when the change is finished
+  panel.addEventListener('change', function (e) { var t = e.target; if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) { App.save(); App.commit(); } });
 
   /* ---------- sync everything ---------- */
   function syncAll() { syncSelection(); syncCamera(); syncSticker(); syncFrame(); markPressed(); }
 
   UI.itemsChanged = function () { renderItemList(); syncSelection(); };
   UI.selectionChanged = function () { syncSelection(); };
+  UI.pictureTapped = function (picked, wasSelected) {
+    if (isPhone() && panel.dataset.open === 'true') setOpen(false);       // tapping the picture puts the sheet away
+    if (!picked) { closeCtx(); return; }
+    var it = App.sel && App.findItem(App.sel);
+    if (picked && wasSelected && it && DP.isPuppet(it.kind)) { openCtx('pose'); }   // a second tap on a picked character is Pose mode
+  };
+  UI.longPress = function (id) { var it = selItem(); if (it && it.id === id && DP.isPuppet(it.kind) && ctxOpen !== 'pose') openCtx('pose'); };
+  UI.poseEnded = function () { if (ctxOpen === 'pose') closeCtx(); };
+  UI.poseChanged = function () { syncFields(); markPressed(); };
+  UI.restored = function () { syncAll(); };
+  UI.snapChanged = function () { markPressed(); };
   UI.itemMoved = function () { if (!syncPend) { syncPend = true; requestAnimationFrame(function () { syncPend = false; syncFields(); syncMount(); }); } };
   UI.cameraChanged = function () { syncCamera(); };
   UI.cameraMoved = function () { if (!syncPend) { syncPend = true; requestAnimationFrame(function () { syncPend = false; if (curTab === 'camera') { syncFields(); $('camHeight').textContent = 'Camera height: ' + (App.rig.camera.position.y * App.UNIT_MM / 1000).toFixed(2) + ' m'; } }); } };
@@ -787,7 +871,7 @@
       var b = e.target.closest('button[data-v]'); if (!b || !App.sel) return;
       App.attachTo(App.sel, { kind: b.getAttribute('data-v'), slot: pickSlot });
       var it = selItem(); attSel = it && it.attach.length ? it.attach[it.attach.length - 1].id : null;
-      closePicker(); syncSelection();
+      closePicker(); syncSelection(); App.commit();
     });
     $('pkClose').addEventListener('click', closePicker);
     $('pkUpload').addEventListener('click', function () { $('fileHold').click(); });
@@ -797,7 +881,7 @@
         if (!App.sel) return;
         App.attachTo(App.sel, { kind: 'upload:' + id, slot: pickSlot });
         var it = selItem(); attSel = it && it.attach.length ? it.attach[it.attach.length - 1].id : null;
-        closePicker(); syncSelection();
+        closePicker(); syncSelection(); App.commit();
       });
     });
     ['filePhotoCam', 'filePhoto'].forEach(function (id) {
@@ -807,14 +891,14 @@
     $('frameText').addEventListener('input', function () { S().frame.text = this.value; App.overlay.render(); App.save(); });
     $('fileProp').addEventListener('change', function () {
       var f = this.files[0]; this.value = '';
-      readUpload(f, function (id) { App.addItem('upload:' + id); });
+      readUpload(f, function (id) { added(App.addItem('upload:' + id)); });
     });
     $('fileSticker').addEventListener('change', function () {
       var f = this.files[0]; this.value = '';
       readUpload(f, function (id) {
         var sid = App.nid('s');
         S().stickers.push({ id: sid, type: 'img', src: 'upload:' + id, x: 0.5, y: 0.5, w: 0.3, r: 0 });
-        App.overlay.render(); App.overlay.select(sid); App.save();
+        App.overlay.render(); App.overlay.select(sid); App.save(); App.commit();
       });
     });
     $('fileScene').addEventListener('change', function () {
@@ -833,6 +917,24 @@
     });
     $('shutter').addEventListener('click', function () { App.takePhoto(); });
     $('sheetToggle').addEventListener('click', function () { setOpen(false); });
+    $('ctxDone').addEventListener('click', closeCtx);
+    // undo, redo and snap live in a few places (the thumb dock, the sheet, the top of the side panel)
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-undo],[data-redo],[data-snap]'); if (!b || !App.edit) return;
+      if (b.hasAttribute('data-undo')) App.edit.undo();
+      else if (b.hasAttribute('data-redo')) App.edit.redo();
+      else { App.edit.setSnap(!App.snap); markPressed(); }
+    });
+    // swipe a sheet's top bar down to put it away
+    [$('ctxHead'), $('sheetToggle')].forEach(function (hd) {
+      var y0 = null, done = false;
+      hd.addEventListener('pointerdown', function (e) { y0 = e.clientY; done = false; });
+      hd.addEventListener('pointermove', function (e) {
+        if (y0 === null || done || !isPhone() || e.pointerType === 'mouse') return;
+        if (e.clientY - y0 > 40) { done = true; y0 = null; if (hd.id === 'ctxHead') closeCtx(); else setOpen(false); }
+      });
+      hd.addEventListener('pointerup', function () { y0 = null; }); hd.addEventListener('pointercancel', function () { y0 = null; });
+    });
 
     // flying pad
     var joy = $('joy'), knob = $('joyKnob'), jp = null;
@@ -857,10 +959,29 @@
   }
 
   /* ---------- start ---------- */
+  /* left or right hand: the shutter, undo and redo, and the Done button move to the side your thumb is on */
+  App.hand = 'right';
+  try { if (localStorage.getItem('dibs-photo-hand') === 'left') App.hand = 'left'; } catch (e) {}
+  function setHand(v) {
+    App.hand = v === 'left' ? 'left' : 'right';
+    document.body.setAttribute('data-hand', App.hand);
+    try { localStorage.setItem('dibs-photo-hand', App.hand); } catch (e) {}
+    markPressed();
+  }
+  document.body.setAttribute('data-hand', App.hand);
+  DP.edit.init({ history: true });
+  App.edit.onAction = function (id) {
+    if (id === 'copy') { if (App.sel) App.duplicateItem(App.sel); }
+    else if (id === 'delete') { if (App.sel) App.removeItem(App.sel); }
+    else if (id === 'flip') { act.flip(); App.commit(); }
+    else if (id === 'give') { App.giveHeld(); }
+    else openCtx(id);
+  };
+  App.editGestures = true;
   buildPanels();
   defineFields();
   wireInputs();
-  setTab('scene');
+  setTab('add');
   setOpen(!isPhone());
   App.boot();
   if (location.protocol === 'http:' || location.protocol === 'https:') {
