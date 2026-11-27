@@ -1,6 +1,6 @@
 /* DIBS Photo Mode: offline cache. Registered only when the page is served over http or https.
    Bump CACHE whenever any listed file changes so people get the new version. */
-var CACHE = 'dibs-photo-mode-v8';
+var CACHE = 'dibs-photo-mode-v9';
 var FILES = [
   './',
   'index.html',
@@ -24,6 +24,7 @@ var FILES = [
   'js/movie.js',
   'js/movie-actions.js',
   'js/movie-ui.js',
+  'js/movie-templates.js',
   'js/movie-quick.js',
   'js/movie-edit.js',
   'vendor/three.min.js',

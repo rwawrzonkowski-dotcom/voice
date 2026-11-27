@@ -155,6 +155,7 @@
       var shot = { id: typeof s.id === 'string' ? s.id.replace(/[^\w-]/g, '').slice(0, 30) || nid('s') : nid('s'), name: typeof s.name === 'string' ? s.name.slice(0, 40) : 'Shot ' + (i + 1), duration: r4(dur), scene: s.scene, tracks: cleanTracks(s.tracks, dur) };
       if (MM.cleanActions) { var acts = MM.cleanActions(s.actions); if (Object.keys(acts).length) shot.actions = acts; }
       if (s.autoCamera === true) shot.autoCamera = true;
+      if (MM.cleanCues) { var cues = MM.cleanCues(s); if (cues.camCues.length) shot.camCues = cues.camCues; if (cues.capCues.length) shot.capCues = cues.capCues; }
       if (isNum(s.actDur) && shot.actions) { shot.actDur = r4(clamp(s.actDur, 0.5, MAX_DUR)); if (isNum(s.preDur)) shot.preDur = r4(clamp(s.preDur, 0.5, MAX_DUR)); }
       if (typeof s.thumb === 'string' && /^data:image\/(jpeg|png);base64,/.test(s.thumb) && s.thumb.length < 60000) shot.thumb = s.thumb;
       m.shots.push(shot);

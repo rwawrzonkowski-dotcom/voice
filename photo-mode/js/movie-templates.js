@@ -1,0 +1,151 @@
+/* DIBS Movie Maker: quick templates.
+   Each template is a short form (fields) that turns into script text for the Script sheet (movie-quick.js).
+   A field is { key, label, type: 'text' | 'cast' | 'symbol' | 'place', def }.
+   script(values) returns the text of the script, written in the same words anyone can type. No screen code here. */
+(function () {
+  'use strict';
+  var DP = window.DP, MM = DP.movie;
+
+  var CAST = [['dibs', 'Dibs'], ['wacker', 'Wacker'], ['chance', 'Chance'], ['hiram', 'Hiram'], ['ivy', 'Ivy'], ['monty', 'Monty'], ['sue', 'Sue'], ['pigeon', 'Pigeon']];
+  function nameOf(kind) { for (var i = 0; i < CAST.length; i++) if (CAST[i][0] === kind) return CAST[i][1]; return 'Dibs'; }
+  /* what was typed or tapped, or the template's own words when the box is empty */
+  function val(v, key, def) {
+    var x = v && v[key] !== undefined && v[key] !== null ? String(v[key]).replace(/\s+/g, ' ').trim() : '';
+    return x || def;
+  }
+  function pick(v, key, def, not) {
+    var k = val(v, key, def);
+    if (!nameOf(k) || CAST.every(function (c) { return c[0] !== k; })) k = def;
+    if (not && k === not) k = CAST.filter(function (c) { return c[0] !== not; })[0][0];
+    return nameOf(k);
+  }
+  function place(v, def) { var p = val(v, 'place', def); return DP.SET_INFO && DP.SET_INFO[p] && p !== 'photo' ? p : def; }
+  /* sentences must not read as commands: a one word line like "Wait" would turn into an action, so these are always real sentences */
+  function spoken(s) { return String(s).replace(/-/g, ' '); }
+
+  MM.CAST_CHOICES = CAST.map(function (c) { return { kind: c[0], name: c[1] }; });
+  MM.TEMPLATES = [
+    {
+      id: 'tip', name: 'Tip of the day', blurb: 'Dibs talks to the camera and gives one tip.',
+      fields: [
+        { key: 'place', label: 'Where', type: 'place', def: 'sweep' },
+        { key: 'tip', label: 'The tip', type: 'text', def: 'Say the snack\'s name before you hand it over.' },
+        { key: 'signoff', label: 'Sign-off', type: 'text', def: 'See you tomorrow, Chicago!' }
+      ],
+      script: function (v) {
+        return ['Scene: ' + place(v, 'sweep') + ', studio',
+          'Caption: Dibs\'s tip of the day',
+          'Dibs (enter left, walk to middle): Hey, it\'s Dibs with today\'s tip!',
+          'Camera: close on Dibs',
+          'Dibs (point): ' + val(v, 'tip', 'Say the snack\'s name before you hand it over.'),
+          'Caption: off',
+          'Camera: wide',
+          'Dibs (wave): ' + val(v, 'signoff', 'See you tomorrow, Chicago!')].join('\n');
+      }
+    },
+    {
+      id: 'chat', name: 'Two-critter chat', blurb: 'Two friends talk. The second one laughs at the end.',
+      fields: [
+        { key: 'first', label: 'First friend', type: 'cast', def: 'dibs' },
+        { key: 'second', label: 'Second friend', type: 'cast', def: 'chance' },
+        { key: 'place', label: 'Where', type: 'place', def: 'lplatform' },
+        { key: 'line1', label: 'First line', type: 'text', def: 'Is the train late again?' },
+        { key: 'line2', label: 'Reply', type: 'text', def: 'Late? It\'s practically a parade.' },
+        { key: 'line3', label: 'Last line', type: 'text', def: 'Then I\'m saving us the good seats.' }
+      ],
+      script: function (v) {
+        var A = pick(v, 'first', 'dibs'), B = pick(v, 'second', 'chance', A.toLowerCase());
+        return ['Scene: ' + place(v, 'lplatform') + ', morning',
+          A + ': ' + val(v, 'line1', 'Is the train late again?'),
+          B + ' (look at ' + A + '): ' + val(v, 'line2', 'Late? It\'s practically a parade.'),
+          A + ' (shrug): ' + val(v, 'line3', 'Then I\'m saving us the good seats.'),
+          '& ' + B + ': laugh'].join('\n');
+      }
+    },
+    {
+      id: 'wacker', name: 'Wacker steals a snack', blurb: 'Three shots. Wacker grabs the snack and is wrong again.',
+      fields: [
+        { key: 'place', label: 'Where', type: 'place', def: 'hotdog' },
+        { key: 'line1', label: 'Dibs shows off', type: 'text', def: 'Best hot dog in Chicago!' },
+        { key: 'line2', label: 'Wacker tricks', type: 'text', def: 'Look! A parade!' },
+        { key: 'line3', label: 'Wacker grabs it', type: 'text', def: 'Mine now.' },
+        { key: 'line4', label: 'Dibs wins', type: 'text', def: 'Good thing I got two.' }
+      ],
+      script: function (v) {
+        return ['Scene: ' + place(v, 'hotdog') + ', noon',
+          'Dibs (holds food, proud): ' + val(v, 'line1', 'Best hot dog in Chicago!'),
+          'Wacker (enter right, walk to Dibs): ' + val(v, 'line2', 'Look! A parade!'),
+          'Dibs (look left): Where?',
+          '--- same',
+          'Wacker (holds food): ' + val(v, 'line3', 'Mine now.'),
+          '& Dibs: question',
+          'Wacker: hop, exit right',
+          '--- same',
+          'Camera: close on Dibs',
+          'Dibs (holds food, proud): ' + val(v, 'line4', 'Good thing I got two.'),
+          'Caption: Wacker is wrong again.'].join('\n');
+      }
+    },
+    {
+      id: 'reveal', name: 'Big reveal', blurb: 'A whisper, a hop, and a big announcement.',
+      fields: [
+        { key: 'who', label: 'Who reveals', type: 'cast', def: 'dibs' },
+        { key: 'place', label: 'Where', type: 'place', def: 'michave' },
+        { key: 'tease', label: 'The tease', type: 'text', def: 'Psst. Want to see something?' },
+        { key: 'reveal', label: 'The reveal', type: 'text', def: 'Ta-da! I learned a new word!' },
+        { key: 'caption', label: 'Caption', type: 'text', def: 'Big news from Dibs' }
+      ],
+      script: function (v) {
+        var W = pick(v, 'who', 'dibs');
+        return ['Scene: ' + place(v, 'michave') + ', noon',
+          'Camera: close on ' + W,
+          W + ' (peek): ' + val(v, 'tease', 'Psst. Want to see something?'),
+          'Camera: wide',
+          W + ' (hop, proud, exclaim): ' + val(v, 'reveal', 'Ta-da! I learned a new word!'),
+          'Camera: push in',
+          'Caption: ' + val(v, 'caption', 'Big news from Dibs')].join('\n');
+      }
+    },
+    {
+      id: 'walk', name: 'Walk and talk', blurb: 'Two friends stroll in together and talk, then race off.',
+      fields: [
+        { key: 'first', label: 'First friend', type: 'cast', def: 'dibs' },
+        { key: 'second', label: 'Second friend', type: 'cast', def: 'monty' },
+        { key: 'place', label: 'Where', type: 'place', def: 'riverwalk' },
+        { key: 'line1', label: 'First line', type: 'text', def: 'Nice day for a walk.' },
+        { key: 'line2', label: 'Reply', type: 'text', def: 'Every day is a nice day by the river.' },
+        { key: 'line3', label: 'Last line', type: 'text', def: 'Race you to the bridge!' }
+      ],
+      script: function (v) {
+        var A = pick(v, 'first', 'dibs'), B = pick(v, 'second', 'monty', A.toLowerCase());
+        return ['Scene: ' + place(v, 'riverwalk') + ', morning',
+          A + ' (enter left, walk to middle): ' + val(v, 'line1', 'Nice day for a walk.'),
+          '& ' + B + ' (enter left, walk to ' + A + '):',
+          B + ': ' + val(v, 'line2', 'Every day is a nice day by the river.'),
+          A + ' (hop): ' + val(v, 'line3', 'Race you to the bridge!'),
+          A + ': exit right',
+          '& ' + B + ': run, exit right'].join('\n');
+      }
+    },
+    {
+      id: 'word', name: 'Word of the week', blurb: 'Dibs holds up a picture word and says it.',
+      fields: [
+        { key: 'word', label: 'The word', type: 'symbol', def: 'more' },
+        { key: 'place', label: 'Where', type: 'place', def: 'sweep' },
+        { key: 'tip', label: 'The tip', type: 'text', def: 'Hold it up, say it, and wait. Give them a chance to try it too.' }
+      ],
+      script: function (v) {
+        var syms = (window.DIBS_ASSETS && window.DIBS_ASSETS.symbols) || {}, key = val(v, 'word', 'more');
+        if (!syms[key]) key = 'more';
+        var say = spoken(key);
+        return ['Scene: ' + place(v, 'sweep') + ', studio',
+          'Caption: Word of the week: ' + say.toUpperCase(),
+          'Dibs (holds ' + key + ', enter left, walk to middle): This week\'s word is ' + say + '!',
+          'Camera: close on Dibs',
+          'Dibs (point): ' + val(v, 'tip', 'Hold it up, say it, and wait. Give them a chance to try it too.'),
+          'Camera: wide',
+          'Dibs (wave): Try it today!'].join('\n');
+      }
+    }
+  ];
+})();

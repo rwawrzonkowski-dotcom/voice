@@ -185,6 +185,16 @@ body{overflow:hidden}
 .qk-rtile{display:flex;flex-direction:column}
 .qk-help{margin:0 0 8px;padding:8px 10px;background:var(--people);border:3px solid var(--ink);border-radius:10px;box-shadow:2px 2px 0 var(--ink);font:600 13.5px/1.45 "Atkinson Hyperlegible",system-ui,sans-serif;white-space:pre-wrap;overflow-x:auto}
 .qk-notes{margin:6px 0 8px;font-size:14px}
+.qk-tpls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 12px}
+.qk-tpl{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:72px;width:100%;padding:8px 10px;background:var(--paper);border:3px solid var(--ink);border-radius:12px;box-shadow:2px 2px 0 var(--ink);color:var(--ink);font:700 14px "Atkinson Hyperlegible",system-ui,sans-serif;text-align:left;cursor:pointer}
+.qk-tpl span{font-weight:400;font-size:13px;color:var(--soft)}
+.qk-tpl:active{transform:translate(2px,2px);box-shadow:none;background:var(--people)}
+.qk-symbox{max-height:210px;overflow:auto;padding:2px}
+.qk-vocab{margin:0 0 10px;font-size:14px}
+.qk-vocab summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:700}
+.qk-vocab ul{margin:0;padding:0 0 0 18px}
+.qk-vocab li{margin:0 0 4px}
+.qk-dlg input[type=text]{margin:0 0 8px}
 .qk-notes ul{margin:0;padding:0 0 0 18px}
 .qk-notes li{margin:0 0 4px}
 

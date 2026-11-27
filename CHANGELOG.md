@@ -2,6 +2,22 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-27: Movie Maker script upgrade and quick templates
+
+- The Script (Tools, Quick, Script) understands more, all parsed on the device with no internet:
+  - Plain short directions in the brackets: `walks over to Wacker`, `runs`, `turns to Dibs`, `faces camera`, `comes in from the right`. Words can be joined with commas, "and" or "then". A line that is not all commands is still spoken.
+  - Walk to a place: `walk to Wacker` (stops beside them), `walk left`, `walk right`, `walk to middle`, `walk to front`, `walk back`.
+  - `enter left` or `enter right` walks in from off screen. `exit left` or `exit right` walks off screen. The wide shot does not zoom out for these walks.
+  - A line starting with `&` happens at the same time as the line before.
+  - `holds food` (or any picture word, or `hot dog`, `snack`) puts a prop in the right hand for that shot. `holds nothing` empties it.
+  - `Camera: wide`, `Camera: close on Dibs`, `Camera: push in`, `Camera: pull out`, `Camera: orbit`, `Camera: auto`. These need Auto camera, which the script turns on unless the shot has camera keys you made.
+  - `Caption: text` shows a caption from that point. `Caption: off` hides it.
+  - `Scene: Hot dog stand, morning` sets the light too (morning, noon, golden or sunset, blue hour or dusk, night, studio). `Scene: same` or `---` keeps the place, and characters start where they ended in the shot before.
+  - On a new movie the script fills the first shot instead of adding a second one.
+- Six templates at the top of the Script sheet: Tip of the day, Two-critter chat, Wacker steals a snack (three shots), Big reveal, Walk and talk, Word of the week. Pick one, change the place, cast and lines, then Put in my script or Build it now.
+- The Script sheet has a new example and a "Words the script knows" list.
+- New file `photo-mode/js/movie-templates.js`. Shots save `camCues` and `capCues`; older movies still open. Offline cache is now `dibs-photo-mode-v9`.
+
 ## 2026-11-27: Home Screen icon fixed
 
 - The three icon pictures (`img/icons/apple-touch-icon.png`, `icon-192.png`, `icon-512.png`) were blank: they had been made from a picture that failed to load. Replaced with the full circle-of-six logo on cream (the same files as the app logo pack's full set). Saving the site to a Home Screen now shows the logo.
