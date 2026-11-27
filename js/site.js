@@ -65,7 +65,7 @@
   window.VOICE_SAY = say;
 
   // ----- Top bar and footer -----
-  var LOGO = '<svg viewBox="0 0 36 36" aria-hidden="true"><path d="M6 4h24a4 4 0 0 1 4 4v15a4 4 0 0 1-4 4H15l-7 6v-6H6a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4Z" fill="currentColor"/><path d="M12 10l6 11 6-11" stroke="var(--bg)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var LOGO = '<svg viewBox="0 0 200 200" aria-hidden="true" focusable="false"><circle cx="100" cy="100" r="90" fill="var(--bg)" stroke="currentColor" stroke-width="12"/><g transform="translate(100 100) rotate(-45) scale(1.42) translate(-50 -20)"><g fill="currentColor"><path d="M0 3 L24 12 L24 28 L0 37 Z"/><ellipse cx="46" cy="20" rx="25" ry="14.5"/><circle cx="75" cy="20" r="9.5"/><path d="M83 15.5 L95 20 L83 24.5 Z"/></g><path d="M60 11.5 Q47 12.5 35 20 Q47 27.5 60 28.5" stroke="var(--lgwing)" stroke-width="4.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g></svg>';
   // Tiny drawings for the menu (Dibs's style: ink outline, flat fills, rounded joins). Decorative, so hidden from screen readers.
   var MI_OPEN = '<svg class="mi" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><rect width="40" height="40" rx="9" fill="#fffdf8"/><g stroke="#2a2350" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">';
   var ICONS = {
@@ -153,7 +153,7 @@
       '<br>Symbols: <a href="https://mulberrysymbols.org"' + X + '>Mulberry Symbols</a> by Steve Lee, <a href="https://creativecommons.org/licenses/by-sa/4.0/"' + X + '>CC BY-SA 4.0</a>.' +
       '<br>All emojis designed by <a href="https://openmoji.org/"' + X + '>OpenMoji</a> – the open-source emoji and icon project. License: <a href="https://creativecommons.org/licenses/by-sa/4.0/"' + X + '>CC BY-SA 4.0</a>.' +
       '<br>Fonts: Lexend, Atkinson Hyperlegible and OpenDyslexic, all under the SIL Open Font License (OpenDyslexic is used unmodified; its Reserved Font Name is kept).' +
-      '<br>Dibs the pigeon, V.O.I.C.E.’s mascot, and Wacker the falcon are original drawings.' +
+      '<br>Dibs the pigeon, V.O.I.C.E.’s mascot, Wacker the falcon and the V.O.I.C.E. logo are original drawings, © 2026 Richard Wawrzonkowski, all rights reserved.' +
       '<br>This site shows some symbols dimmed or recolored. <a href="' + ROOT + 'about.html#credits">All credits and licenses</a></div>' +
       '<div><strong>Please note</strong><br>V.O.I.C.E. supports, but doesn’t replace, an AAC assessment by a speech-language pathologist or team. It is not speech-language therapy. Using this site doesn’t make you a client.' +
       '<br>Not affiliated with or endorsed by Apple, Project Core, Mulberry Symbols or OpenMoji. iPad and Safari are trademarks of Apple Inc.</div></div>';

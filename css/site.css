@@ -33,11 +33,11 @@
   --lift:0 14px 22px -16px rgba(70,50,20,.5);
 }
 /* Board looks. They re-color the top bar, the hero and the board sheet only. */
-body{--bg:#fbf6ea;--herobg:transparent;--hink:#2a2350;--hsoft:#4a4466;--panel:#fffdf8;--hedge:#e2d8c2;--hacc:#3b2f9e;--haccInk:#fff;--pill:#fffdf8;--pillInk:#2a2350;--orbedge:#1e1660}
-body.th-dark{--bg:#000;--herobg:#000;--hink:#fff;--hsoft:#c9c9d6;--panel:#0d0d0d;--hedge:#2b2b2b;--hacc:#facc15;--haccInk:#000;--pill:#151515;--pillInk:#fff;--orbedge:#a16207}
-body.th-cvi{--bg:#000;--herobg:#000;--hink:#ffd600;--hsoft:#e6c200;--panel:#000;--hedge:#ffd600;--hacc:#ffd600;--haccInk:#000;--pill:#000;--pillInk:#ffd600;--orbedge:#a68b00}
-body.th-cbsafe{--bg:#f8fafc;--herobg:#f8fafc;--hink:#111827;--hsoft:#374151;--panel:#fff;--hedge:#1f2937;--hacc:#1d4ed8;--haccInk:#fff;--pill:#fff;--pillInk:#111827;--orbedge:#1e3a8a}
-body.th-dim{--bg:#1e2128;--herobg:#1e2128;--hink:#e5e7eb;--hsoft:#b6bcc8;--panel:#262a33;--hedge:#3a3f4a;--hacc:#a99cf0;--haccInk:#14121f;--pill:#2f343e;--pillInk:#e5e7eb;--orbedge:#6d5fc4}
+body{--bg:#fbf6ea;--herobg:transparent;--hink:#2a2350;--hsoft:#4a4466;--panel:#fffdf8;--hedge:#e2d8c2;--hacc:#3b2f9e;--haccInk:#fff;--pill:#fffdf8;--pillInk:#2a2350;--orbedge:#1e1660;--lgwing:#e0d0f3}
+body.th-dark{--bg:#000;--herobg:#000;--hink:#fff;--hsoft:#c9c9d6;--panel:#0d0d0d;--hedge:#2b2b2b;--hacc:#facc15;--haccInk:#000;--pill:#151515;--pillInk:#fff;--orbedge:#a16207;--lgwing:#3b2f9e}
+body.th-cvi{--bg:#000;--herobg:#000;--hink:#ffd600;--hsoft:#e6c200;--panel:#000;--hedge:#ffd600;--hacc:#ffd600;--haccInk:#000;--pill:#000;--pillInk:#ffd600;--orbedge:#a68b00;--lgwing:#000}
+body.th-cbsafe{--bg:#f8fafc;--herobg:#f8fafc;--hink:#111827;--hsoft:#374151;--panel:#fff;--hedge:#1f2937;--hacc:#1d4ed8;--haccInk:#fff;--pill:#fff;--pillInk:#111827;--orbedge:#1e3a8a;--lgwing:#bfdbfe}
+body.th-dim{--bg:#1e2128;--herobg:#1e2128;--hink:#e5e7eb;--hsoft:#b6bcc8;--panel:#262a33;--hedge:#3a3f4a;--hacc:#a99cf0;--haccInk:#14121f;--pill:#2f343e;--pillInk:#e5e7eb;--orbedge:#6d5fc4;--lgwing:#3b2f9e}
 
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -68,7 +68,7 @@ img{max-width:100%}
 .bar{position:sticky;top:0;z-index:40;background:var(--bg);color:var(--hink);border-bottom:1px dashed var(--hedge);transition:background-color .5s,color .5s}
 .bar nav{display:flex;align-items:center;gap:4px 14px;padding-top:8px;padding-bottom:8px}
 .logo{display:flex;align-items:center;gap:10px;min-height:44px;background:none;border:0;padding:0;cursor:pointer;font-family:Lexend,sans-serif;font-size:24px;font-weight:700;color:var(--hacc);text-decoration:none;flex:none}
-.logo svg{width:34px;height:34px;flex:none}
+.logo svg{width:34px;height:34px;flex:none;color:var(--hink)}
 .logo.boing svg{animation:pop .6s cubic-bezier(.2,1.6,.4,1)}
 .links{display:flex;align-items:center;gap:0 18px;font-size:16px;margin-left:auto}
 .links .nav{color:var(--hink);padding:10px 2px;min-height:44px;display:inline-flex;align-items:center;gap:10px;text-decoration:none;border:0;border-bottom:3px solid transparent;background:none;font:inherit;font-size:16px;cursor:pointer;border-radius:0}
@@ -356,6 +356,14 @@ footer strong{color:var(--ink)}
 /* Dark looks: hovering an option must stay readable (light tint, light text) */
 @media (hover:hover){.th-dark .under .seg .pill:not([aria-pressed=true]):hover,.th-cvi .under .seg .pill:not([aria-pressed=true]):hover,.th-dim .under .seg .pill:not([aria-pressed=true]):hover{background:rgba(255,255,255,.2);color:var(--hink)}}
 
+/* Full logo (img/logo): 48px and up only; the bar uses the one-pigeon icon */
+.mark{display:block;width:112px;height:112px;margin:0 0 14px}
+.hero .mark{margin-bottom:18px}
+.pagehead .mark{width:96px;height:96px;margin:0 0 16px}
+.mark-dark{display:none}
+.th-dark .mark-lt,.th-cvi .mark-lt,.th-dim .mark-lt{display:none}
+.th-dark .mark-dark,.th-cvi .mark-dark,.th-dim .mark-dark{display:block}
+@media (max-width:600px){.mark,.hero .mark{width:72px;height:72px;margin-bottom:10px}.pagehead .mark{width:72px;height:72px}}
 /* Home hero: the full name above the headline */
 .fullname{margin:0 0 10px;font-family:Lexend,system-ui,sans-serif;font-size:17px;color:#6b5f3a}
 /* Dark board looks (High contrast, CVI, Dim): nothing may stay dark purple or brown on the dark hero/bar */

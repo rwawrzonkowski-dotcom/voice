@@ -2,6 +2,20 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-27: Drawings are all rights reserved
+
+- LICENSE and NOTICE.md: from November 27, 2026 the V.O.I.C.E. logo, Dibs, Wacker and the Chicago critters (with costumes and L train drawings) are all rights reserved, not CC BY-SA. Copies of the Dibs and critter drawings released before that date stay under CC BY-SA 4.0. Third-party parts (Universal Core, Mulberry, OpenMoji, fonts, three.js) keep their own licenses.
+
+## 2026-11-27: New V.O.I.C.E. logo
+
+- New logo files in `img/logo/` (full mark, dark full mark, one-pigeon icon, dark icon, icon on cream square). Rule: the full circle only at 48px and up, the one-pigeon icon below that.
+- Menu bar: the speech-bubble V is now the one-pigeon icon, inline SVG in `js/site.js`. Ring and body follow the look's text color, the paper fill follows the bar background, and the wing V uses `--lgwing` set per look in `css/site.css`. The Home "boing" click is kept.
+- Favicons: `icon-192.png`, `icon-512.png` and `apple-touch-icon.png` are rebuilt from `voice-icon-square.svg`; every page adds an SVG icon link before the PNG one.
+- Link preview card `img/og-card.png` rebuilt with the full logo.
+- Home hero (112px, 72px on phones; dark logo in High contrast, CVI and Dim) and About heading (96px) show the full logo.
+- Credits line now says the logo is an original drawing too. About "What's new" has a new line.
+- All CSS and JS links now use `?v=20261127b`.
+
 ## 2026-11-27: Contact email
 
 - `contactEmail` set to Dibsthepigeon@zohomail.com. The "coming soon" notes on Home, About, Privacy and Questions are replaced by email links.
