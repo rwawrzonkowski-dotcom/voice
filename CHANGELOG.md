@@ -2,6 +2,11 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-27: Contact email
+
+- `contactEmail` set to Dibsthepigeon@zohomail.com. The "coming soon" notes on Home, About, Privacy and Questions are replaced by email links.
+- All CSS and JS links now use `?v=20261127a`.
+
 ## 2026-11-27: Photo Mode round 4 (friendlier scene editing)
 
 - Tap an item in the picture and a small paper bar pops up just above it with only its tools: **Pose, Turn, Size, Wear, Emote, Hold, Copy, Delete** for a character, **Turn, Size, Flip, Emote, Copy, Delete** (and **Give** near a character) for a prop, a picture or the L, and **Words, Color, Tail, Turn, Size, Copy, Delete** for a speech bubble. Each button opens one short sheet. The bar follows the item when the camera moves, flips below it when there is no room above, and goes away when you tap empty ground. Turning Dibs is now one drag and a Wave is Pose then Wave.

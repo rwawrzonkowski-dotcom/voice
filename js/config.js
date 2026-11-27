@@ -8,7 +8,7 @@ window.VOICE_SITE = {
   donateUrl: '',
 
   // Public contact email for problem reports and word suggestions. '' = not chosen yet.
-  contactEmail: '',
+  contactEmail: 'Dibsthepigeon@zohomail.com',
 
   // State where the LBA license is held, shown in the footer note. '' = left out.
   lbaState: 'Illinois',
