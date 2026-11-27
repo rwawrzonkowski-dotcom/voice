@@ -2,6 +2,11 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-27: Open to search engines
+
+- The nine main pages now say `index, follow` (was `noindex, nofollow`). The 404 page stays `noindex`. `photo-mode/` is unchanged (another session owns it).
+- `robots.txt` allows everything and points to the new `sitemap.xml` (the nine main pages). Note: crawlers only read robots.txt at the host root, so for this project site the meta tags are what count; submit the sitemap in Google Search Console to speed things up.
+
 ## 2026-11-27: Drawings are all rights reserved
 
 - LICENSE and NOTICE.md: from November 27, 2026 the V.O.I.C.E. logo, Dibs, Wacker and the Chicago critters (with costumes and L train drawings) are all rights reserved, not CC BY-SA. Copies of the Dibs and critter drawings released before that date stay under CC BY-SA 4.0. Third-party parts (Universal Core, Mulberry, OpenMoji, fonts, three.js) keep their own licenses.
