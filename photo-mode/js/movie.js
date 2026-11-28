@@ -953,6 +953,14 @@
     a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
   };
+  /* a phone can hand a video to its share sheet (Save Video puts it in Photos). Returns a promise of true when shared. */
+  MM.canShareFile = function (blob, name) {
+    try { return !!(navigator.canShare && window.File && navigator.canShare({ files: [new File([blob], name, { type: blob.type })] })); } catch (e) { return false; }
+  };
+  MM.shareFile = function (blob, name) {
+    var f = new File([blob], name, { type: blob.type });
+    return navigator.share({ files: [f] }).then(function () { return true; }, function (e) { if (e && e.name === 'AbortError') return false; throw e; });
+  };
   MM.slug = function (s) { return String(s || 'movie').toLowerCase().replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').slice(0, 40) || 'movie'; };
 
   /* ---------- video export ---------- */
@@ -964,10 +972,12 @@
   MM.frameCount = function () { return MM.movie.shots.reduce(function (a, s) { return a + Math.max(1, Math.round(s.duration * FPS)); }, 0); };
   function pickMime() {
     if (!window.MediaRecorder) return '';
-    var list = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'];
+    // .mp4 first: phones (iPhone Photos, Instagram, TikTok) take .mp4 but often not .webm
+    var list = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4;codecs=avc1.42E01E', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
     for (var i = 0; i < list.length; i++) { try { if (MediaRecorder.isTypeSupported(list[i])) return list[i]; } catch (e) {} }
     return '';
   }
+  MM.exportMime = function () { return pickMime().split(';')[0]; };
   MM.canExport = function () { return !!pickMime() && !!HTMLCanvasElement.prototype.captureStream; };
   function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   function toBlob(cv, type, q) { return new Promise(function (res) { cv.toBlob(res, type, q); }); }

@@ -2,6 +2,11 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-28: Movie Maker videos save as .mp4 and go to Photos
+
+- Export now records .mp4 (H.264) whenever the browser can, and .webm only as a fallback. iPhone Photos, Instagram and TikTok take .mp4. The export screen says which file type it will make.
+- On a phone that can share files, the save button reads "Save to Photos or share" and opens the share sheet: Save Video puts it in Photos, or pick Instagram, TikTok and so on. Other devices still download the file.
+
 ## 2026-11-28: Movie Maker TikTok dance template and dance moves
 
 - New beat-timed dance moves: Bounce, Sway (wing wave), Step left, Step right and Spin (a full turn showing the card's back). They are in Quick, Add a command, Dance, and in the script as `bounce 8`, `sway 4`, `step left 4`, `spin 2` (counted in beats).
