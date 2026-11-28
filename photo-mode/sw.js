@@ -1,6 +1,6 @@
 /* DIBS Photo Mode: offline cache. Registered only when the page is served over http or https.
    Pages are fetched from the network first and the cache is the offline fallback. Bump CACHE whenever the FILES list changes. */
-var CACHE = 'dibs-photo-mode-v10';
+var CACHE = 'dibs-photo-mode-v11';
 var FILES = [
   './',
   'index.html',

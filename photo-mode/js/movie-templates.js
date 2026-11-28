@@ -1,6 +1,6 @@
 /* DIBS Movie Maker: quick templates.
    Each template is a short form (fields) that turns into script text for the Script sheet (movie-quick.js).
-   A field is { key, label, type: 'text' | 'cast' | 'symbol' | 'place', def }.
+   A field is { key, label, type: 'text' | 'cast' | 'symbol' | 'place', def }. A cast field with none: true also offers Nobody (value 'nobody'). A template can have a hint, shown under its form.
    script(values) returns the text of the script, written in the same words anyone can type. No screen code here. */
 (function () {
   'use strict';
@@ -125,6 +125,42 @@
           A + ' (hop): ' + val(v, 'line3', 'Race you to the bridge!'),
           A + ': exit right',
           '& ' + B + ': run, exit right'].join('\n');
+      }
+    },
+    {
+      id: 'dance', name: 'TikTok dance', blurb: 'Dibs leads a 15 second dance. Add your own music with Sound.',
+      hint: 'Tip: add your song in Tools, Sound. Set Tempo to the song\'s beats per minute so the moves land on the beat.',
+      fields: [
+        { key: 'place', label: 'Where', type: 'place', def: 'lakefront' },
+        { key: 'lead', label: 'Dance leader', type: 'cast', def: 'dibs' },
+        { key: 'dancer2', label: 'Dancer 2', type: 'cast', none: true, def: 'chance' },
+        { key: 'dancer3', label: 'Dancer 3', type: 'cast', none: true, def: 'ivy' },
+        { key: 'dancer4', label: 'Dancer 4', type: 'cast', none: true, def: 'nobody' },
+        { key: 'tempo', label: 'Tempo (beats a minute, 40 to 220)', type: 'text', number: true, def: '120' },
+        { key: 'caption', label: 'Caption (empty for none)', type: 'text', def: 'Dibs dance challenge' }
+      ],
+      script: function (v) {
+        var bpm = parseFloat(val(v, 'tempo', '120'));
+        bpm = isFinite(bpm) ? Math.max(40, Math.min(220, Math.round(bpm))) : 120;
+        var lead = pick(v, 'lead', 'dibs'), crew = [lead];
+        ['dancer2', 'dancer3', 'dancer4'].forEach(function (key) {
+          var k = val(v, key, 'nobody');
+          if (CAST.every(function (c) { return c[0] !== k; })) return;       // Nobody, or something that is not a character
+          var nm = nameOf(k);
+          if (crew.indexOf(nm) < 0) crew.push(nm);                            // nobody dances twice
+        });
+        // the leader is in the middle at the front, the others stand behind
+        var spots = crew.length === 2 ? ['back left'] : crew.length === 3 ? ['back left', 'back right'] : ['back left', 'back right', 'far back'];
+        var places = [lead + ' front'].concat(crew.slice(1).map(function (nm, i) { return nm + ' ' + spots[i]; }));
+        var cap = v && v.caption !== undefined && v.caption !== null ? String(v.caption).replace(/\s+/g, ' ').trim() : 'Dibs dance challenge';
+        var lines = ['Scene: ' + place(v, 'sweep'), 'Tempo: ' + bpm, 'Places: ' + places.join(', ')];
+        if (cap) lines.push('Caption: ' + cap);
+        lines.push('Camera: wide');
+        // everybody moves together: the lines after the leader's start with &
+        function together(words) { crew.forEach(function (nm, i) { lines.push((i ? '& ' : '') + nm + ': ' + words); }); }
+        together('bounce 8'); together('sway 8'); together('step left 4, step right 4'); together('spin 4, proud');
+        lines.push('& Camera: push in');       // the push in starts with the spin
+        return lines.join('\n');
       }
     },
     {
