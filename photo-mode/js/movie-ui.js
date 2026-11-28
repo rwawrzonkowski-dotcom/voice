@@ -1106,7 +1106,7 @@
   tab = isPhone() ? 'quick' : 'item';
   if (!isPhone()) openSheet(); else applyView();
   MM.start().then(function () {
-    if ('serviceWorker' in navigator && (location.protocol === 'http:' || location.protocol === 'https:')) window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+    if ('serviceWorker' in navigator && (location.protocol === 'http:' || location.protocol === 'https:')) window.addEventListener('load', function () { var hadSw = !!navigator.serviceWorker.controller, reloaded = false; navigator.serviceWorker.addEventListener('controllerchange', function () { if (hadSw && !reloaded) { reloaded = true; location.reload(); } }); navigator.serviceWorker.register('sw.js').catch(function () {}); });
   });
   window.addEventListener('resize', function () { MM.paintCaption(); });
   if (window.ResizeObserver) new ResizeObserver(function () { MM.paintCaption(); }).observe($('frameBox'));
