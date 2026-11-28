@@ -12,7 +12,9 @@
 
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function svgData(svg) { return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); }
-  function isPhone() { return window.matchMedia('(max-width:820px)').matches; }
+  /* a phone: narrow, or a phone turned sideways (short and landscape) */
+  var PHONE_Q = '(max-width:820px), (max-height:500px) and (orientation:landscape)';
+  function isPhone() { return window.matchMedia(PHONE_Q).matches; }
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
   function fmt(v, d) { return (Math.round(v * Math.pow(10, d)) / Math.pow(10, d)).toFixed(d); }
   function secs(t) { return fmt(t, 2) + ' sec'; }
@@ -86,11 +88,68 @@
     $('mmSetKey').addEventListener('click', function () { setKeyHere(); });
     $('mmExport').addEventListener('click', openExport);
     $('mmTools').addEventListener('click', function () { if (isOpen()) closeSheet(); else openSheet(); });
+    wirePhoneLayout();
+  }
+
+  /* ---------- phone layout: Simple mode, Keys, the slim time bar and full screen ---------- */
+  var keysOn = false, fsLayer = null;
+  try { keysOn = localStorage.getItem('dibs-movie-keys') === '1'; } catch (e) {}
+  function isFull() { return document.body.classList.contains('fs'); }
+  function setKeys(on, quiet) {
+    keysOn = !!on;
+    $('mm').setAttribute('data-keys', keysOn ? '1' : '0');
+    var b = $('mmKeys'); b.setAttribute('aria-pressed', keysOn ? 'true' : 'false');
+    b.setAttribute('aria-label', keysOn ? 'Hide the keys timeline and show the shots' : 'Show the keys timeline');
+    if (!quiet) { try { localStorage.setItem('dibs-movie-keys', keysOn ? '1' : '0'); } catch (e) {} }
+    // Simple mode has no key list, so a picked key or row has nothing to show
+    if (!keysOn && (selKey || rowSel)) { selKey = null; rowSel = null; renderKeyBar(); }
+    renderTimeline(true);
+    relayout();
+  }
+  function setFull(on) {
+    on = !!on && isPhone();
+    if (on === isFull()) return;
+    document.body.classList.toggle('fs', on);
+    $('fsBar').hidden = !on;
+    if (on) {
+      if (isOpen()) closeSheet();
+      fsLayer = pushLayer(function () { fsLayer = null; setFull(false); });
+      try { $('fsExit').focus({ preventScroll: true }); } catch (e) {}
+    } else {
+      if (fsLayer) { var l = fsLayer; fsLayer = null; dropLayer(l); }
+      try { $('fsBtn').focus({ preventScroll: true }); } catch (e) {}
+    }
+    relayout(); setTimeout(function () { App.layout(); MM.paintCaption(); }, 120);
+  }
+  UI.isFull = isFull; UI.setFull = setFull;
+  function wirePhoneLayout() {
+    $('mmKeys').addEventListener('click', function () { setKeys(!keysOn); });
+    $('fsBtn').addEventListener('click', function () { setFull(true); });
+    $('fsExit').addEventListener('click', function () { setFull(false); });
+    $('fsPlay').addEventListener('click', function () { MM.togglePlay(); });
+    $('mmTimeline').addEventListener('click', function (e) { if (e.target.closest('[data-tlshots]')) setKeys(false); });
+    // the slim time bar (Simple mode): the same drag as the ruler in the timeline
+    var tr = $('scrubTrack'), sd = null;
+    function f(e) { var r = tr.getBoundingClientRect(); return r.width ? clamp((e.clientX - r.left) / r.width, 0, 1) : 0; }
+    tr.addEventListener('pointerdown', function (e) {
+      MM.pause(); sd = e.pointerId;
+      try { tr.setPointerCapture(e.pointerId); } catch (x) {}
+      MM.seek(f(e) * (tlDur || 1)); e.preventDefault();
+    });
+    tr.addEventListener('pointermove', function (e) { if (sd === e.pointerId) MM.seek(f(e) * (tlDur || 1)); });
+    function end(e) { if (sd === e.pointerId) sd = null; }
+    tr.addEventListener('pointerup', end); tr.addEventListener('pointercancel', end);
+    tr.addEventListener('keydown', function (e) {
+      var d = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
+      if (d) { MM.pause(); MM.seek(MM.t + d / FPS); e.preventDefault(); }
+    });
+    $('mm').setAttribute('data-keys', keysOn ? '1' : '0');
+    $('mmKeys').setAttribute('aria-pressed', keysOn ? 'true' : 'false');
   }
   var lastTimeText = '';
   function updateTime() {
     var tot = MM.total(), cur = MM.absTime(), txt = MM.fmtTime(cur) + ' of ' + MM.fmtTime(tot);
-    if (txt !== lastTimeText) { lastTimeText = txt; $('mmTime').innerHTML = MM.fmtTime(cur) + ' <span class="tot">of ' + MM.fmtTime(tot) + '</span>'; }
+    if (txt !== lastTimeText) { lastTimeText = txt; $('mmTime').innerHTML = MM.fmtTime(cur) + ' <span class="tot">of ' + MM.fmtTime(tot) + '</span>'; $('fsTime').textContent = txt; $('scrubTime').textContent = txt; var ts = document.getElementById('tlTime'); if (ts) ts.textContent = MM.fmtTime(cur); }
   }
   function updatePlay(playing) {
     var b = $('mmPlay');
@@ -98,6 +157,8 @@
     $('mmPlayText').textContent = playing ? 'Pause' : 'Play';
     $('mmPlayIcon').setAttribute('d', playing ? 'M6 4h4v16H6zM14 4h4v16h-4z' : 'M7 4l13 8-13 8z');
     b.setAttribute('aria-pressed', playing ? 'true' : 'false');
+    $('fsPlayText').textContent = playing ? 'Pause' : 'Play'; $('fsPlay').setAttribute('aria-label', playing ? 'Pause' : 'Play');
+    $('fsPlayIcon').setAttribute('d', playing ? 'M6 4h4v16H6zM14 4h4v16h-4z' : 'M7 4l13 8-13 8z');
   }
   function updateHistory() { $('mmUndo').disabled = !MM.canUndo(); $('mmRedo').disabled = !MM.canRedo(); }
   /* undo and redo bring the shot back with nothing picked, so remember what was picked (and which sheet was open) and give it back */
@@ -247,6 +308,7 @@
     var step = dur <= 6 ? 1 : dur <= 20 ? 2 : 5;
     for (var s = 0; s <= dur + 1e-6; s += step) h += '<span class="tick" style="left:' + (s / dur * 100) + '%">' + s + '</span>';
     h += '<span class="ph-head" id="phHead" aria-hidden="true"></span></div>';
+    h += '<button type="button" class="btn small tl-shots" data-tlshots="1" aria-label="Show the shots">Shots<small id="tlTime">' + MM.fmtTime(MM.absTime()) + '</small></button>';
     h += '<div class="tl-scroll" id="tlScroll"><div class="tl-in">';
     if (!groups.length) h += '<p class="tl-empty">No keys in this shot yet. Pick a character or the camera, change something, then tap Set key.</p>';
     groups.forEach(function (g) {
@@ -272,6 +334,8 @@
     if (a) a.style.left = f + '%';
     if (b) b.style.left = f + '%';
     var r = $('tlRuler'); if (r) r.setAttribute('aria-valuenow', fmt(MM.t, 2));
+    var sf = $('scrubFill'), sh = $('scrubHead');
+    if (sf) { sf.style.width = f + '%'; sh.style.left = f + '%'; $('scrubTrack').setAttribute('aria-valuenow', fmt(MM.t, 2)); $('scrubTrack').setAttribute('aria-valuemax', tlDur); }
   }
   function wireTimeline() {
     var el = $('mmTimeline'), scrub = null, kdrag = null;
@@ -638,6 +702,7 @@
     $('mmScrim').addEventListener('click', closeSheet);
     var onMode = function () {
       var phone = isPhone();
+      if (!phone && isFull()) setFull(false);
       if (phone !== wasPhone) { wasPhone = phone; if (phone) closeSheet(); else openSheet(); relayout(); return; }
       if (isOpen()) { if (isWide()) view = 'page'; applyView(); }
     };
@@ -1245,6 +1310,7 @@
       var tg = e.target;
       if (e.key === 'Escape' && !document.querySelector('.modal:not([hidden])') && UI.ctxNow && UI.ctxNow() && !(UI.isDrawing && UI.isDrawing())) { e.preventDefault(); UI.closeCtx(); return; }
       if (e.key === 'Escape' && !document.querySelector('.modal:not([hidden])') && isOpen() && !(UI.isDrawing && UI.isDrawing())) { e.preventDefault(); closeSheet(); return; }
+      if (e.key === 'Escape' && isFull() && !document.querySelector('.modal:not([hidden])') && !(UI.isDrawing && UI.isDrawing())) { e.preventDefault(); setFull(false); return; }
       if (tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.tagName === 'SELECT') && tg.type !== 'range' && tg.type !== 'button') return;
       if (e.ctrlKey || e.metaKey || e.altKey) {
         if ((e.ctrlKey || e.metaKey) && !e.altKey) {

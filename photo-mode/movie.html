@@ -48,6 +48,12 @@
       <p id="drawHelp">Draw on the floor with your finger</p>
       <div class="drawbtns"><button type="button" id="drawDone" class="btn primary">Done</button><button type="button" id="drawCancel" class="btn">Cancel</button></div>
     </div>
+    <button type="button" id="fsBtn" class="fsbtn" aria-label="Full screen picture" title="Full screen picture"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    <div id="fsBar" role="group" aria-label="Full screen controls" hidden>
+      <button type="button" id="fsPlay" class="btn" aria-label="Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path id="fsPlayIcon" d="M7 4l13 8-13 8z"/></svg><span id="fsPlayText">Play</span></button>
+      <span id="fsTime" class="mmtime">0:00 of 0:00</span>
+      <button type="button" id="fsExit" class="btn" aria-label="Leave full screen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg><span>Exit</span></button>
+    </div>
     <div id="msg" role="status" aria-live="polite"></div>
     <div id="mmLoading" role="status" aria-live="polite" hidden><span id="mmLoadingText">Getting your shots ready</span></div>
   </main>
@@ -55,6 +61,7 @@
   <div id="mmTransport">
     <button type="button" id="mmPlay" class="btn" aria-label="Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path id="mmPlayIcon" d="M7 4l13 8-13 8z"/></svg><span id="mmPlayText">Play</span></button>
     <span id="mmTime" class="mmtime">0:00 of 0:00</span>
+    <button type="button" id="mmKeys" class="btn keysbtn" aria-pressed="false" aria-label="Show the keys timeline"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 19h18"/><path d="M12 4l5 5-5 5-5-5z"/></svg><span class="klabel">Keys</span></button>
     <span class="mmspacer"></span>
     <button type="button" id="mmSetKey" class="btn">Set key</button>
     <button type="button" id="mmUndo" class="btn" aria-label="Undo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4L4 9l5 5"/><path d="M4 9h10a6 6 0 0 1 0 12h-4"/></svg><span class="tlabel">Undo</span></button>
@@ -62,6 +69,8 @@
     <button type="button" id="mmSnap" class="btn" data-snap aria-pressed="false" aria-label="Snap to the floor grid"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM4 12h16M12 4v16"/></svg><span class="tlabel">Snap</span></button>
     <button type="button" id="mmTools" class="btn tools" aria-haspopup="dialog" aria-expanded="false" aria-controls="mmPanel">Tools</button>
   </div>
+
+  <div id="mmScrub" aria-label="Time"><div id="scrubTrack" role="slider" tabindex="0" aria-label="Time. Drag to move the playhead." aria-valuemin="0" aria-valuemax="1" aria-valuenow="0"><span id="scrubFill" aria-hidden="true"></span><span id="scrubHead" aria-hidden="true"></span></div><span id="scrubTime" class="mmtime" aria-hidden="true"></span></div>
 
   <div id="mmScrim" hidden></div>
 
