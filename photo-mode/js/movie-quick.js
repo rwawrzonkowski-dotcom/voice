@@ -343,15 +343,16 @@
     });
     modal.addEventListener('input', function (e) {
       if (e.target.id === 'qkScript') { scriptText = e.target.value; scriptConfirm = false; syncScript(); }
+      else if (e.target.getAttribute && e.target.getAttribute('data-tk')) { tplVals[e.target.getAttribute('data-tk')] = e.target.value; tplConfirm = false; var w = $('qkTplWarn'); if (w) w.innerHTML = ''; }
     });
     window.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.hidden) { e.stopPropagation(); closeModal(); } }, true);
   }
-  function openModal(title, html) {
+  function openModal(title, html, noFocus) {
     if (!modal) buildModal();
     $('qkTitle').textContent = title; $('qkBody').innerHTML = html; modal.hidden = false;
     if (!modalLayer) modalLayer = H.pushLayer(function () { modalLayer = null; closeModal(true); });
     $('qkBody').scrollTop = 0; modal.querySelector('.dlg').scrollTop = 0;
-    var f = modal.querySelector('textarea,input'); if (f) setTimeout(function () { try { f.focus(); } catch (e) {} }, 30);
+    var f = noFocus ? null : modal.querySelector('textarea,input'); if (f) setTimeout(function () { try { f.focus(); } catch (e) {} }, 30);
   }
   function closeModal(fromBack) {
     if (modalLayer && fromBack !== true) { var l = modalLayer; modalLayer = null; H.dropLayer(l); }
@@ -534,11 +535,55 @@
   };
 
   /* ---------- Script ---------- */
-  var HELP = 'Scene: Hot dog stand\nDibs: Hey Chicago!\nWacker: Pigeons can\'t make movies.\nDibs: shrug, question\nDibs (wave): Bye!';
+  var HELP = 'Scene: Hot dog stand, morning\nDibs (enter left, walk to middle): Hey Chicago!\nCamera: close on Dibs\nWacker (enter right, walk to Dibs): Pigeons can\'t make movies.\n& Dibs: shrug, question\nCaption: Wacker is wrong again.\nDibs (wave): Bye!';
+  var tplId = null, tplVals = {}, tplConfirm = false;
+  function tplOf(id) { return (MM.TEMPLATES || []).filter(function (t) { return t.id === id; })[0]; }
+  function templatesHtml() {
+    var list = MM.TEMPLATES || [];
+    if (!list.length) return '';
+    return '<h3>Start from a template</h3><div class="qk-tpls">' + list.map(function (t) {
+      return '<button type="button" class="qk-tpl" data-act="qk-tpl" data-v="' + esc(t.id) + '"><b>' + esc(t.name) + '</b><span>' + esc(t.blurb) + '</span></button>';
+    }).join('') + '</div>';
+  }
+  function tplFormHtml() {
+    var t = tplOf(tplId); if (!t) return '';
+    var h = '<p class="small"><button type="button" class="btn small" data-act="qk-tplback">Back to templates</button></p><h3>' + esc(t.name) + '</h3><p class="hint">' + esc(t.blurb) + ' Change what you like, then put it in your script.</p>';
+    t.fields.forEach(function (f) {
+      var cur = tplVals[f.key] !== undefined ? tplVals[f.key] : f.def, id = 'qkF-' + f.key;
+      if (f.type === 'text') {
+        h += '<label class="small" for="' + id + '">' + esc(f.label) + '</label><input type="text" id="' + id + '" data-tk="' + esc(f.key) + '" maxlength="160" value="' + esc(cur) + '" autocomplete="off">';
+        return;
+      }
+      var items = [];
+      if (f.type === 'cast') items = (MM.CAST_CHOICES || []).map(function (c) { return { v: c.kind, name: c.name }; });
+      else if (f.type === 'place') items = Object.keys(DP.SET_INFO).filter(function (k) { return k !== 'photo'; }).map(function (k) { return { v: k, name: DP.SET_INFO[k].name }; });
+      else if (f.type === 'symbol') items = Object.keys(A.symbols).map(function (k) { return { v: k, name: k.replace(/-/g, ' '), img: sym(k) }; });
+      h += '<p class="small gap">' + esc(f.label) + '</p><div class="chips' + (f.type === 'symbol' ? ' qk-symbox' : '') + '" role="group" aria-label="' + esc(f.label) + '">' + items.map(function (o) {
+        return '<button type="button" class="chip' + (o.img ? ' thumb' : '') + '" data-act="qk-tplpick" data-v="' + esc(f.key + '|' + o.v) + '" aria-pressed="' + (o.v === cur) + '">' + (o.img ? '<img alt="" src="' + o.img + '">' : '') + esc(o.name) + '</button>';
+      }).join('') + '</div>';
+    });
+    h += '<div id="qkTplWarn" class="qk-notes" role="status" aria-live="polite"></div>' +
+      '<div class="row"><button type="button" class="btn primary" data-act="qk-tplput">Put in my script</button><button type="button" class="btn" data-act="qk-tplbuild">Build it now</button></div>';
+    return h;
+  }
   function scriptHtml() {
-    return '<p class="hint">One line for each thing said or done. Start with a name and a colon.</p>' +
+    if (tplId) return tplFormHtml();
+    return templatesHtml() +
+      '<h3>Or write your own</h3><p class="hint">One line for each thing said or done. Start with a name and a colon. Add a Scene line for the place and light, Camera: and Caption: lines for the camera and words on screen, and start a line with & to do it at the same time as the line before.</p>' +
       '<pre class="qk-help" aria-label="Example script">' + esc(HELP) + '</pre>' +
-      '<p class="hint">Words like shrug, hop, heart, question, wait 2, walk and wear blue cap become actions. Anything else is spoken. A line starting with Scene: or --- starts a new shot.</p>' +
+      '<p class="hint">Words like shrug, hop, heart, question, wait 2, walk to Dibs, enter left, exit right, holds food and wear blue cap become actions. Anything else is spoken. A line starting with Scene: or --- starts a new shot.</p>' +
+      '<details class="qk-vocab"><summary>Words the script knows</summary><ul>' +
+      '<li><b>Moves:</b> walk, walk fast, run, walk left, walk right, walk to middle, walk to front, walk back, walk to Dibs, walk and follow, hop, wave, wait 2.</li>' +
+      '<li><b>Coming and going:</b> enter, enter left, comes in from the right, exit, exit right, leaves left, goes off right.</li>' +
+      '<li><b>Looking and posing:</b> look left, look right, look at Wacker, turns to Wacker, faces camera, shrug, proud, peek, point, stand.</li>' +
+      '<li><b>Feelings:</b> heart, question, exclaim, idea, laugh, sweat, music, zzz, steam, tears, shiver.</li>' +
+      '<li><b>Things:</b> wear blue cap, wear scarf, holds food, holds a drink, holds nothing, or any picture word like holds juice.</li>' +
+      '<li><b>Put together:</b> use commas, and, or then: Dibs (walks to Wacker and waves).</li>' +
+      '<li><b>Camera lines:</b> Camera: wide, close on Dibs, push in, pull out, orbit, auto. They turn Auto camera on.</li>' +
+      '<li><b>Caption lines:</b> Caption: words to show, Caption: off to hide.</li>' +
+      '<li><b>Places and light:</b> Scene: Hot dog stand, morning (also noon, golden hour, blue hour, night, studio). Scene: same keeps the place.</li>' +
+      '<li><b>Same time:</b> a line that starts with & begins when the line before it begins.</li>' +
+      '</ul></details>' +
       '<textarea id="qkScript" rows="8" aria-label="Your script" placeholder="Dibs: Hello!">' + esc(scriptText) + '</textarea>' +
       '<div id="qkNotes" class="qk-notes" role="status" aria-live="polite"></div>' +
       '<div class="row"><button type="button" class="btn primary" id="qkBuild" data-act="qk-build">Build</button><button type="button" class="btn small" data-act="qk-example">Use the example</button></div>';
@@ -554,12 +599,44 @@
       b.textContent = scriptConfirm ? 'Replace the commands and build' : 'Build';
     }
   }
+  function renderScript() { var b = $('qkBody'); if (!b) return; b.innerHTML = scriptHtml(); syncScript(); b.scrollTop = 0; }
   function openScript() {
     MM.pause();
-    scriptConfirm = false;
-    openModal('Script', scriptHtml());
+    scriptConfirm = false; tplId = null; tplConfirm = false;
+    openModal('Script', scriptHtml(), true);
     syncScript();
   }
+  UI.ext.act['qk-tpl'] = function (v) {
+    var t = tplOf(v); if (!t) return;
+    tplId = v; tplVals = {}; tplConfirm = false;
+    t.fields.forEach(function (f) { tplVals[f.key] = f.def; });
+    renderScript();
+  };
+  UI.ext.act['qk-tplback'] = function () { tplId = null; tplConfirm = false; renderScript(); };
+  UI.ext.act['qk-tplpick'] = function (v) {
+    var i = String(v).indexOf('|'), key = String(v).slice(0, i), val = String(v).slice(i + 1);
+    tplVals[key] = val; tplConfirm = false;
+    Array.prototype.forEach.call(modal.querySelectorAll('[data-act="qk-tplpick"]'), function (b) {
+      var bv = b.getAttribute('data-v'); if (bv.indexOf(key + '|') !== 0) return;
+      b.setAttribute('aria-pressed', bv === v ? 'true' : 'false');
+    });
+    var w = $('qkTplWarn'); if (w) w.innerHTML = '';
+  };
+  /* fills the script box with the template. Asks once when the box already has words. Returns true when it went ahead. */
+  function tplFill() {
+    var t = tplOf(tplId); if (!t) return false;
+    if (scriptText.trim() && !tplConfirm) {
+      tplConfirm = true;
+      var w = $('qkTplWarn'); if (w) w.innerHTML = '<ul><li>This replaces your script. Tap again to go on.</li></ul>';
+      return false;
+    }
+    var text = t.script(tplVals);
+    scriptText = text; scriptConfirm = false; tplConfirm = false; tplId = null;
+    renderScript();
+    return true;
+  }
+  UI.ext.act['qk-tplput'] = function () { tplFill(); };
+  UI.ext.act['qk-tplbuild'] = function () { if (tplFill()) UI.ext.act['qk-build'](); };
   UI.ext.act['openscript'] = openScript;
   UI.ext.act['qk-example'] = function () { scriptText = HELP; scriptConfirm = false; var t = $('qkScript'); if (t) t.value = scriptText; syncScript(); };
   UI.ext.act['qk-build'] = function () {

@@ -37,6 +37,7 @@
       if (!path.length) return null;
       o.path = path; o.speed = isNum(a.speed) ? clamp(a.speed, 0.3, 4) : MM.SPEEDS.normal; o.follow = a.follow === true;
       if (loose && a.rel === true) o.rel = true;
+      if (a.edge === true) o.edge = true;       // walks on or off the screen edge: the automatic camera does not frame them
     } else if (a.type === 'say') {
       var tx = typeof a.text === 'string' ? a.text.replace(/\s+/g, ' ').trim().slice(0, 160) : '';
       if (!tx) return null;
@@ -66,6 +67,26 @@
       raw[id].slice(0, 80).forEach(function (a) { var c = cleanAction(a); if (c) list.push(c); });
       if (list.length) out[id] = list;
     });
+    return out;
+  };
+
+  /* camera and caption cues made by Camera: and Caption: lines of a script. They live on the shot (shot.camCues, shot.capCues). */
+  var CUE_TYPES = ['wide', 'close', 'push', 'pull', 'orbit', 'auto'];
+  MM.cleanCues = function (raw) {
+    var out = { camCues: [], capCues: [] };
+    if (!raw || typeof raw !== 'object') return out;
+    (Array.isArray(raw.camCues) ? raw.camCues : []).slice(0, 80).forEach(function (c) {
+      if (!c || typeof c !== 'object' || CUE_TYPES.indexOf(c.type) < 0 || !isNum(c.t)) return;
+      var o = { t: r3(clamp(c.t, 0, 60)), type: c.type };
+      if (c.type === 'close') { if (typeof c.id === 'string' && /^[\w-]{1,40}$/.test(c.id)) o.id = c.id; else return; }
+      out.camCues.push(o);
+    });
+    out.camCues.sort(function (a, b) { return a.t - b.t; }); out.camCues = out.camCues.slice(0, 40);
+    (Array.isArray(raw.capCues) ? raw.capCues : []).slice(0, 80).forEach(function (c) {
+      if (!c || typeof c !== 'object' || !isNum(c.t)) return;
+      out.capCues.push({ t: r3(clamp(c.t, 0, 60)), text: typeof c.text === 'string' ? c.text.replace(/\s+/g, ' ').trim().slice(0, 120) : '' });
+    });
+    out.capCues.sort(function (a, b) { return a.t - b.t; }); out.capCues = out.capCues.slice(0, 40);
     return out;
   };
 
@@ -133,7 +154,7 @@
   /* ---------- the plan: every key the lists ask for ---------- */
   function sizeOf(bi) { var d = DP.PUPPETS[bi.kind]; return (d ? d.size : 1.2) * (bi.scale || 1); }
   function plan(shot, base) {
-    var lists = shot.actions || {}, G = {}, info = { times: {}, end: {}, start: {}, paths: {}, says: [], follows: [], needed: 0, ids: [] };
+    var lists = shot.actions || {}, G = {}, info = { times: {}, end: {}, start: {}, paths: {}, says: [], follows: [], needed: 0, ids: [], xs: {}, entr: {} };
     var maxEnd = 0, aspect = (function () { var p = MM.platformInfo(MM.movie.platform); return p.w / p.h; })();
 
     /* key lists. Every continuous track starts with a key at 0 that holds the scene's own value. */
@@ -162,14 +183,17 @@
       var bi = base.items[id], def = DP.PUPPETS[bi.kind], wings = def ? def.wings : 0, side = !!(def && def.side), T = 'item:' + id + '.';
       var st = { x: bi.x, z: bi.z, yaw: bi.yaw || 0, pose: {} };
       POSE_PARAMS.forEach(function (p) { st.pose[p] = bi.pose && isNum(bi.pose[p]) ? bi.pose[p] : 0; });
-      var t = LEAD, times = [];
-      info.start[id] = { x: bi.x, z: bi.z };
+      var t = LEAD, times = [], seenAct = false, afterEnter = false;
+      info.start[id] = { x: bi.x, z: bi.z }; info.xs[id] = [];
       function P(p, t0, t1, v, ease) { seg(trk(T + 'pose.' + p, bi.pose && isNum(bi.pose[p]) ? bi.pose[p] : 0), t0, t1, v, ease); }
       function setP(p, t0, t1, v, ease) { P(p, t0, t1, v, ease); st.pose[p] = v; }
       function yawTo(t0, t1, y) { seg(trk(T + 'rot', bi.yaw || 0), t0, t1, y, 'easeInOut'); st.yaw = y; }
 
       list.forEach(function (a) {
-        var t0 = t, dur = a.type === 'walk' ? 0 : MM.actionDur(a), i;
+        var t0 = t, dur = a.type === 'walk' ? 0 : MM.actionDur(a), i, wasEnter = afterEnter;
+        afterEnter = a.type === 'enter';
+        if (a.type === 'wait') { afterEnter = wasEnter; }
+        else if (a.type !== 'enter' && !(a.type === 'walk' && a.edge && wasEnter && !seenAct)) seenAct = true;
         if (a.type === 'wait') { /* time passes */ }
         else if (a.type === 'say') {
           disc(T + 'bubble', t0, { text: a.text, style: a.style || 'speech', tail: 'down' });
@@ -226,6 +250,7 @@
               var p = atArc(w, s), p2 = atArc(w, Math.min(w.len, s + 0.12)), p1 = atArc(w, Math.max(0, s - 0.12));
               var hx = p2[0] - p1[0], hz = p2[1] - p1[1];
               if (Math.hypot(hx, hz) > 1e-4) { yaw += (headingYaw(hx, hz, 0.65) - yaw) * 0.5; lastDx = hx; }
+              if (!a.edge) info.xs[id].push(p[0]);
               put(pa, t0 + w.moveT * u, p, 'linear');
               put(ra, t0 + w.moveT * u, yaw, 'linear');
             }
@@ -242,6 +267,7 @@
             P('bend', te, te + 0.12, st.pose.bend + 10); P('bend', te + 0.12, te + SETTLE, st.pose.bend);
             if (side) P('look', te, te + 0.2, st.pose.look);
             var last = w.pts[w.pts.length - 1];
+            if (a.edge && wasEnter && !info.entr[id] && info.xs[id].length === 0 && !seenAct) { info.entr[id] = true; info.xs[id].push(last[0]); }
             st.x = last[0]; st.z = last[1];
             // face the camera again with the settle
             seg(ra, te, te + SETTLE, bi.yaw || 0, 'easeInOut'); st.yaw = bi.yaw || 0;
@@ -261,7 +287,19 @@
       info.ids.push(id);
       runChar(id, lists[id]);
     });
-    info.needed = info.ids.length ? ceilT(maxEnd + END_HOLD) : 0;
+    /* camera and caption cues (only used when the shot has Auto camera on, and for captions when nobody wrote a caption by hand) */
+    var autoOn = !!shot.autoCamera && !hasManualCamera(shot);
+    var camCues = autoOn && Array.isArray(shot.camCues) ? shot.camCues.filter(function (c) { return c && isNum(c.t) && CUE_TYPES.indexOf(c.type) >= 0; }).sort(function (a, b) { return a.t - b.t; }) : [];
+    var capCues = Array.isArray(shot.capCues) && !hasManualCaption(shot) ? shot.capCues.filter(function (c) { return c && isNum(c.t); }) : [];
+    var cueEnd = 0;
+    camCues.forEach(function (c, i) {
+      var last = i === camCues.length - 1;
+      cueEnd = Math.max(cueEnd, (last && (c.type === 'push' || c.type === 'pull' || c.type === 'orbit')) ? c.t + 2 : c.t + 0.8);
+    });
+    capCues.forEach(function (c) { if (c.text) cueEnd = Math.max(cueEnd, c.t + 2); });
+    maxEnd = Math.max(maxEnd, cueEnd);
+    capCues.forEach(function (c) { disc('caption', c.t, c.text ? { text: c.text } : null); });
+    info.needed = info.ids.length || cueEnd ? ceilT(maxEnd + END_HOLD) : 0;
 
     /* ---------- the camera ---------- */
     function posAt(id, t) { var a = G['item:' + id + '.pos'], bi = base.items[id]; return a ? sampleVec(a, t) : [bi.x, bi.z]; }
@@ -274,8 +312,10 @@
         var vf = DP.fovFor(base.mm, aspect) * D2R, tv = Math.tan(vf / 2), th = tv * aspect;
         var xmin = Infinity, xmax = -Infinity, zs = 0, Hm = 0;
         puppetIds.forEach(function (id) {
-          var bi = base.items[id], hw = sizeOf(bi) * 0.31, xs = [bi.x];
-          if (!followed[id] && G['item:' + id + '.pos']) G['item:' + id + '.pos'].forEach(function (k) { xs.push(k.v[0]); });
+          var bi = base.items[id], hw = sizeOf(bi) * 0.31, xs = info.entr[id] ? [] : [bi.x];
+          // walks on and off the screen edge are not framed: the wide shot stays on the people in the scene
+          if ((!followed[id] || info.entr[id]) && info.xs[id]) xs = xs.concat(info.xs[id]);
+          if (!xs.length) xs = [bi.x];
           xs.forEach(function (x) { xmin = Math.min(xmin, x - hw); xmax = Math.max(xmax, x + hw); });
           zs += bi.z; Hm = Math.max(Hm, sizeOf(bi));
         });
@@ -306,7 +346,20 @@
         cur = { pos: fr.pos.slice(), tgt: fr.tgt.slice() };
       };
       var segs = [];
-      if (auto) info.says.forEach(function (s) { segs.push({ k: 'say', id: s.id, t0: s.t0, t1: s.t1 }); });
+      // Camera: lines. A cue lasts until the next cue (or the end), and while one other than auto lasts the speaker moves wait.
+      var cueSegs = [], orbitN = 0;
+      camCues.forEach(function (c, i) {
+        var t1 = i < camCues.length - 1 ? camCues[i + 1].t : Math.max(info.needed, c.t + 0.5);
+        cueSegs.push({ k: 'cue', cue: c, t0: c.t, t1: t1, last: i === camCues.length - 1 });
+      });
+      var inCue = function (t) { return cueSegs.some(function (c) { return c.cue.type !== 'auto' && t >= c.t0 - 1e-6 && t < c.t1 - 1e-6; }); };
+      if (auto) info.says.forEach(function (s) { if (!inCue(s.t0)) segs.push({ k: 'say', id: s.id, t0: s.t0, t1: s.t1 }); });
+      cueSegs.forEach(function (c) {
+        if (c.cue.type !== 'auto') { segs.push(c); return; }
+        // handing the camera back: whoever is talking right now gets it
+        var talking = info.says.filter(function (s) { return s.t0 < c.t0 - 1e-6 && s.t1 > c.t0 + 0.3; })[0];
+        if (talking) segs.push({ k: 'say', id: talking.id, t0: c.t0, t1: talking.t1 });
+      });
       fol.forEach(function (f) { segs.push({ k: 'follow', id: f.id, t0: f.t0, t1: f.t1 + 0.3, walkEnd: f.t1 }); });
       segs.sort(function (a, b) { return a.t0 - b.t0; });
       for (var q = 0; q < segs.length - 1; q++) if (segs[q].t1 > segs[q + 1].t0) segs[q].t1 = segs[q + 1].t0;
@@ -324,6 +377,31 @@
               var cr = { tgt: fr.tgt, pos: [0, 1, 2].map(function (i) { return fr.tgt[i] + (fr.pos[i] - fr.tgt[i]) * 0.955; }) };
               move(tb, sg.t1, cr, fr.P, 'easeInOut');
             }
+          }
+        } else if (sg.k === 'cue') {
+          lastSp = null;
+          var cu = sg.cue, dd = sg.t1 - sg.t0, cp = cur.pos.slice(), ct = cur.tgt.slice(), fr2, tb2 = Math.min(sg.t0 + 0.8, sg.t1);
+          if (cu.type === 'wide') {
+            move(sg.t0, tb2, { pos: est.pos.slice(), tgt: est.tgt.slice() }, est.tgt.slice(), 'easeInOut');
+          } else if (cu.type === 'close') {
+            var ci = base.items[cu.id]; if (!ci) return;
+            var cpos = posAt(cu.id, sg.t0), cH = sizeOf(ci), ctg = [cpos[0], cH * 0.9, cpos[1]], cd = Math.max(est.dist * 0.85, 3.4);     // close, but still room for the speech bubble above the head
+            fr2 = { tgt: ctg, pos: [0, 1, 2].map(function (i) { return ctg[i] + est.dir[i] * cd; }) };
+            move(sg.t0, tb2, fr2, ctg, 'easeInOut');
+            if (sg.t1 - tb2 > 0.3) move(tb2, sg.t1, { tgt: ctg, pos: [0, 1, 2].map(function (i) { return ctg[i] + (fr2.pos[i] - ctg[i]) * 0.955; }) }, ctg, 'easeInOut');
+          } else if (cu.type === 'push') {
+            move(sg.t0, sg.t1, { tgt: ct, pos: [0, 1, 2].map(function (i) { return ct[i] + (cp[i] - ct[i]) * 0.72; }) }, ct, 'easeInOut');
+          } else if (cu.type === 'pull') {
+            move(sg.t0, sg.t1, { tgt: ct, pos: [0, 1, 2].map(function (i) { return ct[i] + est.dir[i] * est.dist * 1.12; }) }, ct, 'easeInOut');
+          } else if (cu.type === 'orbit') {
+            var len = sg.last ? Math.max(2, dd) : dd, sign = (orbitN++ % 2) ? -1 : 1, vx = cp[0] - ct[0], vz = cp[2] - ct[2], no = Math.max(2, Math.ceil(len * 6)), ko;
+            if (len < 0.3) return;
+            hold(KP, sg.t0); hold(KT, sg.t0); KP[KP.length - 1].ease = 'linear';
+            for (ko = 1; ko <= no; ko++) {
+              var uo = ko / no, th = sign * 22 * D2R * (0.5 - 0.5 * Math.cos(Math.PI * uo));
+              put(KP, sg.t0 + len * uo, [ct[0] + vx * Math.cos(th) + vz * Math.sin(th), cp[1], ct[2] - vx * Math.sin(th) + vz * Math.cos(th)], 'linear');
+            }
+            cur = { pos: KP[KP.length - 1].v.slice(), tgt: ct };
           }
         } else {
           lastSp = null;
@@ -353,6 +431,9 @@
     return shot.tracks.some(function (tr) { return CAMERA_AUTO.indexOf(tr.target) >= 0 && tr.keys.some(function (k) { return !k.gen; }); });
   }
   MM.hasManualCamera = hasManualCamera;
+  function hasManualCaption(shot) {
+    return shot.tracks.some(function (tr) { return tr.target === 'caption' && tr.keys.some(function (k) { return !k.gen; }); });
+  }
   MM.autoCameraOff = function (shot, silent) {
     if (!shot || !shot.autoCamera) return;
     shot.autoCamera = false;
@@ -550,44 +631,142 @@
   }
   function stripEnd(s) { return s.replace(/[.!?]+$/, '').trim(); }
 
-  /* one comma separated word becomes an action, or null when it is not a command */
+  /* a word group is cleaned before it is read: filler words go (then, and, over, the, a, an, just) */
+  function cleanTok(tok) {
+    var w = stripEnd(String(tok).toLowerCase().replace(/\s+/g, ' ')).trim();
+    w = w.replace(/^(?:(?:then|and|over|the|a|an|just)\s+)+/, '');
+    w = w.replace(/\s+(?:the|a|an|just|over)(?=\s|$)/g, '');
+    return w;
+  }
+  /* split on commas, semicolons and the words "and" / "then" ("and follow" stays together) */
+  function splitToks(s) {
+    return String(s || '').split(/\s*[,;]+\s*|\s+(?:and|then)\s+(?!follow)/i).map(function (x) { return x.trim(); }).filter(Boolean);
+  }
+  function speedOf(word) { return /^s/.test(word) ? MM.SPEEDS.slow : /^(f|q)/.test(word) ? MM.SPEEDS.fast : MM.SPEEDS.normal; }
+  var HOLD_WORDS = { 'hot dog': 'food', 'hot dogs': 'food', hotdog: 'food', snack: 'food', snacks: 'food', pizza: 'food', sandwich: 'food', soda: 'drink', pop: 'drink' };
+  function symbolsOf() { return (window.DIBS_ASSETS && window.DIBS_ASSETS.symbols) || {}; }
+  /* "hot dog" -> food, any exact symbol name works too (grocery store, grocery-store). false when not known */
+  function holdKey(t) {
+    var syms = symbolsOf(), dash = t.replace(/\s+/g, '-');
+    if (syms[t]) return t;
+    if (syms[dash]) return dash;
+    if (HOLD_WORDS[t] && syms[HOLD_WORDS[t]]) return HOLD_WORDS[t];
+    return false;
+  }
+  var SIDE = /^(left|right)$/;
+
+  /* one word group becomes an action, or null when it is not a command */
   function parseWord(tok, notes, fuzzyOk) {
-    var w = stripEnd(tok.toLowerCase().replace(/\s+/g, ' ')), m, fixed;
+    var w = cleanTok(tok), m, adv = null;
     if (!w) return null;
-    if ((m = /^wait(?:\s+(\d+(?:\.\d+)?))?(?:\s*(?:s|sec|secs|second|seconds))?$/.exec(w))) return { type: 'wait', sec: m[1] ? clamp(parseFloat(m[1]), 0.1, 30) : 1 };
-    if ((m = /^walk(?:\s+(slow|slowly|fast|quickly|normal))?(?:\s+(follow|and follow|followed))?$/.exec(w))) {
-      var sp = m[1] ? (/^s/.test(m[1]) ? MM.SPEEDS.slow : /^(f|q)/.test(m[1]) ? MM.SPEEDS.fast : MM.SPEEDS.normal) : MM.SPEEDS.normal;
-      return { type: 'walk', speed: sp, follow: !!m[2], path: null };
+    if ((m = /^(slowly|quickly)\s+(.+)$/.exec(w))) { adv = m[1]; w = m[2]; }
+    var a = parseCore(w, tok, notes, fuzzyOk);
+    if (a && adv && (a.type === 'walk' || a.type === 'enter' || a.type === 'exit')) a.speed = adv === 'slowly' ? MM.SPEEDS.slow : MM.SPEEDS.fast;
+    return a;
+  }
+  function parseCore(w, tok, notes, fuzzyOk) {
+    var m, fixed, e;
+    if ((m = /^waits?(?:\s+(\d+(?:\.\d+)?))?(?:\s*(?:s|sec|secs|second|seconds))?$/.exec(w))) return { type: 'wait', sec: m[1] ? clamp(parseFloat(m[1]), 0.1, 30) : 1 };
+    if ((m = /^(exit|exits|leave|leaves|(?:go|goes|walk|walks|run|runs) (?:off|out))(?:\s+stage)?(?:\s+(?:to|via|on))?(?:\s+(left|right))?$/.exec(w))) {
+      e = { type: 'exit', side: m[2] || null };
+      if (/^run/.test(m[1])) e.speed = MM.SPEEDS.fast;
+      return e;
     }
-    if ((m = /^(?:wear|put on|wears)\s+(.+)$/.exec(w))) {
+    if ((m = /^(?:enter|enters|appear|appears|come in|comes in|walk in|walks in|(run in|runs in))(?:\s+from)?(?:\s+(left|right))?$/.exec(w))) {
+      e = { type: 'enter', side: m[2] || null };
+      if (m[1]) e.speed = MM.SPEEDS.fast;
+      return e;
+    }
+    if ((m = /^(walk|walks|go|goes|move|moves|head|heads|run|runs)(?:\s+(.*))?$/.exec(w))) {
+      var rest = m[2] || '', sp = /^run/.test(m[1]) ? MM.SPEEDS.fast : MM.SPEEDS.normal, fol = false, dest = null;
+      rest = rest.replace(/\b(slowly|slow|fast|quickly|normal)\b/g, function (x) { sp = speedOf(x); return ' '; });
+      rest = rest.replace(/\b(?:and )?follow(?:ed|s)?\b/g, function () { fol = true; return ' '; });
+      rest = rest.replace(/\s+/g, ' ').trim().replace(/^(?:up to|next to|toward|towards|to|beside|by)\s+/, '');
+      if (rest) {
+        if (SIDE.test(rest)) dest = { k: 'side', side: rest };
+        else if (rest === 'middle' || rest === 'center' || rest === 'centre') dest = { k: 'mid' };
+        else if (rest === 'front' || rest === 'forward' || rest === 'forwards' || rest === 'camera') dest = { k: 'front' };
+        else if (rest === 'back' || rest === 'backward' || rest === 'backwards') dest = { k: 'back' };
+        else { var who = charKind(rest); if (!who) return null; dest = { k: 'to', who: who }; }
+      }
+      return { type: 'walk', speed: sp, follow: fol, path: null, dest: dest };
+    }
+    if ((m = /^(?:wear|wears|put on|puts on)\s+(.+)$/.exec(w))) {
       if (m[1] === 'nothing' || m[1] === 'none') return { type: 'wear', costume: 'none' };
       var cs = COSTUME_WORDS[m[1]] || COSTUME_WORDS[Object.keys(COSTUME_WORDS).filter(function (k) { return m[1].indexOf(k) >= 0; })[0]];
       return cs ? { type: 'wear', costume: cs } : null;
     }
+    if ((m = /^(?:hold|holds|holding|carry|carries|carrying)\s+(.+)$/.exec(w))) {
+      if (m[1] === 'nothing' || m[1] === 'none') return { type: 'hold', thing: null };
+      var hk = holdKey(m[1]);
+      return hk ? { type: 'hold', thing: hk } : null;
+    }
     if (w === 'lookl') return { type: 'look', target: 'left' };
     if (w === 'lookr') return { type: 'look', target: 'right' };
-    if ((m = /^look(?:\s+at)?\s*(left|right|camera|us|up|(.+))?$/.exec(w))) {
-      var t = m[1] || 'camera';
+    if ((m = /^(look|looks|turn|turns|face|faces)(?:\s+(.*))?$/.exec(w))) {
+      var t = (m[2] || '').replace(/^(?:at|to|toward|towards)\b\s*/, '') || 'camera';
       if (t === 'left' || t === 'right' || t === 'camera') return { type: 'look', target: t };
       if (t === 'us') return { type: 'look', target: 'camera' };
-      var k = charKind(m[2] || t);
+      var k = charKind(t);
       return k ? { type: 'look', target: '@' + k } : null;
     }
     if (w === 'wave' || w === 'waves') return { type: 'wave' };
-    if (w === 'hop' || w === 'hops' || w === 'jump') return { type: 'hop' };
-    if (w === 'enter' || w === 'appear') return { type: 'enter' };
-    if (w === 'exit' || w === 'leave') return { type: 'exit' };
+    if (w === 'hop' || w === 'hops' || w === 'jump' || w === 'jumps') return { type: 'hop' };
+    if (w === 'peeks') w = 'peek';
+    if (/^(?:stand|shrug|point)s$/.test(w)) w = w.slice(0, -1);
     if (POSE_WORDS.indexOf(w) >= 0) return { type: 'pose', preset: w };
     if (w === 'two hearts') return { type: 'emote', id: 'hearts' };
     if (w === 'music note') return { type: 'emote', id: 'note' };
     if (EMOTE_WORDS[w]) return { type: 'emote', id: EMOTE_WORDS[w] };
+    if (/s$/.test(w) && EMOTE_WORDS[w.slice(0, -1)] && w !== 'hearts') return { type: 'emote', id: EMOTE_WORDS[w.slice(0, -1)] };
     if (fuzzyOk && w.indexOf(' ') < 0 && (fixed = fuzzy(w, VOCAB))) {
-      if (notes) notes.push('I read "' + tok.trim() + '" as "' + fixed + '".');
+      if (notes) notes.push('I read "' + String(tok).trim() + '" as "' + fixed + '".');
       return parseWord(fixed);
     }
     return null;
   }
   MM.parseWord = parseWord;
+
+  /* a walk word right before "enter left" or "exit right" is the same move at that speed ("run, exit right") */
+  function mergeRuns(acts) {
+    var out = [];
+    acts.forEach(function (a, i) {
+      var nx = acts[i + 1];
+      if (a.type === 'walk' && !a.dest && !a.follow && nx && (nx.type === 'enter' || nx.type === 'exit') && nx.side) { if (nx.speed === undefined) nx.speed = a.speed; return; }
+      out.push(a);
+    });
+    return out;
+  }
+
+  /* Camera: words. null when not understood */
+  function parseCamera(text, notes, ln) {
+    var w = cleanTok(text), m;
+    if (/^auto$/.test(w)) return { type: 'auto' };
+    if (/^wide(?: shot)?$/.test(w)) return { type: 'wide' };
+    if (/^(?:push|push in|zoom in|move in)$/.test(w)) return { type: 'push' };
+    if (/^(?:pull|pull out|pull back|zoom out)$/.test(w)) return { type: 'pull' };
+    if (/^(?:orbit|circle)$/.test(w)) return { type: 'orbit' };
+    if ((m = /^close(?:\s+up)?(?:\s+on)?(?:\s+(.+))?$/.exec(w))) {
+      var k = m[1] ? charKind(m[1]) : null;
+      if (k) return { type: 'close', who: k };
+      notes.push({ line: ln, text: 'Line ' + ln + (m[1] ? ': I do not know "' + m[1] + '" for the camera to close in on.' : ': close on who? Try Camera: close on Dibs.') });
+      return null;
+    }
+    notes.push({ line: ln, text: 'Line ' + ln + ': I did not know the camera word "' + String(text).trim() + '". Try wide, close on Dibs, push in, pull out, orbit or auto.' });
+    return null;
+  }
+
+  var LIGHT_WORDS = [['golden hour', 'golden'], ['golden', 'golden'], ['sunset', 'golden'], ['blue hour', 'blue'], ['dusk', 'blue'], ['evening', 'blue'], ['midday', 'noon'], ['noon', 'noon'], ['morning', 'morning'], ['night', 'night'], ['studio', 'studio'], ['day', 'noon']];
+  /* "Hot dog stand, morning" -> { text: 'Hot dog stand', light: 'morning' } */
+  function splitLight(text) {
+    var light = null, t = ' ' + text + ' ';
+    LIGHT_WORDS.forEach(function (lw) {
+      if (light) return;
+      var re = new RegExp('(?:\\s(?:at|in the|in|during|on)\\s+|[\\s,]+)' + lw[0] + '(?=[\\s,.]|$)', 'i');
+      if (re.test(t)) { light = lw[1]; t = t.replace(re, ' '); }
+    });
+    return { text: t.replace(/[,;]+/g, ' ').replace(/\s+/g, ' ').trim(), light: light };
+  }
 
   function matchSet(text) {
     var q = text.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean), best = null, bs = 0;
@@ -603,18 +782,31 @@
   }
   MM.matchSet = matchSet;
 
-  /* text -> { shots: [{ isNew, setId, name, lines: [{ who, actions, line }] }], notes: [{ line, text }] } */
+  /* text -> { shots: [{ isNew, setId, light, name, lines }], notes: [{ line, text }] }
+     a line is { who, actions, line, amp } for a character, { cam: { type, who }, line, amp } for Camera: or { cap: text, line, amp } for Caption: */
   MM.parseScript = function (text) {
-    var notes = [], specs = [{ isNew: false, setId: null, name: '', lines: [] }];
+    var notes = [], specs = [{ isNew: false, setId: null, light: null, name: '', lines: [] }];
     String(text || '').split(/\r?\n/).forEach(function (raw, i) {
-      var ln = i + 1, line = raw.trim(), m;
+      var ln = i + 1, line = raw.trim(), m, amp = false;
       if (!line || /^(#|\/\/)/.test(line)) return;
       if ((m = /^-{2,}\s*(.*)$/.exec(line)) || (m = /^scene\s*[:\-]\s*(.*)$/i.exec(line))) {
-        var sid = m[1].trim() ? matchSet(m[1]) : null, nm = m[1].trim().slice(0, 40);
-        if (m[1].trim() && !sid) notes.push({ line: ln, text: 'Line ' + ln + ': I did not find a place called "' + nm + '", so this shot keeps the current place.' });
-        var first = specs[0];
-        if (specs.length === 1 && !first.lines.length && !first.isNew) specs[0] = { isNew: true, setId: sid, name: nm, lines: [] };
-        else specs.push({ isNew: true, setId: sid, name: nm, lines: [] });
+        var sp = splitLight(m[1].trim()), isSame = /^same(?:\s+(?:place|scene|spot))?$/i.test(sp.text), nm = isSame ? '' : sp.text.slice(0, 40);
+        var sid = sp.text && !isSame ? matchSet(sp.text) : null;
+        if (sp.text && !isSame && !sid) notes.push({ line: ln, text: 'Line ' + ln + ': I did not find a place called "' + nm + '", so this shot keeps the current place.' });
+        var spec = { isNew: true, setId: sid, light: sp.light, name: nm, lines: [] }, first = specs[0];
+        if (specs.length === 1 && !first.lines.length && !first.isNew) specs[0] = spec; else specs.push(spec);
+        return;
+      }
+      if (/^&/.test(line)) { amp = true; line = line.replace(/^&\s*/, ''); }
+      if ((m = /^(?:camera|cam)\s*[:：]\s*(.*)$/i.exec(line))) {
+        var cm = parseCamera(m[1], notes, ln);
+        if (cm) specs[specs.length - 1].lines.push({ cam: cm, line: ln, amp: amp });
+        return;
+      }
+      if ((m = /^caption\s*[:：]\s*(.*)$/i.exec(line))) {
+        var ct = m[1].replace(/\s+/g, ' ').trim();
+        if (/^(off|none|clear)$/i.test(ct)) ct = '';
+        specs[specs.length - 1].lines.push({ cap: ct.slice(0, 120), line: ln, amp: amp });
         return;
       }
       m = /^([A-Za-z][A-Za-z ]{0,20}?)\s*(?:\(([^)]*)\))?\s*[:：]\s*(.*)$/.exec(line);
@@ -623,15 +815,14 @@
       if (!kind) { notes.push({ line: ln, text: 'Line ' + ln + ': I do not know "' + m[1].trim() + '". Try Dibs, Wacker, Chance, Hiram, Ivy, Monty, Sue or Pigeon.' }); return; }
       var acts = [], lineNotes = [];
       if (m[2]) {
-        m[2].split(/[,;]+/).forEach(function (tk) {
-          if (!tk.trim()) return;
+        splitToks(m[2]).forEach(function (tk) {
           var a = parseWord(tk, lineNotes, true);
           if (a) acts.push(a); else lineNotes.push('I did not know "' + tk.trim() + '", so I skipped it.');
         });
       }
       var rest = m[3].trim();
       if (rest) {
-        var toks = rest.split(/[,;]+/).map(function (x) { return x.trim(); }).filter(Boolean), exact = 0, cmds = [], local = [], unknown = null;
+        var toks = splitToks(rest), exact = 0, cmds = [], local = [], unknown = null;
         toks.forEach(function (tk) { if (parseWord(tk, [], false)) exact++; });
         // a typo is forgiven only next to words that are surely commands
         toks.forEach(function (tk) { var a = parseWord(tk, local, exact > 0); if (a) cmds.push(a); else if (!unknown) unknown = tk; });
@@ -641,9 +832,10 @@
           if (cmds.length && !/[.!?]/.test(rest)) lineNotes.push('"' + unknown + '" is not a command, so ' + m[1].trim() + ' says all of it out loud.');
         }
       }
+      acts = mergeRuns(acts);
       lineNotes.forEach(function (x) { notes.push({ line: ln, text: 'Line ' + ln + ': ' + x }); });
       if (!acts.length) { notes.push({ line: ln, text: 'Line ' + ln + ': nothing to do for ' + m[1].trim() + '.' }); return; }
-      specs[specs.length - 1].lines.push({ who: kind, actions: acts, line: ln });
+      specs[specs.length - 1].lines.push({ who: kind, actions: acts, line: ln, amp: amp });
     });
     specs = specs.filter(function (s) { return s.lines.length || s.isNew; });
     var cnt = 0; specs.forEach(function (s) { cnt += s.lines.length; });
@@ -684,61 +876,204 @@
   }
   function kindId(scene, kind) { var it = scene.items.filter(function (i) { return i.kind === kind; })[0]; return it ? it.id : null; }
 
+  /* a shot with nothing in it yet: a script that starts with a Scene line fills it instead of adding a shot */
+  function emptyShot(sh) {
+    if (!sh || MM.hasActions(sh) || sh.tracks.some(function (tr) { return tr.keys.some(function (k) { return !k.gen; }); })) return false;
+    var cast = sh.scene.items.filter(function (it) { return DP.isPuppet(it.kind); });
+    if (!cast.length) return true;
+    // the two characters a brand new movie starts with count as empty too, as long as nobody touched them
+    var st = App.starterScene().items.filter(function (it) { return DP.isPuppet(it.kind); });
+    return cast.length === st.length && cast.every(function (it, i) {
+      var o = st[i];
+      return o && it.kind === o.kind && it.x === o.x && it.z === o.z && it.y === o.y && it.yaw === o.yaw && it.scale === o.scale && !(it.attach && it.attach.length);
+    });
+  }
+  var EDGE_SPEED = 1.8;    // walks on and off the screen edge are a little quicker than a normal walk
+
   /* Build: replaces the commands of the shots the script covers. Returns a promise of { ok, text, notes }. */
   MM.buildScript = function (text) {
     var parsed = MM.parseScript(text), notes = parsed.notes.slice();
     if (!parsed.shots.length) return Promise.resolve({ ok: false, text: 'There is nothing to build yet. Type a line like Dibs: Hello!', notes: notes });
     MM.pause(); MM.pushUndo();
-    var m = MM.movie, curIdx = MM.shotIdx, insertAt = curIdx, touchedCur = false, firstIdx = -1, made = [], lineCount = 0, newCount = 0;
-    parsed.shots.forEach(function (spec) {
-      var shot;
-      if (!spec.isNew) { shot = m.shots[curIdx]; touchedCur = true; }
-      else {
+    var m = MM.movie, curIdx = MM.shotIdx, insertAt = curIdx, touchedCur = false, firstIdx = -1, made = [], lineCount = 0, newCount = 0, prev = null;
+    function lightOf(id) { return App.LIGHTS.filter(function (l) { return l.id === id; })[0]; }
+    parsed.shots.forEach(function (spec, si) {
+      var shot, curShot = m.shots[curIdx], reuse = false, kept = false;
+      if (!spec.isNew) { shot = curShot; touchedCur = true; }
+      else if (si === 0 && emptyShot(curShot)) {
+        // the open shot is still empty: the script fills it
+        shot = curShot; touchedCur = true; reuse = true;
+        var cs0 = shot.scene.set || {};
+        shot.scene.set = { id: spec.setId || cs0.id || 'sweep', color: cs0.color || '#fbf6ea' };
+        if (spec.light && lightOf(spec.light)) shot.scene.light = App.lightFrom(lightOf(spec.light));
+        if (spec.name) shot.name = spec.name;
+        shot.autoCamera = true;
+        shot.scene.items = shot.scene.items.filter(function (it) { return !DP.isPuppet(it.kind); });   // the untouched starter characters make room for the script's cast
+      } else {
         var left = MAX_DUR - MM.total();
         if (m.shots.length >= MM.MAX_SHOTS || left < 0.5) { notes.push({ line: spec.lines[0].line, text: 'There is no room for another shot, so "' + (spec.name || 'this scene') + '" was skipped. A movie can be 60 sec.' }); return; }
         var sc = App.starterScene();
         sc.items = []; sc.name = spec.name || 'Scene'; sc.frame.platform = m.platform;
         sc.lens.focus = { mode: 'dist', id: '', dist: 5.4, point: [0, 1, 0] };
-        var curScene = m.shots[curIdx].scene;
+        var curScene = prev ? prev.shot.scene : curShot.scene;
         sc.set = { id: spec.setId || (curScene.set && curScene.set.id) || 'sweep', color: (curScene.set && curScene.set.color) || '#fbf6ea' };
+        kept = !!(prev && prev.setId === sc.set.id);
+        if (spec.light && lightOf(spec.light)) sc.light = App.lightFrom(lightOf(spec.light));
+        else if (kept && prev.shot.scene.light) sc.light = clone(prev.shot.scene.light);    // the same place keeps its light
         shot = MM.newShot(sc, spec.name || 'Shot ' + (m.shots.length + 1), Math.min(4, left));
         shot.autoCamera = true;
         insertAt++; m.shots.splice(insertAt, 0, shot); newCount++;
       }
-      if (spec.isNew && spec.setId == null && !spec.name) { /* keeps the current place */ }
-      if (!spec.isNew && spec.setId) { /* not reachable: the first shot keeps its own place */ }
-      var kinds = []; spec.lines.forEach(function (l) { if (kinds.indexOf(l.who) < 0) kinds.push(l.who); });
-      ensureCast(shot.scene, kinds);
-      // sequence the lines: one character at a time, the others wait their turn
-      var cursor = 0, endT = {}, pos = {}, lists = {};
-      kinds.forEach(function (k) { var id = kindId(shot.scene, k), it = shot.scene.items.filter(function (i) { return i.id === id; })[0]; lists[id] = []; endT[id] = 0; pos[id] = [it.x, it.z]; });
+      var kinds = [], holds = {};
       spec.lines.forEach(function (l) {
-        var id = kindId(shot.scene, l.who), list = lists[id], gap = Math.round((cursor - endT[id]) * 10) / 10;
+        if (!l.who) return;
+        if (kinds.indexOf(l.who) < 0) kinds.push(l.who);
+        l.actions.forEach(function (a) { if (a.type === 'hold') holds[l.who] = a.thing; });
+      });
+      ensureCast(shot.scene, kinds);
+      function itemOf(id) { return shot.scene.items.filter(function (i) { return i.id === id; })[0]; }
+      // the same place as the shot before: characters start where they ended (unless they left the scene)
+      if (kept) kinds.forEach(function (k) {
+        var pe = prev.end[k], it = itemOf(kindId(shot.scene, k));
+        if (!pe || prev.exited[k] || !it) return;
+        it.x = pe[0]; it.z = pe[1]; it.yaw = it.x < -0.1 ? 10 : it.x > 0.1 ? -10 : 0;
+      });
+      // what a character holds is set for the whole shot (each shot sets its own)
+      Object.keys(holds).forEach(function (k) {
+        var it = itemOf(kindId(shot.scene, k)); if (!it) return;
+        it.attach = (it.attach || []).filter(function (a) { return a.slot !== 'handR'; });
+        if (holds[k]) it.attach.push({ id: App.nid('a'), kind: 'symbol:' + holds[k], slot: 'handR', s: 1, r: 0, ox: 0, oy: 0 });
+      });
+      // the edge of the picture: off screen, beyond the people in the shot
+      var cast = shot.scene.items.filter(function (it) { return DP.isPuppet(it.kind); }), cx0 = Infinity, cx1 = -Infinity;
+      cast.forEach(function (it) { cx0 = Math.min(cx0, it.x); cx1 = Math.max(cx1, it.x); });
+      if (!cast.length) { cx0 = cx1 = 0; }
+      var edgeOff = Math.max(4.5, (cx1 - cx0) / 2 + 4.0);
+      function edgeX(side) { return r3((cx0 + cx1) / 2 + (side === 'left' ? -edgeOff : edgeOff)); }
+
+      // sequence the lines: one character at a time, the others wait their turn. A line with & starts with the one before it.
+      var cursor = 0, prevStart = 0, endT = {}, pos = {}, lists = {}, spot = {}, moved = {}, atEdge = {}, exited = {}, cues = [], caps = [], camLine = 0, capLine = 0;
+      kinds.forEach(function (k) { var id = kindId(shot.scene, k), it = itemOf(id); lists[id] = []; endT[id] = 0; pos[id] = [it.x, it.z]; spot[id] = [it.x, it.z]; moved[id] = false; atEdge[id] = false; exited[k] = false; });
+      function posOfKind(k) { var id = kindId(shot.scene, k); if (!id) return null; if (pos[id]) return pos[id]; var it = itemOf(id); return it ? [it.x, it.z] : null; }
+      function walkTo(from, to, speed, edge) {
+        var a = { type: 'walk', path: [[r3((from[0] + to[0]) / 2), r3((from[1] + to[1]) / 2 + 0.1)], [r3(to[0]), r3(to[1])]], speed: speed || MM.SPEEDS.normal, follow: false };
+        if (edge) a.edge = true;
+        return a;
+      }
+      spec.lines.forEach(function (l) {
+        if (l.cam || l.cap !== undefined) {
+          var tcue = r3(LEAD + (l.amp ? prevStart : cursor));
+          if (l.cam) {
+            var cue = { t: tcue, type: l.cam.type };
+            if (l.cam.type === 'close') {
+              var cid = kindId(shot.scene, l.cam.who);
+              if (!cid) { notes.push({ line: l.line, text: 'Line ' + l.line + ': ' + l.cam.who.charAt(0).toUpperCase() + l.cam.who.slice(1) + ' is not in this shot, so the camera cannot close in.' }); lineCount++; return; }
+              cue.id = cid;
+            }
+            if (!camLine) camLine = l.line;
+            cues.push(cue);
+          } else { if (!capLine) capLine = l.line; caps.push({ t: tcue, text: l.cap }); }
+          lineCount++;
+          return;
+        }
+        var id = kindId(shot.scene, l.who), list = lists[id], start = l.amp ? prevStart : cursor;
+        if (l.amp && endT[id] > start + 0.05) {
+          start = endT[id];
+          notes.push({ line: l.line, text: 'Line ' + l.line + ': ' + l.who.charAt(0).toUpperCase() + l.who.slice(1) + ' is busy at that moment, so this line goes right after.' });
+        }
+        start = Math.max(start, endT[id]);
+        var gap = Math.round((start - endT[id]) * 10) / 10;
         if (gap >= 0.1) { list.push({ type: 'wait', sec: Math.min(30, gap) }); endT[id] += Math.min(30, gap); }
-        l.actions.forEach(function (a0) {
-          var a = clone(a0);
-          if (a.type === 'walk') {
-            var from = pos[id], rel = MM.lastPath;
-            if (!rel) { var sgn = from[0] > 0.8 ? -1 : 1; rel = [[0.5 * sgn, 0.15], [1.0 * sgn, 0], [1.5 * sgn, 0.12]]; }
-            a.path = rel.map(function (p) { return [r3(from[0] + p[0]), r3(from[1] + p[1])]; });
-          } else if (a.type === 'look' && typeof a.target === 'string' && a.target.charAt(0) === '@') {
-            var tid = kindId(shot.scene, a.target.slice(1)); a.target = tid && tid !== id ? tid : 'camera';
-          }
-          var c = cleanAction(a); if (!c) return;
+        prevStart = endT[id];
+        function push(c) {
           list.push(c);
           var d = MM.actionDur(c, pos[id]);
           if (c.type === 'walk') pos[id] = c.path[c.path.length - 1];
           endT[id] += d;
+          if (c.type !== 'enter' && c.type !== 'wait') moved[id] = true;
+        }
+        var entering = false;
+        l.actions.forEach(function (a0, ai) {
+          var a = clone(a0), c;
+          if (a.type === 'hold') return;                        // set up above, for the whole shot
+          if (a.type === 'enter' && a.side) {
+            var ex = edgeX(a.side), sp = a.speed || EDGE_SPEED;
+            var nx = l.actions[ai + 1], goesOn = !!(nx && nx.type === 'walk' && nx.dest);    // "enter left, walk to middle": straight on to there
+            if (!moved[id]) {
+              var it0 = itemOf(id); it0.x = ex; pos[id] = [ex, spot[id][1]];
+              list.push({ type: 'enter' }); endT[id] += MM.actionDur({ type: 'enter' });
+              if (goesOn) entering = true; else push(cleanAction(walkTo(pos[id], spot[id], sp, true)));
+            } else {
+              var wasEdge = atEdge[id];
+              push({ type: 'enter' });
+              if (goesOn) entering = wasEdge; else push(cleanAction(walkTo(pos[id], spot[id], sp, wasEdge)));
+            }
+            moved[id] = true; atEdge[id] = false; exited[l.who] = false;
+            return;
+          }
+          if (a.type === 'enter') { push({ type: 'enter' }); exited[l.who] = false; atEdge[id] = false; moved[id] = true; return; }
+          if (a.type === 'exit' && a.side) {
+            var ex2 = edgeX(a.side);
+            push(cleanAction(walkTo(pos[id], [ex2, pos[id][1]], a.speed || EDGE_SPEED, true)));
+            push({ type: 'exit' });
+            atEdge[id] = true; exited[l.who] = true;
+            return;
+          }
+          if (a.type === 'exit') { push({ type: 'exit' }); exited[l.who] = true; return; }
+          if (a.type === 'walk') {
+            var from = pos[id], to = null, d = a.dest;
+            if (d) {
+              if (d.k === 'to') {
+                var tp = posOfKind(d.who), nmx = d.who.charAt(0).toUpperCase() + d.who.slice(1);
+                if (!tp) notes.push({ line: l.line, text: 'Line ' + l.line + ': ' + nmx + ' is not in this shot, so the walk was skipped.' });
+                else if (kindId(shot.scene, d.who) === id) notes.push({ line: l.line, text: 'Line ' + l.line + ': a character cannot walk to itself, so the walk was skipped.' });
+                else to = [tp[0] + (from[0] >= tp[0] ? 1.1 : -1.1), tp[1]];
+              } else if (d.k === 'side') to = [from[0] + (d.side === 'left' ? -1.5 : 1.5), from[1]];
+              else if (d.k === 'mid') to = [0, from[1]];
+              else if (d.k === 'front') to = [from[0], Math.min(1.5, from[1] + 1)];
+              else if (d.k === 'back') to = [from[0], Math.max(-1.5, from[1] - 1)];
+              if (!to) return;
+              a.path = walkTo(from, to).path; delete a.dest;
+            } else {
+              var rel = MM.lastPath;
+              if (!rel) { var sgn = from[0] > 0.8 ? -1 : 1; rel = [[0.5 * sgn, 0.15], [1.0 * sgn, 0], [1.5 * sgn, 0.12]]; }
+              a.path = rel.map(function (p) { return [r3(from[0] + p[0]), r3(from[1] + p[1])]; });
+            }
+            if (entering) { a.edge = true; if (d && a.speed === MM.SPEEDS.normal) a.speed = EDGE_SPEED; entering = false; }
+            c = cleanAction(a); if (!c) return;
+            push(c); atEdge[id] = false;
+            return;
+          }
+          if (a.type === 'look' && typeof a.target === 'string' && a.target.charAt(0) === '@') {
+            var tid = kindId(shot.scene, a.target.slice(1)); a.target = tid && tid !== id ? tid : 'camera';
+          }
+          c = cleanAction(a); if (!c) return;
+          push(c);
         });
-        cursor = endT[id];
+        cursor = Math.max(cursor, endT[id]);
         lineCount++;
       });
       shot.actions = {};
       Object.keys(lists).forEach(function (id) { if (lists[id].length) shot.actions[id] = lists[id]; });
+      // Camera: lines need Auto camera. Captions must not trample captions made by hand.
+      delete shot.camCues; delete shot.capCues;
+      if (cues.length) {
+        if (MM.hasManualCamera(shot)) notes.push({ line: camLine, text: 'Line ' + camLine + ': Camera lines need Auto camera. This shot has camera keys you made, so they were skipped.' });
+        else { shot.camCues = MM.cleanCues({ camCues: cues }).camCues; shot.autoCamera = true; }
+      }
+      if (caps.length) {
+        if (shot.tracks.some(function (tr) { return tr.target === 'caption' && tr.keys.some(function (k) { return !k.gen; }); })) notes.push({ line: capLine, text: 'Line ' + capLine + ': This shot already has captions you made, so the Caption lines were skipped.' });
+        else shot.capCues = MM.cleanCues({ capCues: caps }).capCues;
+      }
+      if (!shot.camCues) delete shot.camCues;
+      if (!shot.capCues || !shot.capCues.length) delete shot.capCues;
       delete shot.thumb; delete shot.actDur;
       var idx = m.shots.indexOf(shot);
       if (firstIdx < 0) firstIdx = idx;
       made.push(shot);
+      var endK = {};
+      kinds.forEach(function (k) { var id = kindId(shot.scene, k); endK[k] = pos[id] ? [pos[id][0], pos[id][1]] : null; });
+      prev = { shot: shot, setId: shot.scene.set && shot.scene.set.id, end: endK, exited: exited };
     });
     if (!made.length) return Promise.resolve({ ok: false, text: 'Nothing was built.', notes: notes });
     // new shots compile from their scene, the open shot reloads first because characters may have been added
