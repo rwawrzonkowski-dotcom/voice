@@ -1097,7 +1097,8 @@
   function updateExSummary() {
     var fast = $('exFast').getAttribute('aria-pressed') === 'true', sz = MM.exportSize(fast), tot = MM.total();
     $('exSummary').textContent = MM.platformInfo(MM.movie.platform).name + ', ' + sz.w + ' x ' + sz.h + ', ' + Math.round(tot * 10) / 10 + ' sec, ' + MM.frameCount() + ' frames';
-    $('exNote').textContent = 'The video is saved as ' + (window.MediaRecorder && MediaRecorder.isTypeSupported('video/webm') ? 'a .webm file' : 'an .mp4 file') + ' at ' + MM.FPS + ' frames each second.';
+    var mt = MM.exportMime();
+    $('exNote').textContent = 'The video is saved as ' + (mt === 'video/mp4' ? 'an .mp4 file, which phones and social apps take' : 'a .webm file. This browser cannot make .mp4, so a phone may not add it to Photos. Safari or Chrome on a phone make .mp4') + ', at ' + MM.FPS + ' frames each second.';
   }
   function closeExport() { $('exportModal').hidden = true; if (exUrl) { URL.revokeObjectURL(exUrl); exUrl = ''; } $('exVideo').removeAttribute('src'); }
   function wireExport() {
@@ -1125,6 +1126,9 @@
         $('exVideo').src = exUrl;
         $('exBusy').hidden = true; $('exDone').hidden = false;
         $('exInfo').textContent = Math.round(res.seconds * 10) / 10 + ' sec, ' + res.w + ' x ' + res.h + ', ' + (res.blob.size / 1048576).toFixed(1) + ' MB' + (res.sound ? ', with sound' : '') + '. Made in ' + Math.round((Date.now() - t0) / 1000) + ' sec.';
+        var nm = 'dibs-' + MM.slug(MM.movie.title) + '-' + MM.movie.platform + '.' + res.ext, share = MM.canShareFile(res.blob, nm);
+        $('exSave').textContent = share ? 'Save to Photos or share' : 'Save video';
+        if (share) $('exInfo').textContent += ' Tap Save to Photos or share, then choose Save Video to put it in Photos, or pick an app.';
         $('exSave').focus();
       }, function (e) {
         $('mmExport').disabled = false;
@@ -1136,7 +1140,12 @@
     });
     $('exSave').addEventListener('click', function () {
       if (!exResult) return;
-      MM.download(exResult.blob, 'dibs-' + MM.slug(MM.movie.title) + '-' + MM.movie.platform + '.' + exResult.ext);
+      var nm = 'dibs-' + MM.slug(MM.movie.title) + '-' + MM.movie.platform + '.' + exResult.ext;
+      if (MM.canShareFile(exResult.blob, nm)) {
+        MM.shareFile(exResult.blob, nm).catch(function () { MM.download(exResult.blob, nm); });
+        return;
+      }
+      MM.download(exResult.blob, nm);
     });
   }
 

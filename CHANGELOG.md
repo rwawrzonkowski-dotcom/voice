@@ -2,6 +2,18 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-28: Movie Maker videos save as .mp4 and go to Photos
+
+- Export now records .mp4 (H.264) whenever the browser can, and .webm only as a fallback. iPhone Photos, Instagram and TikTok take .mp4. The export screen says which file type it will make.
+- On a phone that can share files, the save button reads "Save to Photos or share" and opens the share sheet: Save Video puts it in Photos, or pick Instagram, TikTok and so on. Other devices still download the file.
+
+## 2026-11-28: Movie Maker TikTok dance template and dance moves
+
+- New beat-timed dance moves: Bounce, Sway (wing wave), Step left, Step right and Spin (a full turn showing the card's back). They are in Quick, Add a command, Dance, and in the script as `bounce 8`, `sway 4`, `step left 4`, `spin 2` (counted in beats).
+- New script lines: `Tempo: 120` (beats per minute, 40 to 220) sets the beat for the lines after it. `Places: Dibs front, Chance back left, Ivy back right` stands characters in a dance line facing the camera.
+- New template, TikTok dance: a leader plus up to 3 dancers (or Nobody), place (Lakefront sunset to start), tempo and caption. About 16 sec at 120 beats a minute: bounce, sway, side steps, then a spin and a proud pose with a push in. Add your song with Tools, Sound, and set Tempo to match it.
+- Offline cache is now `dibs-photo-mode-v11`.
+
 ## 2026-11-28: Movie Maker easier deleting and adding (phone)
 
 - The key list on a phone is taller (150px, was 96px). A tap picks the key nearest your finger, and the key bar has Previous key and Next key buttons, so keys packed close together are easy to reach.

@@ -35,6 +35,10 @@
       case 'hop': return 'Hop';
       case 'look': return 'Look at ' + targetName(a.target);
       case 'wait': return 'Wait';
+      case 'bounce': return 'Bounce';
+      case 'sway': return 'Sway';
+      case 'step': return 'Step ' + (a.dir === 'right' ? 'right' : 'left');
+      case 'spin': return 'Spin';
       case 'wear': return a.costume === 'none' ? 'Take off costume' : 'Wear: ' + costumeName(a.costume);
       case 'enter': return 'Enter';
       case 'exit': return 'Exit';
@@ -46,6 +50,8 @@
     switch (a.type) {
       case 'walk': n = 'go'; break; case 'wave': n = 'happy'; break; case 'say': n = 'chat'; break; case 'hop': n = 'up'; break;
       case 'look': n = a.target === 'left' ? 'left' : a.target === 'right' ? 'right' : 'look'; break; case 'wait': n = 'wait'; break;
+      case 'bounce': n = 'up'; break; case 'sway': n = 'silly'; break; case 'spin': n = 'turn'; break;
+      case 'step': n = a.dir === 'right' ? 'right' : 'left'; break;
       case 'enter': n = 'in'; break; case 'exit': n = 'finished'; break; case 'pose': n = POSE_ICON[a.preset] || 'calm'; break;
       case 'emote': var e = DP.emoteInfo(a.id); return e ? svgData(e.svg) : '';
       case 'wear': return a.costume !== 'none' && A.costumes[a.costume] ? svgData(A.costumes[a.costume]) : sym('put');
@@ -53,6 +59,8 @@
     return sym(n);
   }
   var NEW = {
+    bounce: { type: 'bounce', sec: 2 }, sway: { type: 'sway', sec: 2 }, spin: { type: 'spin', sec: 1 },
+    stepl: { type: 'step', sec: 1, dir: 'left' }, stepr: { type: 'step', sec: 1, dir: 'right' },
     wave: { type: 'wave' }, hop: { type: 'hop' }, wait: { type: 'wait', sec: 1 }, enter: { type: 'enter' }, exit: { type: 'exit' },
     pose: function (v) { return { type: 'pose', preset: v }; }, emote: function (v) { return { type: 'emote', id: v }; },
     wear: function (v) { return { type: 'wear', costume: v }; }, look: function (v) { return { type: 'look', target: v }; }
@@ -76,6 +84,9 @@
   function segHtml(act, items, cur, aria) {
     return '<div class="seg" role="group" aria-label="' + aria + '">' + items.map(function (o) { return '<button type="button" data-act="' + act + '" data-v="' + o[0] + '" aria-pressed="' + (String(o[0]) === String(cur)) + '">' + o[1] + '</button>'; }).join('') + '</div>';
   }
+  function beatOf(a) { return typeof a.beat === 'number' && a.beat >= 0.2 && a.beat <= 2 ? a.beat : 0.5; }
+  function r2(v) { return String(Math.round(v * 100) / 100); }
+  function beatText(a) { var n = Math.max(1, Math.round(a.sec / beatOf(a))); return r1(a.sec) + ' sec, ' + n + (n === 1 ? ' beat' : ' beats'); }
   function editorHtml(a, i) {
     var h = '', it = sel();
     if (a.type === 'walk') {
@@ -96,6 +107,10 @@
       h += chipRow('qk-setlook', opts, a.target);
     } else if (a.type === 'wait') {
       h += '<div class="row"><button type="button" class="btn sq" data-act="qk-wait" data-v="-0.5" aria-label="Half a second shorter">' + H.svgi('minus') + '</button><span class="kb-val" id="qkWait">' + r1(a.sec) + ' sec</span><button type="button" class="btn sq" data-act="qk-wait" data-v="0.5" aria-label="Half a second longer">' + H.svgi('plus') + '</button></div>';
+    } else if (a.type === 'bounce' || a.type === 'sway' || a.type === 'step' || a.type === 'spin') {
+      if (a.type === 'step') h += '<p class="small">Which way</p>' + segHtml('qk-dir', [['left', 'Left'], ['right', 'Right']], a.dir === 'right' ? 'right' : 'left', 'Which way');
+      h += '<p class="small gap">How long (one beat at a time)</p><div class="row"><button type="button" class="btn sq" data-act="qk-beats" data-v="-1" aria-label="One beat shorter">' + H.svgi('minus') + '</button><span class="kb-val" id="qkBeats">' + beatText(a) + '</span><button type="button" class="btn sq" data-act="qk-beats" data-v="1" aria-label="One beat longer">' + H.svgi('plus') + '</button></div>';
+      h += '<p class="hint">A beat is ' + r2(beatOf(a)) + ' sec' + (a.beat ? '' : ', which is 120 beats a minute') + '. Script lines set the tempo with Tempo: 120.</p>';
     } else if (a.type === 'wear') {
       h += chipRow('qk-setwear', [{ v: 'none', n: 'Nothing' }].concat(DP.COSTUMES.map(function (c) { return { v: c.id, n: c.name, img: svgData(A.costumes[c.id]) }; })), a.costume);
     } else {
@@ -368,6 +383,9 @@
       tile('qk-new', 'walk', 'Walk path', sym('go')) + tile('qk-new', 'wave', 'Wave', sym('happy')) + tile('qk-new', 'say', 'Say', sym('chat')) +
       tile('qk-new', 'hop', 'Hop', sym('up')) + tile('qk-new', 'look', 'Look', sym('look')) + tile('qk-new', 'wait', 'Wait', sym('wait')) +
       tile('qk-new', 'wear', 'Wear', A.costumes['cap-blue'] ? svgData(A.costumes['cap-blue']) : '') + '</div>';
+    h += '<h3>Dance</h3><div class="qk-grid">' +
+      tile('qk-new', 'bounce', 'Bounce', sym('up')) + tile('qk-new', 'sway', 'Sway', sym('silly')) + tile('qk-new', 'stepl', 'Step left', sym('left')) +
+      tile('qk-new', 'stepr', 'Step right', sym('right')) + tile('qk-new', 'spin', 'Spin', sym('turn')) + '</div><p class="hint">Dance moves keep time with the beat. Each one is as many beats long as you set.</p>';
     h += '<h3>Poses</h3><div class="qk-grid">' + DP.POSES.filter(function (p) { return p.id !== 'hop' && p.id.indexOf('look') !== 0 && p.id !== 'wave'; }).map(function (p) { return tile('qk-newpose', p.id, p.name, sym(POSE_ICON[p.id] || 'calm')); }).join('') + '</div>';
     h += '<h3>Emotes</h3><div class="qk-grid">' + DP.EMOTES.map(function (e) { return tile('qk-newemote', e.id, e.name, svgData(e.svg)); }).join('') + '</div>';
     h += '<h3>Recipes</h3><div class="qk-grid" id="qkRecipes">' + recipeTiles(recipes) + '</div>';
@@ -463,6 +481,18 @@
     edit(function (l) { if (l[i]) l[i].sec = Math.max(0.5, Math.min(30, Math.round((l[i].sec + d) * 2) / 2)); return l; }, { panel: false });
     var l = listOf(sel()), w = $('qkWait'); if (w && l[i]) w.textContent = r1(l[i].sec) + ' sec';
   };
+  UI.ext.act['qk-dir'] = function (v) { setField(function (a) { a.dir = v === 'right' ? 'right' : 'left'; }); };
+  /* a dance move gets longer or shorter by whole beats */
+  UI.ext.act['qk-beats'] = function (v) {
+    var i = editing, d = parseInt(v, 10);
+    edit(function (l) {
+      var a = l[i]; if (!a) return l;
+      var b = beatOf(a), n = Math.max(1, Math.round(a.sec / b) + d);
+      a.sec = Math.max(0.3, Math.min(30, Math.round(n * b * 1000) / 1000));
+      return l;
+    }, { panel: false });
+    var l = listOf(sel()), w = $('qkBeats'); if (w && l[i]) w.textContent = beatText(l[i]);
+  };
   UI.ext.act['qk-auto'] = function () {
     var shot = MM.cur();
     if (!shot.autoCamera && MM.hasManualCamera(shot)) { App.msg('This shot has camera keys you made. Delete them in the timeline to use Auto camera.', 5200); return; }
@@ -551,17 +581,18 @@
     t.fields.forEach(function (f) {
       var cur = tplVals[f.key] !== undefined ? tplVals[f.key] : f.def, id = 'qkF-' + f.key;
       if (f.type === 'text') {
-        h += '<label class="small" for="' + id + '">' + esc(f.label) + '</label><input type="text" id="' + id + '" data-tk="' + esc(f.key) + '" maxlength="160" value="' + esc(cur) + '" autocomplete="off">';
+        h += '<label class="small" for="' + id + '">' + esc(f.label) + '</label><input type="text" id="' + id + '" data-tk="' + esc(f.key) + '" maxlength="160" value="' + esc(cur) + '" autocomplete="off"' + (f.number ? ' inputmode="numeric"' : '') + '>';
         return;
       }
       var items = [];
-      if (f.type === 'cast') items = (MM.CAST_CHOICES || []).map(function (c) { return { v: c.kind, name: c.name }; });
+      if (f.type === 'cast') items = (MM.CAST_CHOICES || []).map(function (c) { return { v: c.kind, name: c.name }; }).concat(f.none ? [{ v: 'nobody', name: 'Nobody' }] : []);
       else if (f.type === 'place') items = Object.keys(DP.SET_INFO).filter(function (k) { return k !== 'photo'; }).map(function (k) { return { v: k, name: DP.SET_INFO[k].name }; });
       else if (f.type === 'symbol') items = Object.keys(A.symbols).map(function (k) { return { v: k, name: k.replace(/-/g, ' '), img: sym(k) }; });
       h += '<p class="small gap">' + esc(f.label) + '</p><div class="chips' + (f.type === 'symbol' ? ' qk-symbox' : '') + '" role="group" aria-label="' + esc(f.label) + '">' + items.map(function (o) {
         return '<button type="button" class="chip' + (o.img ? ' thumb' : '') + '" data-act="qk-tplpick" data-v="' + esc(f.key + '|' + o.v) + '" aria-pressed="' + (o.v === cur) + '">' + (o.img ? '<img alt="" src="' + o.img + '">' : '') + esc(o.name) + '</button>';
       }).join('') + '</div>';
     });
+    if (t.hint) h += '<p class="hint gap">' + esc(t.hint) + '</p>';
     h += '<div id="qkTplWarn" class="qk-notes" role="status" aria-live="polite"></div>' +
       '<div class="row"><button type="button" class="btn primary" data-act="qk-tplput">Put in my script</button><button type="button" class="btn" data-act="qk-tplbuild">Build it now</button></div>';
     return h;
@@ -574,6 +605,8 @@
       '<p class="hint">Words like shrug, hop, heart, question, wait 2, walk to Dibs, enter left, exit right, holds food and wear blue cap become actions. Anything else is spoken. A line starting with Scene: or --- starts a new shot.</p>' +
       '<details class="qk-vocab"><summary>Words the script knows</summary><ul>' +
       '<li><b>Moves:</b> walk, walk fast, run, walk left, walk right, walk to middle, walk to front, walk back, walk to Dibs, walk and follow, hop, wave, wait 2.</li>' +
+      '<li><b>Dance moves:</b> bounce 4, sway 4, step left 4, step right 2, spin 2 (the number is beats; plain bounce, sway, step, spin, twirl and dance work too). Dibs: bounce 4, spin 2 is two commands.</li>' +
+      '<li><b>Tempo:</b> Tempo: 120 (or BPM: 120) sets the beats a minute, 40 to 220, for the lines after it. Places: Dibs front, Chance back left, Ivy back right puts them where you say (front, back, far back, left, right, far left, far right).</li>' +
       '<li><b>Coming and going:</b> enter, enter left, comes in from the right, exit, exit right, leaves left, goes off right.</li>' +
       '<li><b>Looking and posing:</b> look left, look right, look at Wacker, turns to Wacker, faces camera, shrug, proud, peek, point, stand.</li>' +
       '<li><b>Feelings:</b> heart, question, exclaim, idea, laugh, sweat, music, zzz, steam, tears, shiver.</li>' +

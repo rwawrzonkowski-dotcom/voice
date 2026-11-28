@@ -11,7 +11,9 @@
   var LEAD = 0.3;         // the shot opens for a moment before anything happens
   var END_HOLD = 0.5;     // and holds for half a second before the cut
   var SETTLE = 0.35;      // the little stop at the end of a walk
-  var TYPES = ['walk', 'wave', 'say', 'emote', 'pose', 'hop', 'look', 'wait', 'wear', 'enter', 'exit'];
+  var DANCE = ['bounce', 'sway', 'step', 'spin'];   // beat timed dance moves: { sec, beat?, dir? (step) }
+  var TYPES = ['walk', 'wave', 'say', 'emote', 'pose', 'hop', 'look', 'wait', 'wear', 'enter', 'exit'].concat(DANCE);
+  var DEF_BPM = 120;
   MM.ACTION_TYPES = TYPES;
   MM.SPEEDS = { slow: 0.7, normal: 1.2, fast: 2.0 };
   MM.actionInfo = {};     // shot id -> what the last compile worked out (times of each action, end positions, length)
@@ -54,6 +56,10 @@
       o.sec = isNum(a.sec) ? r3(clamp(a.sec, 0.1, 30)) : 1;
     } else if (a.type === 'wear') {
       o.costume = a.costume === 'none' || DP.costumeInfo(a.costume) ? a.costume : 'none';
+    } else if (DANCE.indexOf(a.type) >= 0) {
+      o.sec = isNum(a.sec) ? r3(clamp(a.sec, 0.3, 30)) : (a.type === 'bounce' || a.type === 'sway' ? 2 : 1);
+      if (isNum(a.beat)) o.beat = r3(clamp(a.beat, 0.2, 2));
+      if (a.type === 'step') o.dir = a.dir === 'right' ? 'right' : 'left';
     }
     return o;
   }
@@ -131,6 +137,7 @@
     if (a.type === 'say') return MM.sayDur(a.text);
     if (a.type === 'wait') return a.sec || 1;
     if (a.type === 'walk') return walkInfo(a, from || [0, 0]).dur;
+    if (DANCE.indexOf(a.type) >= 0) return a.sec || 1;
     return FIXED[a.type] || 1;
   };
 
@@ -189,6 +196,51 @@
       function setP(p, t0, t1, v, ease) { P(p, t0, t1, v, ease); st.pose[p] = v; }
       function yawTo(t0, t1, y) { seg(trk(T + 'rot', bi.yaw || 0), t0, t1, y, 'easeInOut'); st.yaw = y; }
 
+      /* beat timed dance moves. A move is cut into whole beats (a.beat sec each, 0.5 when not set) that fill its time exactly. */
+      function dance(a, t0, sec) {
+        var beat = isNum(a.beat) ? clamp(a.beat, 0.2, 2) : 0.5, n = Math.max(1, Math.round(sec / beat)), bl = sec / n, half = bl / 2, te = t0 + sec, p = st.pose, k, ts, last, up;
+        if (a.type === 'bounce') {
+          // up with a small hop in the first half of the beat, knees bend in the second half, so the low point lands on the beat
+          for (k = 0; k < n; k++) {
+            ts = t0 + k * bl; last = k === n - 1;
+            P('hop', ts, ts + half, p.hop + 0.12); P('bend', ts, ts + half, p.bend);
+            P('hop', ts + half, ts + bl, p.hop); P('bend', ts + half, ts + bl, last ? p.bend : p.bend + 12);
+            P('lean', ts, ts + bl, last ? p.lean : p.lean + (k % 2 ? -5 : 5));
+          }
+        } else if (a.type === 'sway') {
+          // wing wave: the wings swing up and down in turn on every beat, the head tilts with them
+          for (k = 0; k < n; k++) {
+            ts = t0 + k * bl; last = k === n - 1; up = k % 2 === 0;
+            if (wings >= 1) P('wingA', ts, ts + bl, last ? p.wingA : up ? 140 : 25);
+            if (wings >= 2) P('wingB', ts, ts + bl, last ? p.wingB : up ? 25 : 140);
+            P('head', ts, ts + bl, last ? p.head : (up ? 1 : -1) * (wings ? 10 : 16));
+          }
+        } else if (a.type === 'step') {
+          // a side step out on one beat and back on the next. It keeps facing the camera and ends where it started.
+          var d = a.dir === 'right' ? 1 : -1, pa = trk(T + 'pos', [bi.x, bi.z]), home = [st.x, st.z], out = [st.x + d * 0.35, st.z];
+          if (n === 1) { seg(pa, t0, t0 + half, out); seg(pa, t0 + half, te, home); P('lean', t0, t0 + half, p.lean + d * 8); P('lean', t0 + half, te, p.lean); }
+          else for (k = 0; k < n; k++) {
+            ts = t0 + k * bl; last = k === n - 1;
+            var go = k % 2 === 0 && !(last && n % 2 === 1);
+            seg(pa, ts, ts + bl, go ? out : home);
+            P('lean', ts, ts + bl, last ? p.lean : go ? p.lean + d * 8 : p.lean - d * 3);
+            if (go || k % 2) { P('hop', ts, ts + half, p.hop + 0.08); P('hop', ts + half, ts + bl, p.hop); }
+          }
+        } else if (a.type === 'spin') {
+          // a full turn on the spot (the back of the card reads fine), a hop to start and a small squash to finish.
+          // The turn is keyed as +360 and wraps back to the start angle on a pose frame boundary (multiples of 1/6 sec are on both the 12 and 30 frame grids), so no frame shows a half turn.
+          var y0 = st.yaw, ra = trk(T + 'rot', bi.yaw || 0), hu = Math.min(0.22, sec * 0.35), sq = Math.min(0.1, sec * 0.2), G6 = 1 / 6, tw = Math.floor((te + 1e-6) / G6) * G6;
+          if (tw < t0 + 0.2) tw = Math.ceil((t0 + 0.2) / G6 - 1e-6) * G6;
+          tw = r4(tw);
+          P('hop', t0, t0 + hu, p.hop + 0.5); P('hop', t0 + hu, t0 + 2 * hu, p.hop);
+          if (wings >= 1) { P('wingA', t0, t0 + hu, 70); P('wingA', tw - 0.2, tw, p.wingA); }
+          if (wings >= 2) { P('wingB', t0, t0 + hu, 70); P('wingB', tw - 0.2, tw, p.wingB); }
+          seg(ra, t0 + 0.06, tw - 1 / FPS, y0 + 360, 'easeInOut');
+          put(ra, tw, y0, 'linear');
+          P('bend', te - 2 * sq, te - sq, p.bend + 12); P('bend', te - sq, te, p.bend);
+        }
+      }
+
       list.forEach(function (a) {
         var t0 = t, dur = a.type === 'walk' ? 0 : MM.actionDur(a), i, wasEnter = afterEnter;
         afterEnter = a.type === 'enter';
@@ -223,6 +275,8 @@
             for (i = 0; i < 4; i++) P('head', t0 + i * 0.3, t0 + i * 0.3 + 0.3, i % 2 ? -12 : 12);
             P('head', t0 + 1.2, t0 + 1.5, h0);
           }
+        } else if (DANCE.indexOf(a.type) >= 0) {
+          dance(a, t0, dur);
         } else if (a.type === 'hop') {
           var h1 = st.pose.hop, b1 = st.pose.bend, wA = st.pose.wingA, wB = st.pose.wingB;
           P('hop', t0, t0 + 0.3, 0.55); P('hop', t0 + 0.3, t0 + 0.62, h1);
@@ -710,6 +764,11 @@
       var k = charKind(t);
       return k ? { type: 'look', target: '@' + k } : null;
     }
+    var NUM = '(\\d+(?:\\.\\d+)?)', BT = '(?:\\s+beats?)?$';
+    if ((m = new RegExp('^(?:dance|dances|bounce|bounces|bouncing)(?:\\s+' + NUM + ')?' + BT).exec(w))) return { type: 'bounce', beats: m[1] ? parseFloat(m[1]) : 4 };
+    if ((m = new RegExp('^(?:sway|sways|swaying)(?:\\s+' + NUM + ')?' + BT).exec(w))) return { type: 'sway', beats: m[1] ? parseFloat(m[1]) : 4 };
+    if ((m = new RegExp('^(?:side step|side steps|step|steps)(?:\\s+(?:to\\s+)?(left|right))?(?:\\s+' + NUM + ')?' + BT).exec(w))) return { type: 'step', dir: m[1] || 'left', beats: m[2] ? parseFloat(m[2]) : 2 };
+    if ((m = new RegExp('^(?:spin|spins|twirl|twirls)(?:\\s+around)?(?:\\s+' + NUM + ')?' + BT).exec(w))) return { type: 'spin', beats: m[1] ? parseFloat(m[1]) : 2 };
     if (w === 'wave' || w === 'waves') return { type: 'wave' };
     if (w === 'hop' || w === 'hops' || w === 'jump' || w === 'jumps') return { type: 'hop' };
     if (w === 'peeks') w = 'peek';
@@ -782,10 +841,26 @@
   }
   MM.matchSet = matchSet;
 
+  /* Places: Dibs front, Chance back left, Ivy back right  ->  { dibs: { x, z }, ... }. Words: front, back, far back, middle, left, right, far left, far right.
+     A character not given a side stands in the middle; front is z 0.5, back is -0.3, far back is -0.8, and nothing said keeps the depth the character has. */
+  function parsePlaces(text, notes, ln) {
+    var out = {}, any = false;
+    String(text).split(/\s*[,;]+\s*/).forEach(function (part) {
+      part = part.trim(); if (!part) return;
+      var m = /^([A-Za-z]+)\s*(.*)$/.exec(part), kind = m && charKind(m[1]);
+      if (!kind) { notes.push({ line: ln, text: 'Line ' + ln + ': I do not know "' + part + '" in the Places line. Try Places: Dibs front, Chance back left.' }); return; }
+      var ws = ' ' + m[2].toLowerCase().replace(/[^a-z ]/g, ' ').replace(/\s+/g, ' ').trim() + ' ', far = / far /.test(ws), pt = {};
+      if (/ front /.test(ws)) pt.z = 0.5; else if (/ back /.test(ws)) pt.z = far ? -0.8 : -0.3;
+      if (/ left /.test(ws)) pt.x = far ? -1.9 : -0.95; else if (/ right /.test(ws)) pt.x = far ? 1.9 : 0.95; else pt.x = 0;
+      out[kind] = pt; any = true;
+    });
+    return any ? out : null;
+  }
+
   /* text -> { shots: [{ isNew, setId, light, name, lines }], notes: [{ line, text }] }
      a line is { who, actions, line, amp } for a character, { cam: { type, who }, line, amp } for Camera: or { cap: text, line, amp } for Caption: */
   MM.parseScript = function (text) {
-    var notes = [], specs = [{ isNew: false, setId: null, light: null, name: '', lines: [] }];
+    var notes = [], specs = [{ isNew: false, setId: null, light: null, name: '', lines: [] }], bpm = DEF_BPM;
     String(text || '').split(/\r?\n/).forEach(function (raw, i) {
       var ln = i + 1, line = raw.trim(), m, amp = false;
       if (!line || /^(#|\/\/)/.test(line)) return;
@@ -798,6 +873,21 @@
         return;
       }
       if (/^&/.test(line)) { amp = true; line = line.replace(/^&\s*/, ''); }
+      if ((m = /^(?:tempo|bpm)\s*[:：]\s*(.*)$/i.exec(line))) {
+        var bm = /^(\d+(?:\.\d+)?)\s*(?:bpm|beats(?: a| per)? minute)?$/i.exec(m[1].trim());
+        if (!bm) notes.push({ line: ln, text: 'Line ' + ln + ': I need a number for the tempo, like Tempo: 120.' });
+        else {
+          var nb = parseFloat(bm[1]);
+          if (nb < 40 || nb > 220) notes.push({ line: ln, text: 'Line ' + ln + ': tempo goes from 40 to 220 beats a minute, so ' + bm[1] + ' became ' + clamp(Math.round(nb), 40, 220) + '.' });
+          bpm = clamp(Math.round(nb), 40, 220);
+        }
+        return;
+      }
+      if ((m = /^places?\s*[:：]\s*(.*)$/i.exec(line))) {
+        var pl = parsePlaces(m[1], notes, ln);
+        if (pl) { var ps = specs[specs.length - 1]; ps.places = ps.places || {}; Object.keys(pl).forEach(function (k) { ps.places[k] = pl[k]; }); }
+        return;
+      }
       if ((m = /^(?:camera|cam)\s*[:：]\s*(.*)$/i.exec(line))) {
         var cm = parseCamera(m[1], notes, ln);
         if (cm) specs[specs.length - 1].lines.push({ cam: cm, line: ln, amp: amp });
@@ -832,6 +922,11 @@
           if (cmds.length && !/[.!?]/.test(rest)) lineNotes.push('"' + unknown + '" is not a command, so ' + m[1].trim() + ' says all of it out loud.');
         }
       }
+      // dance words count beats: the tempo in force turns them into seconds (and each move remembers its beat length)
+      acts.forEach(function (a) {
+        if (a.beats === undefined) return;
+        a.sec = a.beats * 60 / bpm; a.beat = 60 / bpm; delete a.beats;
+      });
       acts = mergeRuns(acts);
       lineNotes.forEach(function (x) { notes.push({ line: ln, text: 'Line ' + ln + ': ' + x }); });
       if (!acts.length) { notes.push({ line: ln, text: 'Line ' + ln + ': nothing to do for ' + m[1].trim() + '.' }); return; }
@@ -937,6 +1032,12 @@
         var pe = prev.end[k], it = itemOf(kindId(shot.scene, k));
         if (!pe || prev.exited[k] || !it) return;
         it.x = pe[0]; it.z = pe[1]; it.yaw = it.x < -0.1 ? 10 : it.x > 0.1 ? -10 : 0;
+      });
+      // Places: line. Everyone it names who is in the shot stands there, facing the camera.
+      if (spec.places) Object.keys(spec.places).forEach(function (k) {
+        var it = itemOf(kindId(shot.scene, k)); if (!it) return;
+        var pt = spec.places[k];
+        it.x = pt.x; if (pt.z !== undefined) it.z = pt.z; it.yaw = 0;
       });
       // what a character holds is set for the whole shot (each shot sets its own)
       Object.keys(holds).forEach(function (k) {
