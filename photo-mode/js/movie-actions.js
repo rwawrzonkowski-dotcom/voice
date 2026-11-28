@@ -683,6 +683,20 @@
     var f = fuzzy(n, Object.keys(NAMES));
     return f ? NAMES[f] : null;
   }
+  /* A character as the script names it. Plain "Pigeon" is copy 1, "Pigeon 2" is copy 2. The key is the kind for copy 1 and 'kind#n' after that,
+     so every script written before copies existed reads the same as it did. */
+  var MAX_COPY = 6;
+  function keyOf(kind, n) { return n > 1 ? kind + '#' + n : kind; }
+  function keyKind(key) { return String(key).split('#')[0]; }
+  function keyN(key) { var p = String(key).split('#'); return p[1] ? Math.max(1, parseInt(p[1], 10) || 1) : 1; }
+  function keyName(key) { var k = keyKind(key), n = keyN(key); return k.charAt(0).toUpperCase() + k.slice(1) + (n > 1 ? ' ' + n : ''); }
+  function charRef(name) {
+    var s = String(name || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim(), n = 1, m = /^(.*?)\s*(\d{1,2})$/.exec(s);
+    if (m && m[1]) { s = m[1]; n = clamp(parseInt(m[2], 10) || 1, 1, MAX_COPY); }
+    var k = charKind(s);
+    return k ? keyOf(k, n) : null;
+  }
+  MM.charKey = charRef; MM.keyName = keyName;
   function stripEnd(s) { return s.replace(/[.!?]+$/, '').trim(); }
 
   /* a word group is cleaned before it is read: filler words go (then, and, over, the, a, an, just) */
@@ -741,7 +755,7 @@
         else if (rest === 'middle' || rest === 'center' || rest === 'centre') dest = { k: 'mid' };
         else if (rest === 'front' || rest === 'forward' || rest === 'forwards' || rest === 'camera') dest = { k: 'front' };
         else if (rest === 'back' || rest === 'backward' || rest === 'backwards') dest = { k: 'back' };
-        else { var who = charKind(rest); if (!who) return null; dest = { k: 'to', who: who }; }
+        else { var who = charRef(rest); if (!who) return null; dest = { k: 'to', who: who }; }
       }
       return { type: 'walk', speed: sp, follow: fol, path: null, dest: dest };
     }
@@ -761,7 +775,7 @@
       var t = (m[2] || '').replace(/^(?:at|to|toward|towards)\b\s*/, '') || 'camera';
       if (t === 'left' || t === 'right' || t === 'camera') return { type: 'look', target: t };
       if (t === 'us') return { type: 'look', target: 'camera' };
-      var k = charKind(t);
+      var k = charRef(t);
       return k ? { type: 'look', target: '@' + k } : null;
     }
     var NUM = '(\\d+(?:\\.\\d+)?)', BT = '(?:\\s+beats?)?$';
@@ -806,7 +820,7 @@
     if (/^(?:pull|pull out|pull back|zoom out)$/.test(w)) return { type: 'pull' };
     if (/^(?:orbit|circle)$/.test(w)) return { type: 'orbit' };
     if ((m = /^close(?:\s+up)?(?:\s+on)?(?:\s+(.+))?$/.exec(w))) {
-      var k = m[1] ? charKind(m[1]) : null;
+      var k = m[1] ? charRef(m[1]) : null;
       if (k) return { type: 'close', who: k };
       notes.push({ line: ln, text: 'Line ' + ln + (m[1] ? ': I do not know "' + m[1] + '" for the camera to close in on.' : ': close on who? Try Camera: close on Dibs.') });
       return null;
@@ -847,7 +861,7 @@
     var out = {}, any = false;
     String(text).split(/\s*[,;]+\s*/).forEach(function (part) {
       part = part.trim(); if (!part) return;
-      var m = /^([A-Za-z]+)\s*(.*)$/.exec(part), kind = m && charKind(m[1]);
+      var m = /^([A-Za-z]+(?:\s*\d+)?)\s*(.*)$/.exec(part), kind = m && charRef(m[1]);
       if (!kind) { notes.push({ line: ln, text: 'Line ' + ln + ': I do not know "' + part + '" in the Places line. Try Places: Dibs front, Chance back left.' }); return; }
       var ws = ' ' + m[2].toLowerCase().replace(/[^a-z ]/g, ' ').replace(/\s+/g, ' ').trim() + ' ', far = / far /.test(ws), pt = {};
       if (/ front /.test(ws)) pt.z = 0.5; else if (/ back /.test(ws)) pt.z = far ? -0.8 : -0.3;
@@ -899,9 +913,9 @@
         specs[specs.length - 1].lines.push({ cap: ct.slice(0, 120), line: ln, amp: amp });
         return;
       }
-      m = /^([A-Za-z][A-Za-z ]{0,20}?)\s*(?:\(([^)]*)\))?\s*[:：]\s*(.*)$/.exec(line);
+      m = /^([A-Za-z][A-Za-z0-9 ]{0,22}?)\s*(?:\(([^)]*)\))?\s*[:：]\s*(.*)$/.exec(line);
       if (!m) { notes.push({ line: ln, text: 'Line ' + ln + ': I need a name and a colon, like Dibs: Hello.' }); return; }
-      var kind = charKind(m[1]);
+      var kind = charRef(m[1]);
       if (!kind) { notes.push({ line: ln, text: 'Line ' + ln + ': I do not know "' + m[1].trim() + '". Try Dibs, Wacker, Chance, Hiram, Ivy, Monty, Sue or Pigeon.' }); return; }
       var acts = [], lineNotes = [];
       if (m[2]) {
@@ -952,10 +966,14 @@
     return it;
   }
   /* characters named in the script but missing from the shot are added, facing the camera and spaced apart */
-  function ensureCast(scene, kinds) {
-    var have = {}, add = [];
-    scene.items.forEach(function (it) { if (DP.isPuppet(it.kind) && !have[it.kind]) have[it.kind] = it; });
-    kinds.forEach(function (k) { if (!have[k] && add.indexOf(k) < 0) add.push(k); });
+  function ensureCast(scene, keys) {
+    var cnt = {}, add = [];
+    scene.items.forEach(function (it) { if (DP.isPuppet(it.kind)) cnt[it.kind] = (cnt[it.kind] || 0) + 1; });
+    // copy n of a kind is the n-th one of that kind in the shot. A copy the shot does not have yet is added (with the copies before it).
+    keys.forEach(function (key) {
+      var kd = keyKind(key), n = keyN(key);
+      while ((cnt[kd] || 0) < n) { cnt[kd] = (cnt[kd] || 0) + 1; add.push({ kind: kd, n: cnt[kd] }); }
+    });
     var existing = scene.items.filter(function (it) { return DP.isPuppet(it.kind); });
     add.forEach(function (k, i) {
       var x;
@@ -965,11 +983,13 @@
         x = cand.filter(function (c) { return existing.every(function (e) { return Math.abs(e.x - c) >= 1.1; }); })[0];
         if (x === undefined) x = existing.length * 1.2;
       }
-      var it = makeItem(scene, k, x, 0.2);
+      var it = makeItem(scene, k.kind, x, 0.2), def = DP.PUPPETS[k.kind];
+      // copies are told apart by body color where the character has colors (copy 1 keeps the drawn one)
+      if (k.n > 1 && it.pose && def && def.colors && def.colors.length > 1) it.pose.color = (k.n - 1) % def.colors.length;
       scene.items.push(it); existing.push(it);
     });
   }
-  function kindId(scene, kind) { var it = scene.items.filter(function (i) { return i.kind === kind; })[0]; return it ? it.id : null; }
+  function kindId(scene, key) { var it = scene.items.filter(function (i) { return i.kind === keyKind(key); })[keyN(key) - 1]; return it ? it.id : null; }
 
   /* a shot with nothing in it yet: a script that starts with a Scene line fills it instead of adding a shot */
   function emptyShot(sh) {
@@ -1068,7 +1088,7 @@
             var cue = { t: tcue, type: l.cam.type };
             if (l.cam.type === 'close') {
               var cid = kindId(shot.scene, l.cam.who);
-              if (!cid) { notes.push({ line: l.line, text: 'Line ' + l.line + ': ' + l.cam.who.charAt(0).toUpperCase() + l.cam.who.slice(1) + ' is not in this shot, so the camera cannot close in.' }); lineCount++; return; }
+              if (!cid) { notes.push({ line: l.line, text: 'Line ' + l.line + ': ' + keyName(l.cam.who) + ' is not in this shot, so the camera cannot close in.' }); lineCount++; return; }
               cue.id = cid;
             }
             if (!camLine) camLine = l.line;
@@ -1080,7 +1100,7 @@
         var id = kindId(shot.scene, l.who), list = lists[id], start = l.amp ? prevStart : cursor;
         if (l.amp && endT[id] > start + 0.05) {
           start = endT[id];
-          notes.push({ line: l.line, text: 'Line ' + l.line + ': ' + l.who.charAt(0).toUpperCase() + l.who.slice(1) + ' is busy at that moment, so this line goes right after.' });
+          notes.push({ line: l.line, text: 'Line ' + l.line + ': ' + keyName(l.who) + ' is busy at that moment, so this line goes right after.' });
         }
         start = Math.max(start, endT[id]);
         var gap = Math.round((start - endT[id]) * 10) / 10;
@@ -1125,7 +1145,7 @@
             var from = pos[id], to = null, d = a.dest;
             if (d) {
               if (d.k === 'to') {
-                var tp = posOfKind(d.who), nmx = d.who.charAt(0).toUpperCase() + d.who.slice(1);
+                var tp = posOfKind(d.who), nmx = keyName(d.who);
                 if (!tp) notes.push({ line: l.line, text: 'Line ' + l.line + ': ' + nmx + ' is not in this shot, so the walk was skipped.' });
                 else if (kindId(shot.scene, d.who) === id) notes.push({ line: l.line, text: 'Line ' + l.line + ': a character cannot walk to itself, so the walk was skipped.' });
                 else to = [tp[0] + (from[0] >= tp[0] ? 1.1 : -1.1), tp[1]];

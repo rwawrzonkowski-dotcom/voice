@@ -2,6 +2,15 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-28: Movie Maker easier phone editing and two of the same character
+
+- Simple mode on phones: the key list is hidden until you tap Keys in the play row (remembered on the device). A slim time bar under the play row still lets you drag through the shot.
+- One panel at a time on phones: with Keys on, the key list takes the shot strip's place (a Shots button brings the strip back), and the key editor opens as a sheet over the bottom, so the picture keeps about two thirds of the screen.
+- Full screen picture: a button on the picture's corner hides everything but the picture and a slim Play, time and Exit bar. Tapping characters still edits them. Escape or the back gesture leaves.
+- Landscape phones: the picture on the left and the controls in a column on the right.
+- Two of the same character: scripts can say `Pigeon 1:` and `Pigeon 2:` (also in look at, walk to, close on and Places). Each copy is its own character with its own body color. Templates number copies when you pick the same character twice, so in TikTok dance every pigeon dances the whole routine, and in a chat each one talks.
+- Offline cache is now `dibs-photo-mode-v12`.
+
 ## 2026-11-28: Movie Maker videos save as .mp4 and go to Photos
 
 - Export now records .mp4 (H.264) whenever the browser can, and .webm only as a fallback. iPhone Photos, Instagram and TikTok take .mp4. The export screen says which file type it will make.

@@ -13,11 +13,17 @@
     var x = v && v[key] !== undefined && v[key] !== null ? String(v[key]).replace(/\s+/g, ' ').trim() : '';
     return x || def;
   }
-  function pick(v, key, def, not) {
+  function pick(v, key, def) { return nameOf(kindPick(v, key, def)); }
+  /* the character id for a cast field (the template's own default when the field is empty or not a character) */
+  function kindPick(v, key, def) {
     var k = val(v, key, def);
-    if (!nameOf(k) || CAST.every(function (c) { return c[0] !== k; })) k = def;
-    if (not && k === not) k = CAST.filter(function (c) { return c[0] !== not; })[0][0];
-    return nameOf(k);
+    return CAST.every(function (c) { return c[0] !== k; }) ? def : k;
+  }
+  /* names for a cast list. A character picked more than once gets numbers in the order picked (Pigeon 1, Pigeon 2), the same numbers the script reads. */
+  function numbered(kinds) {
+    var total = {}, seen = {};
+    kinds.forEach(function (k) { total[k] = (total[k] || 0) + 1; });
+    return kinds.map(function (k) { if (total[k] < 2) return nameOf(k); seen[k] = (seen[k] || 0) + 1; return nameOf(k) + ' ' + seen[k]; });
   }
   function place(v, def) { var p = val(v, 'place', def); return DP.SET_INFO && DP.SET_INFO[p] && p !== 'photo' ? p : def; }
   /* sentences must not read as commands: a one word line like "Wait" would turn into an action, so these are always real sentences */
@@ -54,7 +60,7 @@
         { key: 'line3', label: 'Last line', type: 'text', def: 'Then I\'m saving us the good seats.' }
       ],
       script: function (v) {
-        var A = pick(v, 'first', 'dibs'), B = pick(v, 'second', 'chance', A.toLowerCase());
+        var nm = numbered([kindPick(v, 'first', 'dibs'), kindPick(v, 'second', 'chance')]), A = nm[0], B = nm[1];
         return ['Scene: ' + place(v, 'lplatform') + ', morning',
           A + ': ' + val(v, 'line1', 'Is the train late again?'),
           B + ' (look at ' + A + '): ' + val(v, 'line2', 'Late? It\'s practically a parade.'),
@@ -117,7 +123,7 @@
         { key: 'line3', label: 'Last line', type: 'text', def: 'Race you to the bridge!' }
       ],
       script: function (v) {
-        var A = pick(v, 'first', 'dibs'), B = pick(v, 'second', 'monty', A.toLowerCase());
+        var nm = numbered([kindPick(v, 'first', 'dibs'), kindPick(v, 'second', 'monty')]), A = nm[0], B = nm[1];
         return ['Scene: ' + place(v, 'riverwalk') + ', morning',
           A + ' (enter left, walk to middle): ' + val(v, 'line1', 'Nice day for a walk.'),
           '& ' + B + ' (enter left, walk to ' + A + '):',
@@ -142,13 +148,13 @@
       script: function (v) {
         var bpm = parseFloat(val(v, 'tempo', '120'));
         bpm = isFinite(bpm) ? Math.max(40, Math.min(220, Math.round(bpm))) : 120;
-        var lead = pick(v, 'lead', 'dibs'), crew = [lead];
+        var kinds = [kindPick(v, 'lead', 'dibs')], lead;
         ['dancer2', 'dancer3', 'dancer4'].forEach(function (key) {
           var k = val(v, key, 'nobody');
           if (CAST.every(function (c) { return c[0] !== k; })) return;       // Nobody, or something that is not a character
-          var nm = nameOf(k);
-          if (crew.indexOf(nm) < 0) crew.push(nm);                            // nobody dances twice
+          kinds.push(k);                                                       // the same character twice is two dancers (Pigeon 1, Pigeon 2)
         });
+        var crew = numbered(kinds); lead = crew[0];
         // the leader is in the middle at the front, the others stand behind
         var spots = crew.length === 2 ? ['back left'] : crew.length === 3 ? ['back left', 'back right'] : ['back left', 'back right', 'far back'];
         var places = [lead + ' front'].concat(crew.slice(1).map(function (nm, i) { return nm + ' ' + spots[i]; }));

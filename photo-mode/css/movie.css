@@ -33,6 +33,24 @@ body{overflow:hidden}
 .shot .plus svg{width:30px;height:30px;stroke-width:3}
 .mmspacer{flex:1}
 
+#mmKeys,.tl-shots,.fsbtn,#mmScrub{display:none}
+#fsBar{display:none;position:absolute;left:50%;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:8;align-items:center;gap:8px;padding:6px 8px;background:var(--page);border:3px solid var(--ink);border-radius:14px;box-shadow:var(--shadow);white-space:nowrap}
+#fsBar[hidden]{display:none!important}
+#fsBar .btn{padding:4px 12px}
+#fsBar .btn svg{width:20px;height:20px;fill:currentColor}
+#fsBar #fsExit svg{fill:none;stroke:var(--ink);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+#fsTime{min-width:5.5em;text-align:center;font-size:14px}
+/* the slim time bar under the buttons (phone, Simple mode) */
+#mmScrub{grid-column:1;grid-row:4;padding:2px 14px 7px;background:var(--page)}
+#mmScrub[hidden]{display:none}
+#mmScrub{display:none;align-items:center;gap:10px}
+#scrubTime{display:none;flex:none;font-size:13px}
+#scrubTrack{flex:1;position:relative;height:28px;background:var(--paper);border:3px solid var(--ink);border-radius:10px;touch-action:none;cursor:ew-resize;-webkit-user-select:none;user-select:none}
+#scrubTrack::before{content:"";position:absolute;left:-10px;right:-10px;top:-8px;bottom:-8px}
+#scrubTrack:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+#scrubFill{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--people);border-radius:7px 0 0 7px;pointer-events:none}
+#scrubHead{position:absolute;top:-5px;bottom:-5px;left:0;width:5px;margin-left:-2px;background:var(--accent);border:2px solid var(--ink);border-radius:3px;pointer-events:none}
+
 /* ---------- side column ---------- */
 #mmSide{grid-column:2;grid-row:2/4;display:flex;flex-direction:column;min-height:0;min-width:0;background:var(--page);border-left:3px solid var(--ink)}
 #mmShots{order:1;flex:none}
@@ -118,8 +136,8 @@ body{overflow:hidden}
 #exSetup .tog{margin-top:6px}
 
 /* ---------- phone ---------- */
-@media (max-width:820px){
-  #mm{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto}
+@media (max-width:820px),(max-height:500px) and (orientation:landscape){
+  #mm{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto auto}
   #mmTop{grid-column:1;gap:8px;padding:6px 10px}
   #mmTop select{width:118px;font-size:13.5px;padding:6px 6px}
   #mmTop .mmlink{display:none}
@@ -131,10 +149,27 @@ body{overflow:hidden}
   .mmtime .tot{display:block;font-size:11.5px;font-weight:600;color:var(--soft)}
   #mmTransport .btn{padding:4px 6px;font-size:14px}
   #mmPlayText{display:none}
-  #mmTransport .btn.sq{min-width:44px}
-  #mmSide{grid-column:1;grid-row:4;border-left:0;border-top:3px solid var(--ink)}
+  #mmTransport .btn.sq,#mmTransport #mmPlay{min-width:44px}
+  #mmScrub{display:flex;grid-column:1;grid-row:4}
+  #mmSide{grid-column:1;grid-row:5;border-left:0;border-top:3px solid var(--ink)}
+  /* Simple mode: the shot strip and a slim time bar. Keys on: the key list takes the strip's place. One panel at a time, so the picture keeps its size. */
+  #mm[data-keys="0"] #mmTimeline{display:none}
+  #mm[data-keys="1"] #mmShots,#mm[data-keys="1"] #mmScrub{display:none}
+  #mmKeys{display:inline-flex}
+  #mmTransport .keysbtn .klabel{display:inline;font-size:13px}
+  #mmTransport .keysbtn{min-width:44px;padding:4px 7px;gap:3px}
+  #mmTransport .keysbtn svg{width:18px;height:18px;fill:none;stroke:var(--ink);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .tl-shots{display:inline-flex;flex-direction:column;line-height:1.05;position:absolute;left:0;top:-4px;width:calc(var(--lw) - 6px);padding:0;font-size:13px;z-index:4}
+  /* the key editor and the row bar are a sheet over the strip area */
+  #mmKeyBar{position:fixed;left:0;right:0;bottom:0;z-index:29;max-height:38dvh;overflow-y:auto;padding:8px 12px calc(8px + env(safe-area-inset-bottom));border-top:3px solid var(--ink);border-bottom:0;border-radius:14px 14px 0 0;box-shadow:0 -4px 0 rgba(42,35,80,.12)}
+  #mmKeyBar[hidden]{display:none}
+  /* full screen picture button, top right of the picture */
+  .fsbtn{display:flex;position:absolute;top:8px;right:8px;z-index:8;align-items:center;justify-content:center;width:44px;height:44px;padding:0;background:var(--paper);border:3px solid var(--ink);border-radius:12px;box-shadow:2px 2px 0 var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .fsbtn:active{transform:translate(2px,2px);box-shadow:none}
+  .fsbtn svg{width:22px;height:22px;fill:none;stroke:var(--ink);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+  #stage.drawing .fsbtn{display:none}
+  .tl-shots small{display:none;font-size:11px;font-weight:600}
   #mmTimeline{order:1;padding:6px 8px 4px}
-  #mmKeyBar{order:2;padding:6px 10px}
   #mmShots{order:3;padding:4px 8px 0}
   .tl{--lw:64px}
   .tl-scroll{max-height:150px}
@@ -276,7 +311,7 @@ body{overflow:hidden}
 }
 
 /* ---------- phone: the sheet slides up over the dimmed stage ---------- */
-@media (max-width:820px){
+@media (max-width:820px),(max-height:500px) and (orientation:landscape){
   #mmScrim{display:block;position:fixed;inset:0;z-index:40;background:rgba(15,23,42,.45)}
   #mmScrim[hidden]{display:none}
   #mmPanel,#mmPanel[data-open=false]{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:41;height:62dvh;border-top:0;border-radius:14px 14px 0 0;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.45);transform:translateY(100%);visibility:hidden;transition:transform .22s ease,visibility 0s linear .22s}
@@ -298,7 +333,7 @@ body{overflow:hidden}
 #mmPanel{order:5}
 #mmTransport .tlabel{display:inline}
 #mmSide #ctxSheet .strip{flex-wrap:wrap;overflow-x:visible}
-@media (max-width:820px){
+@media (max-width:820px),(max-height:500px) and (orientation:landscape){
   #mmTransport .tlabel{display:none}
   #mmTransport #mmUndo,#mmTransport #mmRedo,#mmTransport #mmSnap{min-width:44px;padding:4px 6px}
   /* the short sheet sits over the bottom of the screen. The picture keeps its size above it. */
@@ -315,9 +350,10 @@ body[data-hand=left] #mmSnap{order:2}
 body[data-hand=left] #mmUndo{order:3}
 body[data-hand=left] #mmRedo{order:4}
 body[data-hand=left] #mmSetKey{order:5}
-body[data-hand=left] .mmspacer{order:6}
-body[data-hand=left] .mmtime{order:7;text-align:right}
-body[data-hand=left] #mmPlay{order:8}
+body[data-hand=left] #mmKeys{order:6}
+body[data-hand=left] .mmspacer{order:7}
+body[data-hand=left] .mmtime{order:8;text-align:right}
+body[data-hand=left] #mmPlay{order:9}
 @media (min-width:821px){
   body[data-hand=left] #mm{grid-template-columns:440px minmax(0,1fr)}
   body[data-hand=left] #stage,body[data-hand=left] #mmTransport{grid-column:2}
@@ -325,4 +361,52 @@ body[data-hand=left] #mmPlay{order:8}
 }
 @media (min-width:1100px){
   body[data-hand=left] #mm{grid-template-columns:660px minmax(0,1fr)}
+}
+
+/* ---------- a phone turned sideways: the picture on the left, the controls in a column on the right ---------- */
+@media (max-height:500px) and (orientation:landscape){
+  #mm{--col:360px;grid-template-columns:minmax(0,1fr) var(--col);grid-template-rows:auto auto auto minmax(0,1fr)}
+  #mmTop{grid-column:1/3;grid-row:1;padding:4px 10px}
+  #stage{grid-column:1;grid-row:2/5}
+  #mmTransport{grid-column:2;grid-row:2;flex-wrap:wrap;border-top:0;border-left:3px solid var(--ink);padding:4px 8px}
+  #mmScrub{grid-column:2;grid-row:3;border-left:3px solid var(--ink)}
+  #mmSide{grid-column:2;grid-row:4;border-left:3px solid var(--ink);border-top:3px solid var(--ink);overflow-y:auto;overflow-x:hidden;display:block}
+  #mm[data-keys] #mmTimeline{flex:none;overflow:visible}
+  #mm[data-keys] .tl-scroll{max-height:150px}
+  #mm[data-keys] .shot img,#mm[data-keys] .shot .noimg,#mm[data-keys] .shot .plus{height:46px}
+  /* the sheets sit over the controls column */
+  #mmTransport .btn{flex:none}
+  #mmTransport .mmtime{flex:1 0 3.4em}
+  #mmKeyBar,#mm #ctxSheet{left:auto;right:0;width:var(--col);max-height:calc(100dvh - 160px)}
+  #mmPanel,#mmPanel[data-open=false]{left:auto;right:0;top:0;bottom:0;width:var(--col);height:auto;border-radius:0;transform:translateX(100%)}
+  #mmPanel[data-open=true]{transform:none}
+  .sh-head{border-radius:0}
+  body[data-hand=left] #mm{grid-template-columns:var(--col) minmax(0,1fr)}
+  body[data-hand=left] #stage{grid-column:2}
+  body[data-hand=left] #mmTransport,body[data-hand=left] #mmScrub,body[data-hand=left] #mmSide{grid-column:1;border-left:0;border-right:3px solid var(--ink)}
+  body[data-hand=left] #mmKeyBar,body[data-hand=left] #mm #ctxSheet,body[data-hand=left] #mmPanel,body[data-hand=left] #mmPanel[data-open=false]{left:0;right:auto}
+  body[data-hand=left] #mmPanel,body[data-hand=left] #mmPanel[data-open=false]{transform:translateX(-100%)}
+  body[data-hand=left] #mmPanel[data-open=true]{transform:none}
+}
+
+/* ---------- full screen picture: the picture and a slim floating play bar ---------- */
+@media (max-width:820px),(max-height:500px) and (orientation:landscape){
+  body.fs .fsbtn,body.fs #mmTop,body.fs #mmTransport,body.fs #mmScrub,body.fs #mmShots,body.fs #mmTimeline,body.fs #mmKeyBar{display:none}
+  body.fs #fsBar{display:flex}
+  body.fs #mm,body[data-hand=left].fs #mm{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) 0}
+  body.fs #stage,body[data-hand=left].fs #stage{grid-column:1;grid-row:1}
+  body.fs #mmSide,body[data-hand=left].fs #mmSide{grid-column:1;grid-row:2;height:0;min-height:0;padding:0;border:0;overflow:visible}
+  body.fs #mmKeyBar{display:none!important}
+}
+
+/* narrow phones (360 to 400): the time moves down to the slim bar (and into the Shots button when Keys is on) so every button keeps 44 px */
+@media (max-width:400px){
+  #mmTransport{gap:2px;padding:6px 6px;justify-content:space-between}
+  #mmTransport #mmTime{display:none}
+  #mmTransport .keysbtn{flex-direction:column;gap:0;padding:2px 4px;font-size:11px;line-height:1}
+  #mmTransport .keysbtn .klabel{font-size:11px}
+  #mmTransport #mmSetKey{padding:4px 5px;font-size:13px}
+  #mmTransport #mmTools{padding:4px 7px}
+  #scrubTime{display:block}
+  .tl-shots small{display:block}
 }

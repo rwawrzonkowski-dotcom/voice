@@ -602,7 +602,7 @@
     return templatesHtml() +
       '<h3>Or write your own</h3><p class="hint">One line for each thing said or done. Start with a name and a colon. Add a Scene line for the place and light, Camera: and Caption: lines for the camera and words on screen, and start a line with & to do it at the same time as the line before.</p>' +
       '<pre class="qk-help" aria-label="Example script">' + esc(HELP) + '</pre>' +
-      '<p class="hint">Words like shrug, hop, heart, question, wait 2, walk to Dibs, enter left, exit right, holds food and wear blue cap become actions. Anything else is spoken. A line starting with Scene: or --- starts a new shot.</p>' +
+      '<p class="hint">Words like shrug, hop, heart, question, wait 2, walk to Dibs, enter left, exit right, holds food and wear blue cap become actions. Anything else is spoken. A line starting with Scene: or --- starts a new shot. Two of the same character are Pigeon 1 and Pigeon 2 (Pigeon alone is Pigeon 1); each gets its own color.</p>' +
       '<details class="qk-vocab"><summary>Words the script knows</summary><ul>' +
       '<li><b>Moves:</b> walk, walk fast, run, walk left, walk right, walk to middle, walk to front, walk back, walk to Dibs, walk and follow, hop, wave, wait 2.</li>' +
       '<li><b>Dance moves:</b> bounce 4, sway 4, step left 4, step right 2, spin 2 (the number is beats; plain bounce, sway, step, spin, twirl and dance work too). Dibs: bounce 4, spin 2 is two commands.</li>' +
