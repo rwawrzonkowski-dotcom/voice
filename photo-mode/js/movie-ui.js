@@ -19,7 +19,7 @@
   /* drawn icons, in the same ink stroke as the photo mode tabs */
   var ICON = {
     plus: '<path d="M12 5v14M5 12h14"/>', minus: '<path d="M5 12h14"/>',
-    back: '<path d="M15 5l-7 7 7 7"/>',
+    back: '<path d="M15 5l-7 7 7 7"/>', next: '<path d="M9 5l7 7-7 7"/>', cross: '<path d="M6 6l12 12M18 6L6 18"/>',
     undo: '<path d="M9 4L4 9l5 5"/><path d="M4 9h10a6 6 0 0 1 0 12h-4"/>', redo: '<path d="M15 4l5 5-5 5"/><path d="M20 9H10a6 6 0 0 0 0 12h4"/>',
     quick: '<path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"/>',
     shot: '<rect x="3" y="9" width="18" height="11" rx="1.5"/><path d="M3 9l2.5-5 4 1.2L7 9M10 5.2l4 1.2L11.5 9M14.5 6.4L18.5 7.6 16 9"/>',
@@ -32,7 +32,7 @@
   };
   function svgi(id) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + ICON[id] + '</svg>'; }
 
-  var tab = 'item', selKey = null, dirty = {}, lastUndoAt = 0, activeField = null;
+  var tab = 'item', selKey = null, rowSel = null, dirty = {}, lastUndoAt = 0, activeField = null;
   var content = $('mmContent'), panel = $('mmPanel');
   var reduced = window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches;
 
@@ -109,8 +109,10 @@
     var m = MM.movie, el = $('mmShots'); if (!m) return;
     var h = '<div class="shothead"><strong>Shot ' + (MM.shotIdx + 1) + ' of ' + m.shots.length + '</strong><span class="small">' + Math.round(MM.cur().duration * 10) / 10 + ' sec, movie ' + MM.fmtTime(MM.total()) + ' of 1:00</span></div><div class="shotrow" id="shotRow">';
     m.shots.forEach(function (sh, i) {
-      h += '<button type="button" class="shot" data-i="' + i + '" aria-pressed="' + (i === MM.shotIdx) + '" aria-label="Shot ' + (i + 1) + ', ' + esc(sh.name) + ', ' + Math.round(sh.duration * 10) / 10 + ' seconds">' +
-        (sh.thumb ? '<img alt="" draggable="false" src="' + sh.thumb + '">' : '<span class="noimg"></span>') + '<span class="num">' + (i + 1) + '</span><span class="dur">' + Math.round(sh.duration * 10) / 10 + ' sec</span></button>';
+      var on = i === MM.shotIdx, x = on && m.shots.length > 1;
+      h += (x ? '<div class="shotbox">' : '') + '<button type="button" class="shot" data-i="' + i + '" aria-pressed="' + on + '" aria-label="Shot ' + (i + 1) + ', ' + esc(sh.name) + ', ' + Math.round(sh.duration * 10) / 10 + ' seconds">' +
+        (sh.thumb ? '<img alt="" draggable="false" src="' + sh.thumb + '">' : '<span class="noimg"></span>') + '<span class="num">' + (i + 1) + '</span><span class="dur">' + Math.round(sh.duration * 10) / 10 + ' sec</span></button>' +
+        (x ? '<button type="button" class="shot-x" data-delshot="1" aria-label="Delete shot ' + (i + 1) + '"><span aria-hidden="true">' + svgi('cross') + '</span></button></div>' : '');
     });
     h += '<button type="button" class="shot add" data-add="1" aria-label="Add a shot"><span class="plus" aria-hidden="true">' + svgi('plus') + '</span><span class="dur">Add shot</span></button></div>';
     el.innerHTML = h;
@@ -118,10 +120,15 @@
   function wireShots() {
     var el = $('mmShots'), drag = null;
     el.addEventListener('click', function (e) {
+      if (e.target.closest('.shot-x')) {
+        MM.pause(); drag = null;
+        MM.deleteShot().then(function (ok) { if (ok) App.msg('Shot deleted. Tap Undo to bring it back.', 4000); });
+        return;
+      }
       var b = e.target.closest('button.shot'); if (!b || drag && drag.moved) return;
-      if (b.getAttribute('data-add')) { openSheet('shot'); return; }
+      if (b.getAttribute('data-add')) { MM.pause(); openAddChooser(); return; }
       MM.pause();
-      MM.selectShot(parseInt(b.getAttribute('data-i'), 10));
+      MM.selectShot(parseInt(b.getAttribute('data-i'), 10)).then(function () { var n = emptyStageText(); if (n) App.msg(n, 5600); });
     });
     // drag to reorder: a mouse drags at once, a finger presses and holds first
     el.addEventListener('pointerdown', function (e) {
@@ -145,6 +152,58 @@
     });
     function end() { if (!drag) return; clearTimeout(drag.timer); var m = drag.moved; if (drag.b) drag.b.classList.remove('lift'); setTimeout(function () { drag = null; }, 0); if (m) { renderShots(); renderTimeline(); } }
     el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+  }
+
+  /* ---------- Add shot chooser ---------- */
+  var addModal = null, addLayer = null;
+  function buildAddModal() {
+    addModal = document.createElement('div');
+    addModal.id = 'mmAddModal'; addModal.className = 'modal'; addModal.hidden = true;
+    addModal.innerHTML = '<div class="dlg mmdlg qk-dlg" role="dialog" aria-modal="true" aria-labelledby="mmAddTitle"><header class="sh-head"><h2 id="mmAddTitle">Add a shot</h2><button type="button" class="sh-done" id="mmAddClose">Close</button></header><div class="dlgbody addbody">' +
+      '<button type="button" class="btn addchoice" data-add="blank">Blank shot<span class="small">A new empty scene</span></button>' +
+      '<button type="button" class="btn addchoice" data-add="copy">Copy this shot<span class="small">Keeps the keys and commands</span></button>' +
+      '<button type="button" class="btn addchoice" data-add="tpl">From a template<span class="small">Tip of the day, Big reveal and more</span></button>' +
+      '<button type="button" class="btn small" data-add="more">More choices</button></div></div>';
+    document.body.appendChild(addModal);
+    $('mmAddClose').addEventListener('click', closeAddChooser);
+    addModal.addEventListener('click', function (e) {
+      if (e.target === addModal) { closeAddChooser(); return; }
+      var b = e.target.closest('[data-add]'); if (!b) return;
+      var a = b.getAttribute('data-add');
+      closeAddChooser();
+      if (a === 'blank') MM.addShot(App.starterScene());
+      else if (a === 'copy') MM.duplicateShot();
+      else if (a === 'tpl') { if (UI.ext.act.openscript) UI.ext.act.openscript(); }
+      else openSheet('shot');
+    });
+    window.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !addModal.hidden) { e.stopPropagation(); closeAddChooser(); } }, true);
+  }
+  function openAddChooser() {
+    if (!addModal) buildAddModal();
+    addModal.hidden = false;
+    if (!addLayer) addLayer = pushLayer(function () { addLayer = null; addModal.hidden = true; });
+    var f = addModal.querySelector('.addchoice'); if (f) setTimeout(function () { try { f.focus(); } catch (x) {} }, 30);
+  }
+  function closeAddChooser() {
+    if (addLayer) { var l = addLayer; addLayer = null; dropLayer(l); }
+    if (addModal) addModal.hidden = true;
+  }
+
+  /* when nobody is on stage at the playhead (characters that walk in), say so. Editor only: this is a message, not part of the picture. */
+  function emptyStageText() {
+    var shot = MM.cur(); if (!shot || MM.playing || MM.exporting) return '';
+    var ps = puppets(); if (!ps.length) return '';
+    var t = MM.t, first = Infinity, any = false;
+    ps.forEach(function (p) {
+      var tr = MM.getTrack(shot, 'item:' + p.id + '.visible'), vis = true;
+      if (tr && tr.keys.length) {
+        tr.keys.forEach(function (k) { if (k.t <= t + 1e-6) vis = !!k.v; else if (k.v && k.t < first) first = k.t; });
+        if (tr.keys[0].t > t + 1e-6) vis = true;
+      }
+      if (vis) any = true;
+    });
+    if (any || first === Infinity) return '';
+    return 'Nobody is on stage yet. They walk in at ' + fmt(first, 1) + ' sec. Tap Play or drag the time.';
   }
 
   /* ---------- timeline ---------- */
@@ -191,9 +250,11 @@
     h += '<div class="tl-scroll" id="tlScroll"><div class="tl-in">';
     if (!groups.length) h += '<p class="tl-empty">No keys in this shot yet. Pick a character or the camera, change something, then tap Set key.</p>';
     groups.forEach(function (g) {
-      h += '<div class="tl-group">' + esc(g.title) + '</div>';
+      var gsel = rowSel && rowSel.kind === 'group' && rowSel.key === g.key;
+      h += '<button type="button" class="tl-group" data-grp="' + esc(g.key) + '" aria-pressed="' + !!gsel + '" aria-label="' + esc(g.title + ': row options') + '">' + esc(g.title) + '</button>';
       g.lanes.forEach(function (ln) {
-        h += '<div class="tl-row"><span class="tl-lab">' + esc(ln.label) + '</span><div class="tl-lane" data-target="' + esc(ln.tr.target) + '">';
+        var rsel = rowSel && rowSel.kind === 'row' && rowSel.target === ln.tr.target;
+        h += '<div class="tl-row"><button type="button" class="tl-lab" data-row="' + esc(ln.tr.target) + '" aria-pressed="' + !!rsel + '" aria-label="' + esc(g.title + ' ' + ln.label + ': row options') + '">' + esc(ln.label) + '</button><div class="tl-lane" data-target="' + esc(ln.tr.target) + '">';
         ln.tr.keys.forEach(function (k, i) {
           var sel = selKey && selKey.target === ln.tr.target && Math.abs(selKey.t - k.t) < 0.5 / FPS;
           h += '<button type="button" class="tl-key' + (sel ? ' sel' : '') + (k.v === null || k.v === false ? ' off' : '') + (k.gen ? ' gen' : '') + '" data-target="' + esc(ln.tr.target) + '" data-t="' + k.t + '" style="left:' + (k.t / dur * 100) + '%" aria-label="' + esc(ln.label + ' key at ' + fmt(k.t, 2) + ' sec. ' + keyTitle(ln.tr, k)) + '" aria-pressed="' + sel + '"><i></i></button>';
@@ -221,6 +282,13 @@
     el.addEventListener('pointerdown', function (e) {
       var key = e.target.closest('.tl-key');
       if (key) {
+        // keys can sit close together: take the one whose diamond is nearest the finger
+        var near = null, nd = 1e9;
+        Array.prototype.forEach.call(key.parentNode.querySelectorAll('.tl-key'), function (kb) {
+          var r = kb.getBoundingClientRect(), d = Math.abs(e.clientX - (r.left + r.width / 2));
+          if (d < nd) { nd = d; near = kb; }
+        });
+        if (near && near !== key && nd <= 22) key = near;
         kdrag = { target: key.getAttribute('data-target'), t: parseFloat(key.getAttribute('data-t')), x: e.clientX, moved: false, pid: e.pointerId, el: key, idx: -1 };
         var tr = MM.getTrack(MM.cur(), kdrag.target); kdrag.idx = MM.keyAt(tr, kdrag.t);
         try { key.setPointerCapture(e.pointerId); } catch (x) {}
@@ -257,6 +325,13 @@
       if (scrub && e.pointerId === scrub.pid) scrub = null;
     }
     el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+    el.addEventListener('click', function (e) {
+      var b = e.target.closest('.tl-lab, .tl-group'); if (!b) return;
+      MM.pause();
+      if (b.getAttribute('data-row')) rowSel = { kind: 'row', target: b.getAttribute('data-row') };
+      else rowSel = { kind: 'group', key: b.getAttribute('data-grp') };
+      selKey = null; renderTimeline(true); renderKeyBar();
+    });
     el.addEventListener('keydown', function (e) {
       if (e.target.id !== 'tlRuler') return;
       var d = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
@@ -266,7 +341,7 @@
 
   /* ---------- keys: selecting, editing ---------- */
   function selectKey(target, t) {
-    selKey = { target: target, t: t };
+    selKey = { target: target, t: t }; rowSel = null;
     MM.pause(); MM.seek(t);
     renderTimeline(true); renderKeyBar();
     var d = MM.describe(target);
@@ -287,9 +362,18 @@
   }
   function renderKeyBar() {
     var el = $('mmKeyBar'), c = curKey();
-    if (!c) { el.hidden = true; el.innerHTML = ''; selKey = null; return; }
-    var d = c.d, k = c.k, h = '<div class="kb-top"><strong>' + esc(trackTitle(selKey.target)) + '</strong>';
-    h += '<button type="button" class="btn small" data-kb="close" aria-label="Close key editor">Close</button></div>';
+    if (!c) {
+      selKey = null;
+      var ri = rowSel ? rowInfo() : null;
+      if (!ri) { rowSel = null; el.hidden = true; el.innerHTML = ''; return; }
+      var rh = '<div class="kb-top"><strong>' + esc(ri.title) + '</strong><button type="button" class="btn small" data-kb="close" aria-label="Close row options">Close</button></div>';
+      rh += '<div class="kb-row"><button type="button" class="btn danger small" data-kb="rowdel">' + esc(ri.btn) + '</button></div>';
+      if (ri.src) rh += '<div class="kb-row"><button type="button" class="btn danger small" data-kb="rowdelsrc">' + esc(ri.srcBtn) + '</button></div><p class="hint">' + esc(ri.srcHint) + '</p>';
+      el.hidden = false; el.innerHTML = rh; return;
+    }
+    var d = c.d, k = c.k, h = '<div class="kb-top"><strong>' + esc(trackTitle(selKey.target)) + '</strong><span class="kb-nav">';
+    h += '<button type="button" class="btn sq small" data-kb="prev" aria-label="Previous key"' + (c.i < 1 ? ' disabled' : '') + '>' + svgi('back') + '</button><button type="button" class="btn sq small" data-kb="next" aria-label="Next key"' + (c.i >= c.tr.keys.length - 1 ? ' disabled' : '') + '>' + svgi('next') + '</button>';
+    h += '<button type="button" class="btn small" data-kb="close" aria-label="Close key editor">Close</button></span></div>';
     h += '<div class="kb-row"><span class="kb-lab">Time</span><button type="button" class="btn sq small" data-kb="back" aria-label="One frame earlier">' + svgi('minus') + '</button><span class="kb-val" id="kbTime">' + secs(k.t) + '</span><button type="button" class="btn sq small" data-kb="fwd" aria-label="One frame later">' + svgi('plus') + '</button>';
     if (d.mode !== 'discrete') {
       h += '<span class="kb-lab sp">Ease</span><div class="seg" role="group" aria-label="Easing">' + [['linear', 'Linear'], ['easeInOut', 'Smooth'], ['back', 'Pop']].map(function (e) { return '<button type="button" data-kb="ease" data-v="' + e[0] + '" aria-pressed="' + (k.ease === e[0]) + '">' + e[1] + '</button>'; }).join('') + '</div>';
@@ -309,8 +393,14 @@
     var el = $('mmKeyBar');
     el.addEventListener('click', function (e) {
       var b = e.target.closest('[data-kb]'); if (!b) return;
-      var a = b.getAttribute('data-kb'), c = curKey(); if (!c && a !== 'close') return;
-      if (a === 'close') { selKey = null; renderKeyBar(); renderTimeline(true); return; }
+      var a = b.getAttribute('data-kb'), c = curKey();
+      if (a === 'rowdel' || a === 'rowdelsrc') { deleteRows(a === 'rowdelsrc'); return; }
+      if (!c && a !== 'close') return;
+      if (a === 'close') { selKey = null; rowSel = null; renderKeyBar(); renderTimeline(true); return; }
+      if (a === 'prev' || a === 'next') {
+        var nk = c.tr.keys[c.i + (a === 'next' ? 1 : -1)]; if (nk) selectKey(selKey.target, nk.t);
+        return;
+      }
       if (a === 'del') { MM.pushUndo(); MM.removeKey(MM.cur(), selKey.target, c.i); selKey = null; MM.touch(); renderKeyBar(); renderTimeline(true); MM.seek(MM.t); return; }
       if (a === 'ease') { MM.pushUndo(); c.k.ease = b.getAttribute('data-v'); delete c.k.gen; MM.touch(); renderKeyBar(); MM.seek(MM.t); return; }
       if (a === 'back' || a === 'fwd') {
@@ -328,6 +418,72 @@
       MM.setKey(MM.cur(), selKey.target, c.k.t, c.d.n > 1 ? v : v[0]);
       MM.touch(); MM.seek(MM.t); renderTimeline(true);
     });
+  }
+
+  /* ---------- deleting a whole row or all of one character's keys ---------- */
+  /* what the picked row or group holds: its name, tracks, key count and, when generated keys are in it, the Quick commands behind them */
+  function rowInfo() {
+    var shot = MM.cur(); if (!shot || !rowSel) return null;
+    var groups = laneGroups(shot), targets = [], title = '', g, n = 0, gen = false;
+    if (rowSel.kind === 'group') {
+      g = groups.filter(function (x) { return x.key === rowSel.key; })[0]; if (!g) return null;
+      g.lanes.forEach(function (ln) { targets.push(ln.tr.target); });
+      title = g.title;
+    } else {
+      groups.forEach(function (x) { x.lanes.forEach(function (ln) { if (ln.tr.target === rowSel.target) { g = x; targets.push(ln.tr.target); title = x.title + ': ' + ln.label; } }); });
+      if (!g) return null;
+    }
+    shot.tracks.forEach(function (tr) { if (targets.indexOf(tr.target) >= 0) { n += tr.keys.length; tr.keys.forEach(function (k) { if (k.gen) gen = true; }); } });
+    var o = { kind: rowSel.kind, title: title, targets: targets, n: n, gen: gen, group: g.key, src: '' };
+    var gn = g.title, tail = ' (' + n + (n === 1 ? ' key)' : ' keys)');
+    if (rowSel.kind === 'row') o.btn = 'Delete this row' + tail;
+    else if (g.key === 'camera') o.btn = 'Delete all camera keys' + tail;
+    else if (g.key === 'caption') o.btn = 'Delete all caption keys' + tail;
+    else if (g.key === 'look') o.btn = 'Delete all light and look keys' + tail;
+    else o.btn = 'Delete all keys for ' + gn + tail;
+    if (gen) {
+      var id = g.key.indexOf('item:') === 0 ? g.key.slice(5) : null;
+      if (id && shot.actions && shot.actions[id] && shot.actions[id].length) {
+        o.src = 'actions'; o.id = id;
+        o.srcBtn = 'Delete and also clear ' + gn + "'s Quick commands";
+        o.srcHint = 'Some of these keys come from the Quick list. They come back when the list builds again, unless you clear it too.';
+      } else if (g.key === 'camera' && shot.autoCamera) {
+        o.src = 'auto'; o.srcBtn = 'Delete and turn Auto camera off';
+        o.srcHint = 'Auto camera made some of these keys. Deleting them turns Auto camera off, so they stay gone.';
+      } else if (g.key === 'caption' && shot.capCues && shot.capCues.length) {
+        o.src = 'caps'; o.srcBtn = 'Delete and also clear the script captions';
+        o.srcHint = 'Some of these captions come from the script. They come back unless you clear them too.';
+      }
+    }
+    return o;
+  }
+  function deleteRows(withSource) {
+    var ri = rowInfo(), shot = MM.cur(); if (!ri) return;
+    MM.pause(); MM.pushUndo();
+    MM.clearTracks(shot, function (t) { return ri.targets.indexOf(t) >= 0; });
+    if (selKey && ri.targets.indexOf(selKey.target) >= 0) selKey = null;
+    if (ri.gen && ri.group === 'camera' && shot.autoCamera) {
+      // the camera keys would be made again, so Auto camera goes off with them
+      if (MM.autoCameraOff) MM.autoCameraOff(shot, true); else { shot.autoCamera = false; delete shot.camCues; }
+    }
+    if (withSource && ri.src === 'actions') { delete shot.actions[ri.id]; if (!Object.keys(shot.actions).length) delete shot.actions; }
+    else if (withSource && ri.src === 'caps') delete shot.capCues;
+    rowSel = null;
+    if (withSource && ri.src === 'actions' && MM.compileActions) MM.compileActions(shot);
+    MM.touch(); renderKeyBar(); renderTimeline(true); renderShots(); MM.seek(MM.t);
+    if (tab === 'quick' || tab === 'camera') renderPanel();
+    App.msg('Row deleted. Tap Undo to bring it back.', 4000);
+  }
+  /* Tools, Shot: take every key and every Quick command out of the shot, one Undo step */
+  function clearAllKeys() {
+    var shot = MM.cur(); if (!shot) return;
+    MM.pause(); MM.pushUndo();
+    shot.tracks = [];
+    delete shot.actions; delete shot.camCues; delete shot.capCues;
+    if (shot.autoCamera) { shot.autoCamera = false; if (MM.emit) MM.emit('autocam'); }
+    selKey = null; rowSel = null; dirty = {};
+    MM.touch(); renderKeyBar(); renderTimeline(); renderShots(); MM.seek(0); renderPanel();
+    App.msg('All keys are gone from this shot. Tap Undo to bring them back.', 4200);
   }
 
   /* ---------- Set key ---------- */
@@ -531,7 +687,8 @@
       '<div class="field"><label for="shName">Name</label></div><input type="text" id="shName" maxlength="40" value="' + esc(shot.name) + '" aria-label="Shot name">' +
       '<h3 class="gap">Length</h3><div class="row"><button type="button" class="btn sq" data-act="dur" data-v="-0.5" aria-label="Half a second shorter">' + svgi('minus') + '</button><span class="kb-val" id="durText">' + shot.duration + ' sec</span><button type="button" class="btn sq" data-act="dur" data-v="0.5" aria-label="Half a second longer">' + svgi('plus') + '</button></div>' +
       '<p class="hint" id="durHint">The whole movie can be 60 sec. Now it is ' + MM.fmtTime(MM.total()) + '.</p>' +
-      '<div class="row"><button type="button" class="btn" data-act="shotleft">Move earlier</button><button type="button" class="btn" data-act="shotright">Move later</button><button type="button" class="btn danger" data-act="shotdel">Delete shot</button></div></div>' +
+      '<div class="row"><button type="button" class="btn" data-act="shotleft">Move earlier</button><button type="button" class="btn" data-act="shotright">Move later</button><button type="button" class="btn danger" data-act="shotdel">Delete shot</button></div>' +
+      '<h3 class="gap">Keys</h3><div class="row"><button type="button" class="btn danger" data-act="clearkeys">Clear all keys</button></div><p class="hint">Takes every key and Quick command out of this shot. Tap Undo to bring them back. To remove one row, tap its name in the timeline.</p></div>' +
       '<div class="group"><h3>Add a shot after this one</h3>' +
       '<div class="row"><button type="button" class="btn" data-act="addblank">Blank starter</button><button type="button" class="btn" data-act="adddup">Copy of this shot</button></div>' +
       '<div class="row"><button type="button" class="btn" data-act="addfile">Import a scene file</button><button type="button" class="btn" data-act="addauto">From photo mode</button></div>' +
@@ -798,6 +955,7 @@
     dur: function (v) { MM.setDuration(MM.cur().duration + parseFloat(v)); renderShots(); renderTimeline(); var dh = $('durHint'); if (dh) dh.textContent = 'The whole movie can be 60 sec. Now it is ' + MM.fmtTime(MM.total()) + '.'; syncFields(); updateTime(); },
     shotleft: function () { MM.moveShot(MM.shotIdx, MM.shotIdx - 1); renderShots(); },
     shotright: function () { MM.moveShot(MM.shotIdx, MM.shotIdx + 1); renderShots(); },
+    clearkeys: function () { clearAllKeys(); },
     shotdel: function () { MM.deleteShot().then(function (ok) { if (ok) App.msg('Shot deleted. Tap Undo to bring it back.', 4000); }); },
     addblank: function () { MM.addShot(App.starterScene()); },
     adddup: function () { MM.duplicateShot(); },
@@ -1060,7 +1218,7 @@
   MM.on('play', updatePlay);
   MM.on('loaded', function () {
     pickFirst();
-    selKey = selKey && curKey() ? selKey : null;
+    selKey = selKey && curKey() ? selKey : null; rowSel = null;
     renderShots(); renderTimeline(); renderKeyBar();
     if (!MM.playing) renderPanel();
     updateTime();
@@ -1101,7 +1259,7 @@
   buildTop(); buildSheet(); wireShots(); wireTimeline(); wireKeyBar(); wireContent(); wireFiles(); wireExport(); wireKeys();
   App.pad = { t: isPhone() ? 8 : 14, b: isPhone() ? 10 : 14, s: isPhone() ? 10 : 16 };
   window.addEventListener('resize', function () { App.pad = { t: isPhone() ? 8 : 14, b: isPhone() ? 10 : 14, s: isPhone() ? 10 : 16 }; });
-  UI.h = { esc: esc, svgData: svgData, isPhone: isPhone, secs: secs, itemName: itemName, puppets: puppets, selItem: selItem, openSheet: openSheet, closeSheet: closeSheet, isOpen: isOpen, showPage: showPage, pushLayer: pushLayer, dropLayer: dropLayer, renderPanel: renderPanel, renderTimeline: renderTimeline, renderShots: renderShots, renderKeyBar: renderKeyBar, updateTime: updateTime, afterMovieLoaded: function () { afterMovieLoaded(); }, getTab: function () { return tab; }, undoBurst: undoBurst, act: act, clearDirty: function (target) { delete dirty[target]; }, svgi: svgi, syncFields: syncFields };
+  UI.h = { emptyStageText: emptyStageText, esc: esc, svgData: svgData, isPhone: isPhone, secs: secs, itemName: itemName, puppets: puppets, selItem: selItem, openSheet: openSheet, closeSheet: closeSheet, isOpen: isOpen, showPage: showPage, pushLayer: pushLayer, dropLayer: dropLayer, renderPanel: renderPanel, renderTimeline: renderTimeline, renderShots: renderShots, renderKeyBar: renderKeyBar, updateTime: updateTime, afterMovieLoaded: function () { afterMovieLoaded(); }, getTab: function () { return tab; }, undoBurst: undoBurst, act: act, clearDirty: function (target) { delete dirty[target]; }, svgi: svgi, syncFields: syncFields };
   if (DP.movieEdit) DP.movieEdit.setup(UI);
   tab = isPhone() ? 'quick' : 'item';
   if (!isPhone()) openSheet(); else applyView();
