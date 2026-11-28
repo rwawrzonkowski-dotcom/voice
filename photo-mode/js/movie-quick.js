@@ -653,7 +653,7 @@
     MM.buildScript(scriptText).then(function (res) {
       H.afterMovieLoaded();
       refreshViz();
-      if (res.ok && !res.notes.length) { closeModal(); App.msg(res.text, 4200); return; }
+      if (res.ok && !res.notes.length) { closeModal(); var en = H.emptyStageText(); App.msg(res.text + (en ? ' ' + en : ''), en ? 6400 : 4200); return; }
       scriptConfirm = false;
       var box = $('qkNotes'), b = $('qkBuild');
       if (box) box.innerHTML = '<ul><li><strong>' + esc(res.text) + '</strong></li>' + res.notes.map(function (n) { return '<li>' + esc(n.text) + '</li>'; }).join('') + '</ul>';

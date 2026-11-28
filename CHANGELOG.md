@@ -2,6 +2,15 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-28: Movie Maker easier deleting and adding (phone)
+
+- The key list on a phone is taller (150px, was 96px). A tap picks the key nearest your finger, and the key bar has Previous key and Next key buttons, so keys packed close together are easy to reach.
+- Tap a row name (like Position) to delete the whole row, or a group name (like Dibs or Camera) to delete all its keys. Each is one Undo step. If the keys came from Quick commands or Auto camera, a second button also clears those so the keys do not come back.
+- Tools, Shot has Clear all keys.
+- The picked shot in the strip has a round x to delete it (Undo brings it back).
+- Add shot opens a short chooser: Blank shot, Copy this shot, From a template, More choices.
+- When a shot starts with nobody on stage (they walk in), a note says when they arrive.
+
 ## 2026-11-28: Photo Mode and Movie Maker show updates right away
 
 - The offline helper (`photo-mode/sw.js`) now gets pages from the network first and uses its saved copy only when offline. Before, it showed the saved copy first, so a new version (like the script upgrade) could stay hidden after an update. Install fetches fresh copies (`cache: 'reload'`). Offline cache is now `dibs-photo-mode-v10`.
