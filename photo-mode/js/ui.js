@@ -985,6 +985,6 @@
   setOpen(!isPhone());
   App.boot();
   if (location.protocol === 'http:' || location.protocol === 'https:') {
-    if ('serviceWorker' in navigator) window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+    if ('serviceWorker' in navigator) window.addEventListener('load', function () { var hadSw = !!navigator.serviceWorker.controller, reloaded = false; navigator.serviceWorker.addEventListener('controllerchange', function () { if (hadSw && !reloaded) { reloaded = true; location.reload(); } }); navigator.serviceWorker.register('sw.js').catch(function () {}); });
   }
 })();

@@ -1,6 +1,6 @@
 /* DIBS Photo Mode: offline cache. Registered only when the page is served over http or https.
-   Bump CACHE whenever any listed file changes so people get the new version. */
-var CACHE = 'dibs-photo-mode-v9';
+   Pages are fetched from the network first and the cache is the offline fallback. Bump CACHE whenever the FILES list changes. */
+var CACHE = 'dibs-photo-mode-v10';
 var FILES = [
   './',
   'index.html',
@@ -38,7 +38,7 @@ var FILES = [
 ];
 
 self.addEventListener('install', function (e) {
-  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(FILES); }).then(function () { return self.skipWaiting(); }));
+  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(FILES.map(function (f) { return new Request(f, { cache: 'reload' }); })); }).then(function () { return self.skipWaiting(); }));
 });
 self.addEventListener('activate', function (e) {
   e.waitUntil(caches.keys().then(function (keys) {
@@ -50,11 +50,11 @@ self.addEventListener('fetch', function (e) {
   if (req.method !== 'GET') return;
   var url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
-  e.respondWith(caches.match(req, { ignoreSearch: true }).then(function (hit) {
-    if (hit) return hit;
-    return fetch(req).then(function (res) {
-      if (res && res.ok && res.type === 'basic') { var copy = res.clone(); caches.open(CACHE).then(function (c) { c.put(req, copy); }); }
-      return res;
-    }).catch(function () { return caches.match('index.html'); });
+  // network first, so a new version shows on the next load; the saved copy is used when offline
+  e.respondWith(fetch(req, { cache: 'no-cache' }).then(function (res) {
+    if (res && res.ok && res.type === 'basic') { var copy = res.clone(); caches.open(CACHE).then(function (c) { c.put(req, copy); }); }
+    return res;
+  }).catch(function () {
+    return caches.match(req, { ignoreSearch: true }).then(function (hit) { return hit || caches.match('index.html'); });
   }));
 });

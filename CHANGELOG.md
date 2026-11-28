@@ -2,6 +2,11 @@
 
 Newest first. Add a line here every time the site changes.
 
+## 2026-11-28: Photo Mode and Movie Maker show updates right away
+
+- The offline helper (`photo-mode/sw.js`) now gets pages from the network first and uses its saved copy only when offline. Before, it showed the saved copy first, so a new version (like the script upgrade) could stay hidden after an update. Install fetches fresh copies (`cache: 'reload'`). Offline cache is now `dibs-photo-mode-v10`.
+- When a new version takes over, the page reloads itself once (`js/ui.js`, `js/movie-ui.js`).
+
 ## 2026-11-27: Movie Maker script upgrade and quick templates
 
 - The Script (Tools, Quick, Script) understands more, all parsed on the device with no internet:
